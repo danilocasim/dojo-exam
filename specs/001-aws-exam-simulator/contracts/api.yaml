@@ -1,0 +1,622 @@
+openapi: 3.0.3
+info:
+  title: AWS Exam Simulator - Admin & Sync API
+  description: |
+    REST API for the AWS Cloud Practitioner Exam Simulator.
+    Two consumer groups:
+    - **Admin**: Question CRUD with approval workflow (API key authenticated)
+    - **Mobile Sync**: Question download for offline use (unauthenticated)
+  version: 1.0.0
+  contact:
+    name: Exam App Team
+
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+security: []
+
+paths:
+  # ─── Sync Endpoints (Unauthenticated) ─────────────────────────
+
+  /api/questions/sync:
+    get:
+      summary: Sync approved questions to mobile device
+      description: |
+        Returns questions updated since the given timestamp (incremental sync).
+        If no `since` parameter is provided, returns all approved questions (full sync).
+        Only returns questions with status "approved".
+      operationId: syncQuestions
+      tags: [Sync]
+      parameters:
+        - name: since
+          in: query
+          description: ISO 8601 timestamp for incremental sync. Omit for full sync.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2026-02-12T10:00:00Z"
+      responses:
+        "200":
+          description: Sync payload with questions and metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/questions/sync/full:
+    get:
+      summary: Force full sync of all approved questions
+      description: Returns all approved questions regardless of timestamp. Used for first-time sync or recovery.
+      operationId: fullSyncQuestions
+      tags: [Sync]
+      responses:
+        "200":
+          description: Full question bank
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+
+  # ─── Admin Question Management (API Key Required) ─────────────
+
+  /api/admin/questions:
+    get:
+      summary: List all questions with filtering
+      operationId: listQuestions
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, review, approved, archived]
+        - name: domain
+          in: query
+          schema:
+            $ref: "#/components/schemas/Domain"
+        - name: difficulty
+          in: query
+          schema:
+            $ref: "#/components/schemas/Difficulty"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Paginated question list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedQuestions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create a new question
+      description: Creates a question in "draft" status with answer options.
+      operationId: createQuestion
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuestionRequest"
+      responses:
+        "201":
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/admin/questions/{questionId}:
+    parameters:
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get a single question with answers
+      operationId: getQuestion
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Question details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      summary: Update a question
+      description: |
+        Updates question content. If the question was "approved", editing it
+        resets status to "draft" to require re-approval.
+      operationId: updateQuestion
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuestionRequest"
+      responses:
+        "200":
+          description: Question updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Archive a question
+      description: Soft-deletes a question by setting status to "archived".
+      operationId: archiveQuestion
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Question archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/admin/questions/{questionId}/approve:
+    post:
+      summary: Approve a question
+      description: Transitions a question from "draft" or "review" to "approved".
+      operationId: approveQuestion
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Question approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          description: Question cannot be approved (already approved or archived)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/admin/questions/bulk-approve:
+    post:
+      summary: Bulk approve questions
+      description: Approve multiple questions at once.
+      operationId: bulkApproveQuestions
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionIds]
+              properties:
+                questionIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+                  maxItems: 50
+      responses:
+        "200":
+          description: Bulk approval result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approved:
+                    type: integer
+                    description: Number of questions successfully approved
+                  skipped:
+                    type: integer
+                    description: Number of questions that could not be approved
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        questionId:
+                          type: string
+                        reason:
+                          type: string
+
+  # ─── Admin Stats ───────────────────────────────────────────────
+
+  /api/admin/stats:
+    get:
+      summary: Get question bank statistics
+      description: Returns counts of questions by status, domain, and difficulty.
+      operationId: getStats
+      tags: [Admin]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Question bank statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestionStats"
+
+  # ─── Health ────────────────────────────────────────────────────
+
+  /api/health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [System]
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Admin-API-Key
+      description: Admin API key for question management endpoints
+
+  schemas:
+    Domain:
+      type: string
+      enum:
+        - cloud_concepts
+        - security_compliance
+        - cloud_technology
+        - billing_pricing
+
+    Difficulty:
+      type: string
+      enum:
+        - easy
+        - medium
+        - hard
+
+    QuestionType:
+      type: string
+      enum:
+        - single_choice
+        - multiple_choice
+        - true_false
+
+    QuestionStatus:
+      type: string
+      enum:
+        - draft
+        - review
+        - approved
+        - archived
+
+    AnswerOption:
+      type: object
+      required: [text, isCorrect, displayOrder]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        text:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        isCorrect:
+          type: boolean
+        displayOrder:
+          type: integer
+          minimum: 1
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        text:
+          type: string
+          maxLength: 2000
+        domain:
+          $ref: "#/components/schemas/Domain"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        questionType:
+          $ref: "#/components/schemas/QuestionType"
+        explanation:
+          type: string
+          maxLength: 3000
+        status:
+          $ref: "#/components/schemas/QuestionStatus"
+        requiredSelections:
+          type: integer
+          minimum: 1
+        answerOptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerOption"
+          minItems: 2
+          maxItems: 6
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+
+    CreateQuestionRequest:
+      type: object
+      required: [text, domain, difficulty, questionType, explanation, answerOptions]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        domain:
+          $ref: "#/components/schemas/Domain"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        questionType:
+          $ref: "#/components/schemas/QuestionType"
+        explanation:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        requiredSelections:
+          type: integer
+          minimum: 1
+          default: 1
+        answerOptions:
+          type: array
+          items:
+            type: object
+            required: [text, isCorrect, displayOrder]
+            properties:
+              text:
+                type: string
+                minLength: 1
+                maxLength: 1000
+              isCorrect:
+                type: boolean
+              displayOrder:
+                type: integer
+                minimum: 1
+          minItems: 2
+          maxItems: 6
+
+    UpdateQuestionRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        domain:
+          $ref: "#/components/schemas/Domain"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        questionType:
+          $ref: "#/components/schemas/QuestionType"
+        explanation:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        requiredSelections:
+          type: integer
+          minimum: 1
+        answerOptions:
+          type: array
+          items:
+            type: object
+            required: [text, isCorrect, displayOrder]
+            properties:
+              text:
+                type: string
+              isCorrect:
+                type: boolean
+              displayOrder:
+                type: integer
+          minItems: 2
+          maxItems: 6
+
+    SyncResponse:
+      type: object
+      required: [questions, deletedIds, timestamp, checksum]
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+          description: New or updated questions since last sync
+        deletedIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: IDs of questions that have been archived/removed
+        timestamp:
+          type: string
+          format: date-time
+          description: Server timestamp for this sync (use as `since` for next sync)
+        checksum:
+          type: string
+          description: Hash of the full approved question bank for integrity verification
+        totalApproved:
+          type: integer
+          description: Total number of approved questions in the bank
+
+    PaginatedQuestions:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+
+    QuestionStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        byStatus:
+          type: object
+          properties:
+            draft:
+              type: integer
+            review:
+              type: integer
+            approved:
+              type: integer
+            archived:
+              type: integer
+        byDomain:
+          type: object
+          properties:
+            cloud_concepts:
+              type: integer
+            security_compliance:
+              type: integer
+            cloud_technology:
+              type: integer
+            billing_pricing:
+              type: integer
+        byDifficulty:
+          type: object
+          properties:
+            easy:
+              type: integer
+            medium:
+              type: integer
+            hard:
+              type: integer
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Invalid API key"
+            code: "UNAUTHORIZED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Question not found"
+            code: "NOT_FOUND"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Validation failed: text is required"
+            code: "VALIDATION_ERROR"
