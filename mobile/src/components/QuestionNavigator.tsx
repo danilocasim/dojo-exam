@@ -9,28 +9,30 @@ import {
   Pressable,
   StyleSheet,
 } from 'react-native';
+import { ChevronLeft, ChevronRight, Flag, Grid3x3, X, Check } from 'lucide-react-native';
 import { ExamAnswer } from '../storage/schema';
 
-// Color constants
+// AWS Dark Color Palette
 const colors = {
-  slate950: '#020617',
-  slate900: '#0f172a',
-  slate800: '#1e293b',
-  slate700: '#334155',
-  slate600: '#475569',
-  slate500: '#64748b',
-  slate400: '#94a3b8',
-  slate300: '#cbd5e1',
-  white: '#ffffff',
-  black: '#000000',
-  orange500: '#f97316',
-  orange600: '#ea580c',
-  orange900: '#7c2d12',
-  orange400: '#fb923c',
-  emerald500: '#10b981',
-  emerald600: '#059669',
-  emerald900: '#064e3b',
-  emerald400: '#34d399',
+  // Backgrounds
+  background: '#232F3E', // AWS Squid Ink
+  surface: '#161E2D', // Deep Navy
+  surfaceHover: '#1D2939',
+  // Borders
+  borderDefault: '#374151',
+  borderSubtle: '#2D3B4E',
+  // Text
+  textHeading: '#FFFFFF',
+  textBody: '#D1D5DB',
+  textMuted: '#9CA3AF',
+  textDisabled: '#6B7280',
+  // Accents
+  primaryOrange: '#FF9900', // AWS Orange
+  secondaryOrange: '#EC7211',
+  primaryOrangeDark: '#7D4E00',
+  // Status
+  success: '#059669',
+  successDark: '#064E3B',
   transparent: 'transparent',
 };
 
@@ -71,24 +73,26 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
     const isAnswered = answer.answeredAt !== null;
     const isQuestionFlagged = answer.isFlagged;
 
-    let bgColor = colors.slate700;
-    let borderColor = colors.transparent;
+    let bgColor = colors.surfaceHover;
+    let borderColor = colors.borderSubtle;
 
-    if (isAnswered) {
-      bgColor = colors.emerald600;
+    if (isAnswered && !isQuestionFlagged) {
+      bgColor = colors.successDark;
+      borderColor = colors.success;
     }
     if (isQuestionFlagged) {
-      bgColor = isAnswered ? colors.orange500 : colors.orange600;
+      bgColor = colors.primaryOrangeDark;
+      borderColor = colors.primaryOrange;
     }
     if (isCurrentQuestion) {
-      borderColor = colors.white;
+      borderColor = colors.textHeading;
     }
 
     return { backgroundColor: bgColor, borderColor };
   };
 
   const getQuestionTextColor = (answer: ExamAnswer) => {
-    return answer.answeredAt !== null || answer.isFlagged ? colors.white : colors.slate400;
+    return answer.answeredAt !== null || answer.isFlagged ? colors.textHeading : colors.textMuted;
   };
 
   return (
@@ -103,11 +107,18 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
           </Text>
           <View style={styles.badges}>
             <View style={styles.answeredBadge}>
-              <Text style={styles.answeredBadgeText}>✓ {answeredCount}</Text>
+              <Check size={12} color={colors.success} strokeWidth={3} />
+              <Text style={styles.answeredBadgeText}> {answeredCount}</Text>
             </View>
             {flaggedCount > 0 && (
               <View style={styles.flaggedBadge}>
-                <Text style={styles.flaggedBadgeText}>🚩 {flaggedCount}</Text>
+                <Flag
+                  size={11}
+                  color={colors.primaryOrange}
+                  strokeWidth={2}
+                  fill={colors.primaryOrange}
+                />
+                <Text style={styles.flaggedBadgeText}> {flaggedCount}</Text>
               </View>
             )}
           </View>
@@ -135,13 +146,18 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               hasPrevious ? styles.navButtonActive : styles.navButtonInactive,
             ]}
           >
+            <ChevronLeft
+              size={18}
+              color={hasPrevious ? colors.textBody : colors.textDisabled}
+              strokeWidth={2}
+            />
             <Text
               style={[
                 styles.navButtonText,
-                { color: hasPrevious ? colors.slate300 : colors.slate600 },
+                { color: hasPrevious ? colors.textBody : colors.textDisabled },
               ]}
             >
-              ← Prev
+              Prev
             </Text>
           </TouchableOpacity>
 
@@ -155,14 +171,12 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
                 isFlagged ? styles.iconButtonFlagged : styles.iconButtonDefault,
               ]}
             >
-              <Text
-                style={[
-                  styles.iconButtonText,
-                  { color: isFlagged ? colors.orange400 : colors.slate400 },
-                ]}
-              >
-                {isFlagged ? '🚩' : '⚑'}
-              </Text>
+              <Flag
+                size={16}
+                color={isFlagged ? colors.primaryOrange : colors.textMuted}
+                strokeWidth={2}
+                fill={isFlagged ? colors.primaryOrange : 'transparent'}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -170,7 +184,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               activeOpacity={0.7}
               style={[styles.iconButton, styles.iconButtonDefault]}
             >
-              <Text style={styles.iconButtonText}>⊞</Text>
+              <Grid3x3 size={16} color={colors.textMuted} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -182,10 +196,18 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
             style={[styles.navButton, hasNext ? styles.nextButtonActive : styles.navButtonInactive]}
           >
             <Text
-              style={[styles.navButtonText, { color: hasNext ? colors.white : colors.slate600 }]}
+              style={[
+                styles.navButtonText,
+                { color: hasNext ? colors.textHeading : colors.textDisabled },
+              ]}
             >
-              Next →
+              Next
             </Text>
+            <ChevronRight
+              size={18}
+              color={hasNext ? colors.textHeading : colors.textDisabled}
+              strokeWidth={2}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -213,22 +235,22 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
                   onPress={() => setShowGrid(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Text style={styles.modalCloseText}>×</Text>
+                  <X size={18} color={colors.textBody} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
 
               {/* Legend */}
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.slate700 }]} />
+                  <View style={[styles.legendDot, { backgroundColor: colors.surfaceHover }]} />
                   <Text style={styles.legendText}>Unanswered</Text>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.emerald600 }]} />
+                  <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
                   <Text style={styles.legendText}>Answered</Text>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.orange500 }]} />
+                  <View style={[styles.legendDot, { backgroundColor: colors.primaryOrange }]} />
                   <Text style={styles.legendText}>Flagged</Text>
                 </View>
               </View>
@@ -264,11 +286,11 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.slate900,
-    paddingHorizontal: 16,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.slate800,
+    borderTopColor: colors.borderDefault,
   },
   progressInfo: {
     flexDirection: 'row',
@@ -277,15 +299,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressText: {
-    color: colors.slate400,
+    color: colors.textMuted,
     fontSize: 14,
   },
   progressCurrent: {
-    color: colors.white,
+    color: colors.textHeading,
     fontWeight: '600',
   },
   progressTotal: {
-    color: colors.slate500,
+    color: colors.textMuted,
   },
   badges: {
     flexDirection: 'row',
@@ -293,38 +315,42 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   answeredBadge: {
-    backgroundColor: colors.emerald900,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.successDark,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   answeredBadgeText: {
-    color: colors.emerald400,
+    color: colors.success,
     fontSize: 12,
     fontWeight: '600',
   },
   flaggedBadge: {
-    backgroundColor: colors.orange900,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryOrangeDark,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   flaggedBadgeText: {
-    color: colors.orange400,
+    color: colors.primaryOrange,
     fontSize: 12,
     fontWeight: '600',
   },
   progressBarContainer: {
-    height: 6,
-    backgroundColor: colors.slate800,
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: 2,
     marginBottom: 16,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: colors.emerald500,
-    borderRadius: 3,
+    backgroundColor: colors.success,
+    borderRadius: 2,
   },
   navButtons: {
     flexDirection: 'row',
@@ -332,21 +358,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
+    gap: 4,
   },
   navButtonActive: {
-    backgroundColor: colors.slate800,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
   },
   navButtonInactive: {
-    backgroundColor: colors.slate900,
+    backgroundColor: 'transparent',
   },
   nextButtonActive: {
-    backgroundColor: colors.orange500,
+    backgroundColor: colors.primaryOrange,
   },
   navButtonText: {
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 14,
   },
   centerControls: {
@@ -354,70 +385,68 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
   },
   iconButtonDefault: {
-    backgroundColor: colors.slate800,
+    backgroundColor: colors.surfaceHover,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
   },
   iconButtonFlagged: {
-    backgroundColor: colors.orange900,
-  },
-  iconButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.slate400,
+    backgroundColor: colors.primaryOrangeDark,
+    borderWidth: 1,
+    borderColor: colors.primaryOrange,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.black,
+    backgroundColor: 'rgba(0,0,0,0.85)',
   },
   modalDimmer: {
     flex: 1,
-    opacity: 0.7,
   },
   modalContent: {
-    backgroundColor: colors.slate900,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 20,
+    padding: 24,
     borderTopWidth: 1,
-    borderTopColor: colors.slate800,
+    borderTopColor: colors.borderDefault,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.textHeading,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: colors.slate500,
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: 4,
   },
   modalCloseButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.slate800,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceHover,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  modalCloseText: {
-    color: colors.slate400,
-    fontSize: 18,
   },
   legend: {
     flexDirection: 'row',
     gap: 16,
-    marginBottom: 16,
-    backgroundColor: colors.slate950,
+    marginBottom: 20,
+    backgroundColor: colors.background,
     padding: 12,
     borderRadius: 8,
   },
@@ -428,12 +457,12 @@ const styles = StyleSheet.create({
   legendDot: {
     width: 12,
     height: 12,
-    borderRadius: 2,
+    borderRadius: 4,
     marginRight: 8,
   },
   legendText: {
     fontSize: 12,
-    color: colors.slate500,
+    color: colors.textBody,
   },
   questionGrid: {
     flexDirection: 'row',

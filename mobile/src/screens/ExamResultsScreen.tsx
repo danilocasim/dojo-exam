@@ -11,35 +11,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Trophy, XCircle, BookOpen, Home, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { getExamResult, formatTimeSpent } from '../services';
 import { ExamResult, DomainScore } from '../storage/schema';
 import { useExamStore } from '../stores';
 
-// Color constants
+// AWS Dark Color Palette
 const colors = {
-  slate950: '#020617',
-  slate900: '#0f172a',
-  slate800: '#1e293b',
-  slate500: '#64748b',
-  slate400: '#94a3b8',
-  slate300: '#cbd5e1',
-  white: '#ffffff',
-  orange500: '#f97316',
-  orange400: '#fb923c',
-  orange300: '#fdba74',
-  orange200: '#fed7aa',
-  orange900: '#7c2d12',
-  orange950: '#431407',
-  emerald600: '#059669',
-  emerald500: '#10b981',
-  emerald400: '#34d399',
-  emerald950: '#022c22',
-  red600: '#dc2626',
-  red500: '#ef4444',
-  red400: '#f87171',
-  red900: '#7f1d1d',
-  red950: '#450a0a',
+  // Backgrounds
+  background: '#232F3E', // AWS Squid Ink
+  surface: '#161E2D', // Deep Navy
+  surfaceHover: '#1D2939',
+  // Borders
+  borderDefault: '#374151',
+  // Text
+  textHeading: '#FFFFFF',
+  textBody: '#D1D5DB',
+  textMuted: '#9CA3AF',
+  // Accents
+  primaryOrange: '#FF9900',
+  secondaryOrange: '#EC7211',
+  orangeDark: '#7D4E00',
+  orangeLight: '#FFB84D',
+  // Status
+  success: '#059669',
+  successLight: '#6EE7B7',
+  successDark: '#064E3B',
+  error: '#DC2626',
+  errorLight: '#FCA5A5',
+  errorDark: '#7F1D1D',
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ExamResults'>;
@@ -97,21 +98,21 @@ export const ExamResultsScreen: React.FC = () => {
   };
 
   const getScoreColor = (score: number, passingScore: number = 70) => {
-    if (score >= passingScore) return colors.emerald400;
-    if (score >= passingScore - 10) return colors.orange400;
-    return colors.red400;
+    if (score >= passingScore) return colors.successLight;
+    if (score >= passingScore - 10) return colors.orangeLight;
+    return colors.errorLight;
   };
 
   const getDomainBarColor = (percentage: number) => {
-    if (percentage >= 70) return colors.emerald500;
-    if (percentage >= 50) return colors.orange500;
-    return colors.red500;
+    if (percentage >= 70) return colors.success;
+    if (percentage >= 50) return colors.primaryOrange;
+    return colors.error;
   };
 
   const getDomainTextColor = (percentage: number) => {
-    if (percentage >= 70) return colors.emerald400;
-    if (percentage >= 50) return colors.orange400;
-    return colors.red400;
+    if (percentage >= 70) return colors.successLight;
+    if (percentage >= 50) return colors.orangeLight;
+    return colors.errorLight;
   };
 
   if (loading) {
@@ -127,9 +128,9 @@ export const ExamResultsScreen: React.FC = () => {
 
   if (error || !result) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <View style={styles.errorIcon}>
-          <Text style={styles.errorEmoji}>❌</Text>
+      <SafeAreaView style={styles.errorScreenContainer}>
+        <View style={styles.errorIconContainer}>
+          <AlertCircle size={32} color={colors.error} strokeWidth={2} />
         </View>
         <Text style={styles.errorText}>{error ?? 'Failed to load results'}</Text>
         <TouchableOpacity onPress={handleGoHome} activeOpacity={0.8} style={styles.errorButton}>
@@ -142,130 +143,139 @@ export const ExamResultsScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={[styles.header, result.passed ? styles.headerPassed : styles.headerFailed]}>
-        {/* Status badge */}
-        <View style={styles.statusContainer}>
-          <View
-            style={[
-              styles.statusIcon,
-              result.passed ? styles.statusIconPassed : styles.statusIconFailed,
-            ]}
-          >
-            <Text style={styles.statusEmoji}>{result.passed ? '🎉' : '📚'}</Text>
+        {/* Header */}
+        <View style={[styles.header, result.passed ? styles.headerPassed : styles.headerFailed]}>
+          {/* Status badge */}
+          <View style={styles.statusContainer}>
+            <View
+              style={[
+                styles.statusIcon,
+                result.passed ? styles.statusIconPassed : styles.statusIconFailed,
+              ]}
+            >
+              {result.passed ? (
+                <Trophy size={28} color={colors.textHeading} strokeWidth={2} />
+              ) : (
+                <BookOpen size={28} color={colors.textHeading} strokeWidth={2} />
+              )}
+            </View>
+            <View
+              style={[
+                styles.statusBadge,
+                result.passed ? styles.statusBadgePassed : styles.statusBadgeFailed,
+              ]}
+            >
+              <Text style={styles.statusText}>{result.passed ? 'PASSED' : 'NOT PASSED'}</Text>
+            </View>
           </View>
-          <View
-            style={[
-              styles.statusBadge,
-              result.passed ? styles.statusBadgePassed : styles.statusBadgeFailed,
-            ]}
-          >
-            <Text style={styles.statusText}>{result.passed ? 'PASSED' : 'NOT PASSED'}</Text>
+
+          {/* Score */}
+          <View style={styles.scoreContainer}>
+            <View style={styles.scoreCircle}>
+              <Text style={[styles.scoreValue, { color: getScoreColor(result.score) }]}>
+                {result.score}
+              </Text>
+              <Text style={styles.scorePercent}>%</Text>
+            </View>
+            <Text style={styles.passingNote}>Passing: 70%</Text>
           </View>
         </View>
 
-        {/* Score */}
-        <View style={styles.scoreContainer}>
-          <View style={styles.scoreCircle}>
-            <Text style={[styles.scoreValue, { color: getScoreColor(result.score) }]}>
-              {result.score}
+        {/* Stats */}
+        <View style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: colors.successLight }]}>
+              {result.correctAnswers}
             </Text>
-            <Text style={styles.scorePercent}>%</Text>
+            <Text style={styles.statLabel}>Correct</Text>
           </View>
-          <Text style={styles.passingNote}>Passing: 70%</Text>
-        </View>
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.emerald400 }]}>
-            {result.correctAnswers}
-          </Text>
-          <Text style={styles.statLabel}>Correct</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.red400 }]}>
-            {result.totalQuestions - result.correctAnswers}
-          </Text>
-          <Text style={styles.statLabel}>Incorrect</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.orange400 }]}>
-            {formatTimeSpent(result.timeSpentMs)}
-          </Text>
-          <Text style={styles.statLabel}>Time</Text>
-        </View>
-      </View>
-
-      {/* Domain Performance */}
-      <View style={styles.domainCard}>
-        <Text style={styles.sectionLabel}>Domain Performance</Text>
-
-        {result.domainBreakdown.map((domain: DomainScore, index: number) => (
-          <View key={domain.domainId} style={index > 0 ? styles.domainItemSpaced : undefined}>
-            <View style={styles.domainHeader}>
-              <Text style={styles.domainName} numberOfLines={1}>
-                {domain.domainName}
-              </Text>
-              <Text
-                style={[styles.domainPercent, { color: getDomainTextColor(domain.percentage) }]}
-              >
-                {domain.percentage}%
-              </Text>
-            </View>
-            <View style={styles.domainBarContainer}>
-              <View
-                style={[
-                  styles.domainBarFill,
-                  {
-                    width: `${domain.percentage}%`,
-                    backgroundColor: getDomainBarColor(domain.percentage),
-                  },
-                ]}
-              />
-            </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: colors.errorLight }]}>
+              {result.totalQuestions - result.correctAnswers}
+            </Text>
+            <Text style={styles.statLabel}>Incorrect</Text>
           </View>
-        ))}
-      </View>
-
-      {/* Weak Areas */}
-      {result.domainBreakdown.some((d) => d.percentage < 70) && (
-        <View style={styles.weakAreasCard}>
-          <View style={styles.weakAreasHeader}>
-            <Text style={styles.weakAreasEmoji}>📚</Text>
-            <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: colors.orangeLight }]}>
+              {formatTimeSpent(result.timeSpentMs)}
+            </Text>
+            <Text style={styles.statLabel}>Time</Text>
           </View>
-          {result.domainBreakdown
-            .filter((d) => d.percentage < 70)
-            .sort((a, b) => a.percentage - b.percentage)
-            .map((domain) => (
-              <View key={domain.domainId} style={styles.weakAreaItem}>
-                <View style={styles.weakAreaDot} />
-                <Text style={styles.weakAreaName}>{domain.domainName}</Text>
-                <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
+        </View>
+
+        {/* Domain Performance */}
+        <View style={styles.domainCard}>
+          <Text style={styles.sectionLabel}>Domain Performance</Text>
+
+          {result.domainBreakdown.map((domain: DomainScore, index: number) => (
+            <View key={domain.domainId} style={index > 0 ? styles.domainItemSpaced : undefined}>
+              <View style={styles.domainHeader}>
+                <Text style={styles.domainName} numberOfLines={1}>
+                  {domain.domainName}
+                </Text>
+                <Text
+                  style={[styles.domainPercent, { color: getDomainTextColor(domain.percentage) }]}
+                >
+                  {domain.percentage}%
+                </Text>
               </View>
-            ))}
+              <View style={styles.domainBarContainer}>
+                <View
+                  style={[
+                    styles.domainBarFill,
+                    {
+                      width: `${domain.percentage}%`,
+                      backgroundColor: getDomainBarColor(domain.percentage),
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          ))}
         </View>
-      )}
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          onPress={handleReviewExam}
-          activeOpacity={0.8}
-          style={styles.reviewButton}
-        >
-          <Text style={styles.reviewButtonText}>Review Answers</Text>
-        </TouchableOpacity>
+        {/* Weak Areas */}
+        {result.domainBreakdown.some((d) => d.percentage < 70) && (
+          <View style={styles.weakAreasCard}>
+            <View style={styles.weakAreasHeader}>
+              <AlertCircle
+                size={18}
+                color={colors.orangeLight}
+                strokeWidth={2}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+            </View>
+            {result.domainBreakdown
+              .filter((d) => d.percentage < 70)
+              .sort((a, b) => a.percentage - b.percentage)
+              .map((domain) => (
+                <View key={domain.domainId} style={styles.weakAreaItem}>
+                  <View style={styles.weakAreaDot} />
+                  <Text style={styles.weakAreaName}>{domain.domainName}</Text>
+                  <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
+                </View>
+              ))}
+          </View>
+        )}
 
-        <TouchableOpacity onPress={handleGoHome} activeOpacity={0.8} style={styles.homeButton}>
-          <Text style={styles.homeButtonText}>Back to Home</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={handleReviewExam}
+            activeOpacity={0.8}
+            style={styles.reviewButton}
+          >
+            <Text style={styles.reviewButtonText}>Review Answers</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleGoHome} activeOpacity={0.8} style={styles.homeButton}>
+            <Text style={styles.homeButtonText}>Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -273,64 +283,63 @@ export const ExamResultsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.slate950,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.slate950,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.slate950,
+    backgroundColor: colors.background,
   },
   loadingIcon: {
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: colors.orange500,
+    backgroundColor: colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
   loadingText: {
-    color: colors.slate400,
+    color: colors.textMuted,
     fontSize: 16,
   },
-  errorContainer: {
+  errorScreenContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.slate950,
+    backgroundColor: colors.background,
     padding: 24,
   },
-  errorIcon: {
+  errorIconContainer: {
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: colors.red900,
+    backgroundColor: colors.errorDark,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
-  errorEmoji: {
-    fontSize: 30,
-  },
   errorText: {
-    color: colors.red400,
+    color: colors.errorLight,
     fontSize: 18,
     marginBottom: 24,
     textAlign: 'center',
   },
   errorButton: {
-    backgroundColor: colors.slate800,
+    backgroundColor: colors.surface,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
   },
   errorButtonText: {
-    color: colors.white,
+    color: colors.textHeading,
     fontWeight: '600',
   },
   header: {
@@ -339,10 +348,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   headerPassed: {
-    backgroundColor: colors.emerald950,
+    backgroundColor: colors.successDark,
   },
   headerFailed: {
-    backgroundColor: colors.red950,
+    backgroundColor: colors.errorDark,
   },
   statusContainer: {
     alignItems: 'center',
@@ -357,13 +366,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statusIconPassed: {
-    backgroundColor: colors.emerald600,
+    backgroundColor: colors.success,
   },
   statusIconFailed: {
-    backgroundColor: colors.red600,
-  },
-  statusEmoji: {
-    fontSize: 28,
+    backgroundColor: colors.error,
   },
   statusBadge: {
     paddingHorizontal: 20,
@@ -371,13 +377,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   statusBadgePassed: {
-    backgroundColor: colors.emerald600,
+    backgroundColor: colors.success,
   },
   statusBadgeFailed: {
-    backgroundColor: colors.red600,
+    backgroundColor: colors.error,
   },
   statusText: {
-    color: colors.white,
+    color: colors.textHeading,
     fontWeight: 'bold',
     fontSize: 14,
     letterSpacing: 1,
@@ -386,25 +392,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scoreCircle: {
-    backgroundColor: colors.slate900,
+    backgroundColor: colors.surface,
     width: 120,
     height: 120,
     borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.slate800,
+    borderColor: colors.borderDefault,
   },
   scoreValue: {
     fontSize: 40,
     fontWeight: 'bold',
   },
   scorePercent: {
-    color: colors.slate500,
+    color: colors.textMuted,
     fontSize: 18,
   },
   passingNote: {
-    color: colors.slate500,
+    color: colors.textMuted,
     marginTop: 8,
     fontSize: 13,
   },
@@ -412,11 +418,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: colors.slate900,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.slate800,
+    borderColor: colors.borderDefault,
   },
   statItem: {
     flex: 1,
@@ -428,26 +434,26 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: colors.slate500,
+    color: colors.textMuted,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: colors.slate800,
+    backgroundColor: colors.borderDefault,
   },
   domainCard: {
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: colors.slate900,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.slate800,
+    borderColor: colors.borderDefault,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.slate500,
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
@@ -462,7 +468,7 @@ const styles = StyleSheet.create({
   },
   domainName: {
     fontSize: 14,
-    color: colors.slate300,
+    color: colors.textBody,
     flex: 1,
   },
   domainPercent: {
@@ -471,7 +477,7 @@ const styles = StyleSheet.create({
   },
   domainBarContainer: {
     height: 6,
-    backgroundColor: colors.slate800,
+    backgroundColor: colors.borderDefault,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -482,25 +488,21 @@ const styles = StyleSheet.create({
   weakAreasCard: {
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: colors.orange950,
+    backgroundColor: colors.orangeDark,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.orange900,
+    borderColor: colors.secondaryOrange,
   },
   weakAreasHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  weakAreasEmoji: {
-    fontSize: 18,
-    marginRight: 8,
-  },
   weakAreasTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.orange300,
+    color: colors.orangeLight,
   },
   weakAreaItem: {
     flexDirection: 'row',
@@ -511,16 +513,16 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.orange400,
+    backgroundColor: colors.primaryOrange,
     marginRight: 12,
   },
   weakAreaName: {
-    color: colors.orange200,
+    color: colors.orangeLight,
     flex: 1,
     fontSize: 14,
   },
   weakAreaPercent: {
-    color: colors.orange400,
+    color: colors.primaryOrange,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -530,27 +532,27 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   reviewButton: {
-    backgroundColor: colors.orange500,
+    backgroundColor: colors.primaryOrange,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 10,
   },
   reviewButtonText: {
-    color: colors.white,
+    color: colors.textHeading,
     fontWeight: 'bold',
     fontSize: 16,
   },
   homeButton: {
-    backgroundColor: colors.slate900,
+    backgroundColor: colors.surface,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.slate800,
+    borderColor: colors.borderDefault,
   },
   homeButtonText: {
-    color: colors.slate300,
+    color: colors.textBody,
     fontWeight: '600',
     fontSize: 16,
   },

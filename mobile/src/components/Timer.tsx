@@ -1,6 +1,7 @@
 // T044: Timer component with countdown display
 import React, { useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Clock } from 'lucide-react-native';
 import { formatRemainingTime } from '../services';
 
 export interface TimerProps {
@@ -12,20 +13,26 @@ export interface TimerProps {
   onPersist?: () => void;
 }
 
-// Color constants
+// AWS Dark Color Palette
 const colors = {
-  slate800: '#1e293b',
-  slate700: '#334155',
-  slate500: '#64748b',
-  slate400: '#94a3b8',
-  white: '#ffffff',
-  orange400: '#fb923c',
-  orange800: '#9a3412',
-  orange950: '#431407',
-  red400: '#f87171',
-  red500: '#ef4444',
-  red800: '#991b1b',
-  red950: '#450a0a',
+  // Backgrounds
+  surface: '#161E2D',
+  surfaceHover: '#1D2939',
+  // Borders
+  borderDefault: '#374151',
+  // Text
+  textHeading: '#FFFFFF',
+  textBody: '#D1D5DB',
+  textMuted: '#9CA3AF',
+  // Warning states
+  warningBg: '#7D4E00',
+  warningBorder: '#FF9900',
+  warningText: '#FFB84D',
+  // Critical states
+  criticalBg: '#7F1D1D',
+  criticalBorder: '#DC2626',
+  criticalText: '#FCA5A5',
+  criticalDot: '#DC2626',
 };
 
 /**
@@ -46,17 +53,27 @@ export const Timer: React.FC<TimerProps> = ({
   // Get color based on remaining time
   const getTimeColor = () => {
     const minutes = remainingTimeMs / 60000;
-    if (minutes <= 5) return colors.red400;
-    if (minutes <= 15) return colors.orange400;
-    return colors.white;
+    if (minutes <= 5) return colors.criticalText;
+    if (minutes <= 15) return colors.warningText;
+    return colors.textBody;
   };
 
   // Get background/border colors based on remaining time
   const getBgStyle = () => {
     const minutes = remainingTimeMs / 60000;
-    if (minutes <= 5) return { backgroundColor: colors.red950, borderColor: colors.red800 };
-    if (minutes <= 15) return { backgroundColor: colors.orange950, borderColor: colors.orange800 };
-    return { backgroundColor: colors.slate800, borderColor: colors.slate700 };
+    if (minutes <= 5)
+      return { backgroundColor: colors.criticalBg, borderColor: colors.criticalBorder };
+    if (minutes <= 15)
+      return { backgroundColor: colors.warningBg, borderColor: colors.warningBorder };
+    return { backgroundColor: 'transparent', borderColor: colors.borderDefault };
+  };
+
+  // Get icon color based on remaining time
+  const getIconColor = () => {
+    const minutes = remainingTimeMs / 60000;
+    if (minutes <= 5) return colors.criticalText;
+    if (minutes <= 15) return colors.warningText;
+    return colors.textMuted;
   };
 
   const tick = useCallback(() => {
@@ -106,7 +123,7 @@ export const Timer: React.FC<TimerProps> = ({
 
   return (
     <View style={[styles.container, getBgStyle()]}>
-      <Text style={styles.icon}>⏱</Text>
+      <Clock size={14} color={getIconColor()} strokeWidth={2} />
       <Text style={[styles.time, { color: getTimeColor() }]}>{displayTime}</Text>
       {isLowTime && <View style={styles.lowTimeIndicator} />}
     </View>
@@ -123,14 +140,14 @@ export const CompactTimer: React.FC<{
   const minutes = remainingTimeMs / 60000;
 
   const getColor = () => {
-    if (minutes <= 5) return colors.red400;
-    if (minutes <= 15) return colors.orange400;
-    return colors.white;
+    if (minutes <= 5) return colors.criticalText;
+    if (minutes <= 15) return colors.warningText;
+    return colors.textBody;
   };
 
   return (
     <View style={styles.compactContainer}>
-      <Text style={styles.compactIcon}>⏱</Text>
+      <Clock size={12} color={colors.textMuted} strokeWidth={2} />
       <Text style={[styles.compactTime, { color: getColor() }]}>{displayTime}</Text>
     </View>
   );
@@ -140,46 +157,40 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-  },
-  icon: {
-    color: colors.slate400,
-    marginRight: 8,
-    fontSize: 14,
+    gap: 8,
   },
   time: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    fontVariant: ['tabular-nums'],
   },
   lowTimeIndicator: {
-    marginLeft: 8,
+    marginLeft: 4,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.red500,
+    backgroundColor: colors.criticalDot,
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.slate800,
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.slate700,
-  },
-  compactIcon: {
-    color: colors.slate500,
-    marginRight: 8,
-    fontSize: 14,
+    borderColor: colors.borderDefault,
+    gap: 6,
   },
   compactTime: {
     fontSize: 14,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
 });
 

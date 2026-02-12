@@ -13,11 +13,48 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  Cloud,
+  Play,
+  AlertTriangle,
+  ClipboardList,
+  BarChart2,
+  Settings,
+} from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
 import { hasInProgressExam } from '../services';
 import { getTotalQuestionCount } from '../storage/repositories/question.repository';
 import { canGenerateExam } from '../services/exam-generator.service';
+
+// AWS Dark Color Palette
+const colors = {
+  // Backgrounds
+  background: '#232F3E', // AWS Squid Ink
+  surface: '#161E2D', // Deep Navy
+  surfaceHover: '#1D2939',
+  // Borders
+  borderDefault: '#374151',
+  // Text
+  textHeading: '#FFFFFF',
+  textBody: '#D1D5DB',
+  textMuted: '#9CA3AF',
+  // Accents
+  primaryOrange: '#FF9900',
+  secondaryOrange: '#EC7211',
+  orangeDark: '#7D4E00',
+  orangeLight: '#FFB84D',
+  // Status
+  success: '#059669',
+  successLight: '#6EE7B7',
+  error: '#DC2626',
+  errorLight: '#FCA5A5',
+  errorDark: '#7F1D1D',
+  // Quick actions
+  practiceColor: '#7C3AED',
+  historyColor: '#0891B2',
+  settingsColor: '#475569',
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -120,9 +157,9 @@ export const HomeScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <View style={styles.loadingIcon}>
-          <Text style={styles.cloudEmoji}>☁️</Text>
+          <Cloud size={40} color={colors.textHeading} strokeWidth={2} />
         </View>
-        <ActivityIndicator size="large" color="#f97316" />
+        <ActivityIndicator size="large" color={colors.primaryOrange} />
         <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
     );
@@ -135,7 +172,7 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.logoIcon}>
-              <Text style={styles.logoEmoji}>☁️</Text>
+              <Cloud size={22} color={colors.textHeading} strokeWidth={2} />
             </View>
             <View>
               <Text style={styles.appTitle}>CloudPrep</Text>
@@ -166,7 +203,7 @@ export const HomeScreen: React.FC = () => {
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: '#34d399' }]}>70%</Text>
+                <Text style={[styles.statValue, { color: colors.successLight }]}>70%</Text>
                 <Text style={styles.statLabel}>To Pass</Text>
               </View>
             </View>
@@ -177,7 +214,12 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.resumeCard}>
               <View style={styles.resumeHeader}>
                 <View style={styles.resumeIcon}>
-                  <Text style={styles.playEmoji}>▶️</Text>
+                  <Play
+                    size={16}
+                    color={colors.textHeading}
+                    strokeWidth={2}
+                    fill={colors.textHeading}
+                  />
                 </View>
                 <View style={styles.resumeTextContainer}>
                   <Text style={styles.resumeTitle}>Exam In Progress</Text>
@@ -218,7 +260,11 @@ export const HomeScreen: React.FC = () => {
               style={[styles.startButton, !canStart && styles.startButtonDisabled]}
             >
               <LinearGradient
-                colors={canStart ? ['#f97316', '#ea580c'] : ['#334155', '#1e293b']}
+                colors={
+                  canStart
+                    ? [colors.primaryOrange, colors.secondaryOrange]
+                    : [colors.surfaceHover, colors.surface]
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.startButtonGradient}
@@ -235,12 +281,19 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
-          {/* Warning */}
           {!canStart && !hasInProgress && (
             <View style={styles.warningCard}>
-              <Text style={styles.warningText}>
-                ⚠️ Need at least 65 questions to start. Current: {questionCount}
-              </Text>
+              <View style={styles.warningContent}>
+                <AlertTriangle
+                  size={16}
+                  color={colors.errorLight}
+                  strokeWidth={2}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.warningText}>
+                  Need at least 65 questions to start. Current: {questionCount}
+                </Text>
+              </View>
             </View>
           )}
 
@@ -259,8 +312,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: '#7c3aed' }]}>
-                <Text style={styles.actionEmoji}>📝</Text>
+              <View style={[styles.actionIcon, { backgroundColor: colors.practiceColor }]}>
+                <ClipboardList size={18} color={colors.textHeading} strokeWidth={2} />
               </View>
               <Text style={styles.actionTitle}>Practice</Text>
               <Text style={styles.actionSubtitle}>By domain</Text>
@@ -271,8 +324,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: '#0891b2' }]}>
-                <Text style={styles.actionEmoji}>📊</Text>
+              <View style={[styles.actionIcon, { backgroundColor: colors.historyColor }]}>
+                <BarChart2 size={18} color={colors.textHeading} strokeWidth={2} />
               </View>
               <Text style={styles.actionTitle}>History</Text>
               <Text style={styles.actionSubtitle}>Past exams</Text>
@@ -283,8 +336,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: '#475569' }]}>
-                <Text style={styles.actionEmoji}>⚙️</Text>
+              <View style={[styles.actionIcon, { backgroundColor: colors.settingsColor }]}>
+                <Settings size={18} color={colors.textHeading} strokeWidth={2} />
               </View>
               <Text style={styles.actionTitle}>Settings</Text>
               <Text style={styles.actionSubtitle}>Configure</Text>
@@ -299,33 +352,30 @@ export const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#020617', // slate-950
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: '#020617', // slate-950
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#020617',
+    backgroundColor: colors.background,
   },
   loadingIcon: {
     width: 80,
     height: 80,
     borderRadius: 16,
-    backgroundColor: '#f97316',
+    backgroundColor: colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
-  cloudEmoji: {
-    fontSize: 40,
-  },
   loadingText: {
     marginTop: 16,
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontSize: 16,
   },
   header: {
@@ -341,38 +391,35 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: '#f97316',
+    backgroundColor: colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  logoEmoji: {
-    fontSize: 22,
-  },
   appTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors.textHeading,
   },
   appSubtitle: {
     fontSize: 14,
-    color: '#fb923c',
+    color: colors.orangeLight,
   },
   content: {
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: '#0f172a', // slate-900
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: colors.borderDefault,
   },
   cardLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
@@ -388,24 +435,24 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors.textHeading,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textMuted,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.borderDefault,
   },
   resumeCard: {
-    backgroundColor: '#431407', // orange-950
+    backgroundColor: colors.orangeDark,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#7c2d12',
+    borderColor: colors.secondaryOrange,
   },
   resumeHeader: {
     flexDirection: 'row',
@@ -416,13 +463,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f97316',
+    backgroundColor: colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  playEmoji: {
-    fontSize: 16,
   },
   resumeTextContainer: {
     flex: 1,
@@ -430,11 +474,11 @@ const styles = StyleSheet.create({
   resumeTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.textHeading,
   },
   resumeSubtitle: {
     fontSize: 13,
-    color: '#fdba74',
+    color: colors.orangeLight,
   },
   resumeButtons: {
     flexDirection: 'row',
@@ -442,26 +486,26 @@ const styles = StyleSheet.create({
   },
   resumeButton: {
     flex: 1,
-    backgroundColor: '#f97316',
+    backgroundColor: colors.primaryOrange,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
   resumeButtonText: {
-    color: '#ffffff',
+    color: colors.textHeading,
     fontWeight: 'bold',
     fontSize: 15,
   },
   newButton: {
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.borderDefault,
   },
   newButtonText: {
-    color: '#cbd5e1',
+    color: colors.textBody,
     fontWeight: '500',
   },
   startButton: {
@@ -480,31 +524,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   startButtonTitle: {
-    color: '#ffffff',
+    color: colors.textHeading,
     fontWeight: 'bold',
     fontSize: 18,
     marginBottom: 2,
   },
   startButtonSubtitle: {
-    color: '#fed7aa',
+    color: colors.orangeLight,
     fontSize: 13,
   },
   warningCard: {
-    backgroundColor: '#450a0a',
+    backgroundColor: colors.errorDark,
     borderRadius: 10,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#7f1d1d',
+    borderColor: colors.error,
+  },
+  warningContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   warningText: {
-    color: '#f87171',
+    color: colors.errorLight,
     fontSize: 13,
+    flex: 1,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 10,
@@ -516,11 +565,11 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: colors.borderDefault,
   },
   actionIcon: {
     width: 36,
@@ -530,16 +579,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 10,
   },
-  actionEmoji: {
-    fontSize: 16,
-  },
   actionTitle: {
-    color: '#ffffff',
+    color: colors.textHeading,
     fontWeight: '600',
     fontSize: 13,
   },
   actionSubtitle: {
-    color: '#64748b',
+    color: colors.textMuted,
     fontSize: 11,
     marginTop: 2,
   },

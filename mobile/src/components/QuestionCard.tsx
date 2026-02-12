@@ -1,6 +1,7 @@
 // T043: QuestionCard component with option selection
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Check, X, Lightbulb, CheckCircle2, XCircle } from 'lucide-react-native';
 import { Question, QuestionOption, QuestionType } from '../storage/schema';
 
 export interface QuestionCardProps {
@@ -12,31 +13,32 @@ export interface QuestionCardProps {
   disabled?: boolean;
 }
 
-// Color constants
+// AWS Dark Color Palette
 const colors = {
-  slate950: '#020617',
-  slate900: '#0f172a',
-  slate800: '#1e293b',
-  slate700: '#334155',
-  slate600: '#475569',
-  slate500: '#64748b',
-  slate400: '#94a3b8',
-  slate300: '#cbd5e1',
-  white: '#ffffff',
-  orange500: '#f97316',
-  orange950: '#431407',
-  orange100: '#ffedd5',
-  emerald500: '#10b981',
-  emerald600: '#059669',
-  emerald800: '#065f46',
-  emerald950: '#022c22',
-  emerald300: '#6ee7b7',
-  red500: '#ef4444',
-  red600: '#dc2626',
-  red800: '#991b1b',
-  red950: '#450a0a',
-  red300: '#fca5a5',
-  orange400: '#fb923c',
+  // Backgrounds
+  background: '#232F3E', // AWS Squid Ink
+  surface: '#161E2D', // Deep Navy
+  surfaceHover: '#1D2939',
+  surfaceSelected: '#2D3B4E',
+  // Borders
+  borderDefault: '#374151',
+  borderSubtle: '#2D3B4E',
+  borderAccent: '#FF9900', // AWS Orange
+  // Text
+  textHeading: '#FFFFFF',
+  textBody: '#D1D5DB', // Light Gray
+  textMuted: '#9CA3AF',
+  textDisabled: '#6B7280',
+  // Accents
+  primaryOrange: '#FF9900', // AWS Orange
+  secondaryOrange: '#EC7211', // Darker Orange
+  // Status
+  success: '#059669', // Professional Emerald
+  successBg: '#064E3B',
+  successText: '#6EE7B7',
+  error: '#DC2626', // Professional Red
+  errorBg: '#7F1D1D',
+  errorText: '#FCA5A5',
 };
 
 /**
@@ -64,19 +66,28 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
     if (showResult) {
       if (isCorrectOption) {
-        return { backgroundColor: colors.emerald950, borderColor: colors.emerald600 };
+        return { backgroundColor: colors.successBg, borderColor: colors.success };
       }
       if (isSelected && !isCorrectOption) {
-        return { backgroundColor: colors.red950, borderColor: colors.red600 };
+        return { backgroundColor: colors.errorBg, borderColor: colors.error };
       }
-      return { backgroundColor: colors.slate900, borderColor: colors.slate700 };
+      return { backgroundColor: colors.surface, borderColor: colors.borderDefault };
     }
 
     if (isSelected) {
-      return { backgroundColor: colors.orange950, borderColor: colors.orange500 };
+      return {
+        backgroundColor: colors.surfaceSelected,
+        borderColor: colors.borderAccent,
+        // Subtle glow effect via shadow
+        shadowColor: colors.primaryOrange,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+      };
     }
 
-    return { backgroundColor: colors.slate900, borderColor: colors.slate700 };
+    return { backgroundColor: colors.surface, borderColor: colors.borderDefault };
   };
 
   const getCheckboxStyle = (option: QuestionOption) => {
@@ -85,19 +96,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
     if (showResult) {
       if (isCorrectOption) {
-        return { backgroundColor: colors.emerald500, borderColor: colors.emerald500 };
+        return { backgroundColor: colors.success, borderColor: colors.success };
       }
       if (isSelected && !isCorrectOption) {
-        return { backgroundColor: colors.red500, borderColor: colors.red500 };
+        return { backgroundColor: colors.error, borderColor: colors.error };
       }
-      return { backgroundColor: colors.slate800, borderColor: colors.slate600 };
+      return { backgroundColor: 'transparent', borderColor: colors.borderDefault };
     }
 
     if (isSelected) {
-      return { backgroundColor: colors.orange500, borderColor: colors.orange500 };
+      return { backgroundColor: colors.primaryOrange, borderColor: colors.primaryOrange };
     }
 
-    return { backgroundColor: colors.slate800, borderColor: colors.slate600 };
+    return { backgroundColor: 'transparent', borderColor: colors.textMuted };
   };
 
   const getOptionTextColor = (option: QuestionOption) => {
@@ -105,11 +116,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     const isCorrectOption = question.correctAnswers.includes(option.id);
 
     if (showResult) {
-      if (isCorrectOption) return colors.emerald300;
-      if (isSelected && !isCorrectOption) return colors.red300;
+      if (isCorrectOption) return colors.successText;
+      if (isSelected && !isCorrectOption) return colors.errorText;
     }
-    if (isSelected) return colors.orange100;
-    return colors.slate300;
+    if (isSelected) return colors.textHeading;
+    return colors.textBody;
   };
 
   const getQuestionTypeLabel = (type: QuestionType): string => {
@@ -158,7 +169,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   getCheckboxStyle(option),
                 ]}
               >
-                {selectedAnswers.includes(option.id) && <Text style={styles.checkmark}>✓</Text>}
+                {selectedAnswers.includes(option.id) && (
+                  <Check size={14} color={colors.textHeading} strokeWidth={3} />
+                )}
               </View>
 
               {/* Option text */}
@@ -180,16 +193,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               isCorrect ? styles.resultCorrect : styles.resultIncorrect,
             ]}
           >
-            <View
-              style={[
-                styles.resultIcon,
-                { backgroundColor: isCorrect ? colors.emerald500 : colors.red500 },
-              ]}
-            >
-              <Text style={styles.resultIconText}>{isCorrect ? '✓' : '✗'}</Text>
+            <View style={styles.resultIcon}>
+              {isCorrect ? (
+                <CheckCircle2 size={24} color={colors.success} strokeWidth={2} />
+              ) : (
+                <XCircle size={24} color={colors.error} strokeWidth={2} />
+              )}
             </View>
             <Text
-              style={[styles.resultText, { color: isCorrect ? colors.emerald300 : colors.red300 }]}
+              style={[
+                styles.resultText,
+                { color: isCorrect ? colors.successText : colors.errorText },
+              ]}
             >
               {isCorrect ? 'Correct!' : 'Incorrect'}
             </Text>
@@ -200,7 +215,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         {showResult && question.explanation && (
           <View style={styles.explanationBox}>
             <View style={styles.explanationHeader}>
-              <Text style={styles.explanationEmoji}>💡</Text>
+              <View style={styles.explanationIcon}>
+                <Lightbulb size={16} color={colors.primaryOrange} strokeWidth={2} />
+              </View>
               <Text style={styles.explanationLabel}>Explanation</Text>
             </View>
             <Text style={styles.explanationText}>{question.explanation}</Text>
@@ -214,54 +231,60 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.slate950,
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 24,
   },
   badgeRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   badge: {
-    backgroundColor: colors.slate800,
-    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 8,
   },
   badgeText: {
     fontSize: 12,
-    color: colors.slate400,
+    color: colors.textMuted,
     fontWeight: '500',
+    letterSpacing: 0.5,
   },
   questionBox: {
-    backgroundColor: colors.slate900,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.slate800,
+    marginBottom: 32,
+    paddingBottom: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderDefault,
   },
   questionText: {
     fontSize: 18,
-    color: colors.white,
+    color: colors.textHeading,
     lineHeight: 28,
+    fontWeight: '400',
+    fontFamily: 'System',
   },
   optionsContainer: {
     gap: 12,
   },
   optionButton: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
   },
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderWidth: 2,
-    marginRight: 12,
+    marginRight: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -269,12 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   checkboxRound: {
-    borderRadius: 12,
-  },
-  checkmark: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: 'bold',
+    borderRadius: 11,
   },
   optionTextContainer: {
     flex: 1,
@@ -285,10 +303,10 @@ const styles = StyleSheet.create({
   },
   optionLetter: {
     fontWeight: '600',
-    color: colors.slate500,
+    color: colors.textMuted,
   },
   resultContainer: {
-    marginTop: 20,
+    marginTop: 28,
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
@@ -296,56 +314,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   resultCorrect: {
-    backgroundColor: colors.emerald950,
-    borderColor: colors.emerald800,
+    backgroundColor: colors.successBg,
+    borderColor: colors.success,
   },
   resultIncorrect: {
-    backgroundColor: colors.red950,
-    borderColor: colors.red800,
+    backgroundColor: colors.errorBg,
+    borderColor: colors.error,
   },
   resultIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
   },
-  resultIconText: {
-    color: colors.white,
-    fontWeight: 'bold',
-  },
   resultText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   explanationBox: {
-    marginTop: 16,
-    backgroundColor: colors.slate900,
+    marginTop: 24,
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.slate800,
+    borderColor: colors.borderDefault,
   },
   explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  explanationEmoji: {
-    fontSize: 18,
-    marginRight: 8,
+  explanationIcon: {
+    marginRight: 10,
   },
   explanationLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.orange400,
+    color: colors.primaryOrange,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   explanationText: {
-    fontSize: 14,
-    color: colors.slate300,
+    fontSize: 15,
+    color: colors.textBody,
     lineHeight: 24,
   },
 });

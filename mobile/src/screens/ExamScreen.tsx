@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { X, Send } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import {
   useExamStore,
@@ -221,7 +222,7 @@ export const ExamScreen: React.FC = () => {
         <View style={styles.header}>
           {/* Exit button */}
           <TouchableOpacity onPress={handleExitPress} activeOpacity={0.7} style={styles.exitButton}>
-            <Text style={styles.exitIcon}>✕</Text>
+            <X size={18} color="#9CA3AF" strokeWidth={2} />
           </TouchableOpacity>
 
           {/* Timer */}
@@ -243,7 +244,10 @@ export const ExamScreen: React.FC = () => {
             {isSubmitting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.submitText}>Submit</Text>
+              <View style={styles.submitContent}>
+                <Text style={styles.submitText}>Submit</Text>
+                <Send size={14} color="#9CA3AF" strokeWidth={2} />
+              </View>
             )}
           </TouchableOpacity>
         </View>
@@ -284,61 +288,66 @@ export const ExamScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#020617', // slate-950
+    backgroundColor: '#232F3E', // AWS Squid Ink
   },
   container: {
     flex: 1,
-    backgroundColor: '#020617', // slate-950
+    backgroundColor: '#232F3E',
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#020617',
+    backgroundColor: '#232F3E',
   },
   loadingIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#f97316',
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#FF9900',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
   loadingText: {
-    color: '#94a3b8',
+    color: '#D1D5DB',
     fontSize: 16,
   },
   header: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 16,
+    backgroundColor: '#161E2D',
+    paddingHorizontal: 20,
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#374151',
   },
   exitButton: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#1e293b',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#374151',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  exitIcon: {
-    color: '#94a3b8',
-    fontSize: 20,
-  },
   submitButton: {
-    backgroundColor: '#f97316',
-    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#374151',
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
   },
+  submitContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   submitText: {
-    color: '#ffffff',
+    color: '#9CA3AF',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -346,17 +355,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorContainer: {
-    backgroundColor: '#450a0a',
-    marginHorizontal: 16,
-    marginBottom: 8,
+    backgroundColor: '#7F1D1D',
+    marginHorizontal: 20,
+    marginBottom: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#7f1d1d',
+    borderColor: '#DC2626',
   },
   errorText: {
-    color: '#f87171',
+    color: '#FCA5A5',
     fontSize: 14,
   },
 });
