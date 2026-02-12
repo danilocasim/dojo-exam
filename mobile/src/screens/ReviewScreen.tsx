@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, ChevronRight, X, BarChart2, AlertCircle, Grid3x3 } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import {
   useReviewStore,
@@ -60,22 +61,24 @@ export const ReviewScreen: React.FC = () => {
   const route = useRoute<ReviewRouteProp>();
   const { attemptId } = route.params;
 
-  // Store state
-  const reviewData = useReviewStore((state) => state.reviewData);
-  const filteredItems = useReviewStore((state) => state.filteredItems);
+  // Store state (primitive selectors - stable)
   const currentIndex = useReviewStore((state) => state.currentIndex);
   const filter = useReviewStore((state) => state.filter);
   const isLoading = useReviewStore((state) => state.isLoading);
   const error = useReviewStore((state) => state.error);
 
-  // Selectors
-  const currentItem = useReviewStore(selectCurrentReviewItem);
+  // Object/array selectors - must use useShallow to avoid infinite loops
+  const reviewData = useReviewStore(useShallow((state) => state.reviewData));
+  const filteredItems = useReviewStore(useShallow((state) => state.filteredItems));
+  const currentItem = useReviewStore(useShallow(selectCurrentReviewItem));
+  const stats = useReviewStore(useShallow((state) => selectReviewStats(state)));
+
+  // Primitive selectors
   const hasNext = useReviewStore(selectHasNextReviewQuestion);
   const hasPrevious = useReviewStore(selectHasPreviousReviewQuestion);
   const progress = useReviewStore(selectReviewProgress);
-  const stats = useReviewStore(selectReviewStats);
 
-  // Actions
+  // Actions - useShallow to get stable reference
   const {
     loadReview,
     setFilter,
@@ -83,7 +86,16 @@ export const ReviewScreen: React.FC = () => {
     goToNextQuestion,
     goToPreviousQuestion,
     resetReviewState,
-  } = useReviewStore();
+  } = useReviewStore(
+    useShallow((state) => ({
+      loadReview: state.loadReview,
+      setFilter: state.setFilter,
+      goToQuestion: state.goToQuestion,
+      goToNextQuestion: state.goToNextQuestion,
+      goToPreviousQuestion: state.goToPreviousQuestion,
+      resetReviewState: state.resetReviewState,
+    })),
+  );
 
   // Local state
   const [showDomains, setShowDomains] = useState(false);
