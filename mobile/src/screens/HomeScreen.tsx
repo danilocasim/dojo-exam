@@ -27,33 +27,29 @@ import { hasInProgressExam } from '../services';
 import { getTotalQuestionCount } from '../storage/repositories/question.repository';
 import { canGenerateExam } from '../services/exam-generator.service';
 
-// AWS Dark Color Palette
+// AWS Modern Color Palette
 const colors = {
   // Backgrounds
-  background: '#232F3E', // AWS Squid Ink
-  surface: '#161E2D', // Deep Navy
-  surfaceHover: '#1D2939',
+  background: '#232F3E', // AWS Deep Navy
+  surface: '#1F2937', // Slate for cards
+  surfaceHover: '#374151',
   // Borders
-  borderDefault: '#374151',
+  borderDefault: '#374151', // Gray border
   // Text
-  textHeading: '#FFFFFF',
-  textBody: '#D1D5DB',
+  textHeading: '#F9FAFB', // Pure white for headings
+  textBody: '#D1D5DB', // Light Gray for body
   textMuted: '#9CA3AF',
   // Accents
-  primaryOrange: '#FF9900',
+  primaryOrange: '#FF9900', // AWS Orange
   secondaryOrange: '#EC7211',
-  orangeDark: '#7D4E00',
+  orangeDark: 'rgba(255, 153, 0, 0.2)', // Subtle orange tint
   orangeLight: '#FFB84D',
   // Status
-  success: '#059669',
+  success: '#10B981',
   successLight: '#6EE7B7',
-  error: '#DC2626',
+  error: '#EF4444',
   errorLight: '#FCA5A5',
-  errorDark: '#7F1D1D',
-  // Quick actions
-  practiceColor: '#7C3AED',
-  historyColor: '#0891B2',
-  settingsColor: '#475569',
+  errorDark: 'rgba(239, 68, 68, 0.15)',
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -312,8 +308,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.practiceColor }]}>
-                <ClipboardList size={18} color={colors.textHeading} strokeWidth={2} />
+              <View style={styles.actionIconMinimal}>
+                <ClipboardList size={22} color={colors.primaryOrange} strokeWidth={1.5} />
               </View>
               <Text style={styles.actionTitle}>Practice</Text>
               <Text style={styles.actionSubtitle}>By domain</Text>
@@ -324,8 +320,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.historyColor }]}>
-                <BarChart2 size={18} color={colors.textHeading} strokeWidth={2} />
+              <View style={styles.actionIconMinimal}>
+                <BarChart2 size={22} color={colors.primaryOrange} strokeWidth={1.5} />
               </View>
               <Text style={styles.actionTitle}>History</Text>
               <Text style={styles.actionSubtitle}>Past exams</Text>
@@ -336,8 +332,8 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
               style={styles.actionCard}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.settingsColor }]}>
-                <Settings size={18} color={colors.textHeading} strokeWidth={2} />
+              <View style={styles.actionIconMinimal}>
+                <Settings size={22} color={colors.textMuted} strokeWidth={1.5} />
               </View>
               <Text style={styles.actionTitle}>Settings</Text>
               <Text style={styles.actionSubtitle}>Configure</Text>
@@ -448,11 +444,11 @@ const styles = StyleSheet.create({
   },
   resumeCard: {
     backgroundColor: colors.orangeDark,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.secondaryOrange,
+    borderColor: colors.primaryOrange,
   },
   resumeHeader: {
     flexDirection: 'row',
@@ -565,29 +561,25 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    backgroundColor: colors.surface,
-    padding: 14,
-    borderRadius: 10,
+    backgroundColor: 'transparent',
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.borderDefault,
-  },
-  actionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
+  },
+  actionIconMinimal: {
+    marginBottom: 12,
   },
   actionTitle: {
     color: colors.textHeading,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 14,
   },
   actionSubtitle: {
     color: colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 

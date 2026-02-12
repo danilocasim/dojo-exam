@@ -288,7 +288,7 @@ export const ExamScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#232F3E', // AWS Squid Ink
+    backgroundColor: '#232F3E', // AWS Deep Navy
   },
   container: {
     flex: 1,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: {
-    backgroundColor: '#161E2D',
+    backgroundColor: '#1F2937', // Slate
     paddingHorizontal: 20,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -355,14 +355,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorContainer: {
-    backgroundColor: '#7F1D1D',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     marginHorizontal: 20,
     marginBottom: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: '#EF4444',
   },
   errorText: {
     color: '#FCA5A5',

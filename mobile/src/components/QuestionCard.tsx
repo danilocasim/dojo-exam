@@ -1,7 +1,7 @@
 // T043: QuestionCard component with option selection
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Check, X, Lightbulb, CheckCircle2, XCircle } from 'lucide-react-native';
+import { Lightbulb, CheckCircle2, XCircle } from 'lucide-react-native';
 import { Question, QuestionOption, QuestionType } from '../storage/schema';
 
 export interface QuestionCardProps {
@@ -13,31 +13,31 @@ export interface QuestionCardProps {
   disabled?: boolean;
 }
 
-// AWS Dark Color Palette
+// AWS Modern Color Palette
 const colors = {
   // Backgrounds
-  background: '#232F3E', // AWS Squid Ink
-  surface: '#161E2D', // Deep Navy
-  surfaceHover: '#1D2939',
-  surfaceSelected: '#2D3B4E',
+  background: '#232F3E', // AWS Deep Navy
+  surface: '#1F2937', // Slate for cards
+  surfaceHover: '#374151',
+  surfaceSelected: '#4A3A1A', // Amber-gold tint for selected state
   // Borders
-  borderDefault: '#374151',
-  borderSubtle: '#2D3B4E',
+  borderDefault: '#374151', // Gray border
+  borderSubtle: '#4B5563',
   borderAccent: '#FF9900', // AWS Orange
   // Text
-  textHeading: '#FFFFFF',
-  textBody: '#D1D5DB', // Light Gray
+  textHeading: '#F9FAFB', // Pure white for headings
+  textBody: '#D1D5DB', // Light Gray for body
   textMuted: '#9CA3AF',
   textDisabled: '#6B7280',
   // Accents
   primaryOrange: '#FF9900', // AWS Orange
   secondaryOrange: '#EC7211', // Darker Orange
   // Status
-  success: '#059669', // Professional Emerald
-  successBg: '#064E3B',
+  success: '#10B981', // Modern Emerald
+  successBg: 'rgba(16, 185, 129, 0.15)',
   successText: '#6EE7B7',
-  error: '#DC2626', // Professional Red
-  errorBg: '#7F1D1D',
+  error: '#EF4444', // Modern Red
+  errorBg: 'rgba(239, 68, 68, 0.15)',
   errorText: '#FCA5A5',
 };
 
@@ -71,44 +71,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       if (isSelected && !isCorrectOption) {
         return { backgroundColor: colors.errorBg, borderColor: colors.error };
       }
-      return { backgroundColor: colors.surface, borderColor: colors.borderDefault };
+      return { backgroundColor: 'transparent', borderColor: colors.borderDefault };
     }
 
     if (isSelected) {
       return {
         backgroundColor: colors.surfaceSelected,
         borderColor: colors.borderAccent,
-        // Subtle glow effect via shadow
+        borderWidth: 2, // Thicker border for selected
+        // Strong orange glow effect
         shadowColor: colors.primaryOrange,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 6,
       };
     }
 
-    return { backgroundColor: colors.surface, borderColor: colors.borderDefault };
-  };
-
-  const getCheckboxStyle = (option: QuestionOption) => {
-    const isSelected = selectedAnswers.includes(option.id);
-    const isCorrectOption = question.correctAnswers.includes(option.id);
-
-    if (showResult) {
-      if (isCorrectOption) {
-        return { backgroundColor: colors.success, borderColor: colors.success };
-      }
-      if (isSelected && !isCorrectOption) {
-        return { backgroundColor: colors.error, borderColor: colors.error };
-      }
-      return { backgroundColor: 'transparent', borderColor: colors.borderDefault };
-    }
-
-    if (isSelected) {
-      return { backgroundColor: colors.primaryOrange, borderColor: colors.primaryOrange };
-    }
-
-    return { backgroundColor: 'transparent', borderColor: colors.textMuted };
+    // Default state: transparent with subtle border
+    return { backgroundColor: 'transparent', borderColor: colors.borderDefault };
   };
 
   const getOptionTextColor = (option: QuestionOption) => {
@@ -119,7 +100,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       if (isCorrectOption) return colors.successText;
       if (isSelected && !isCorrectOption) return colors.errorText;
     }
-    if (isSelected) return colors.textHeading;
+    // Selected text is AWS Orange for full orange appearance
+    if (isSelected) return '#FF9900'; // AWS Orange text
     return colors.textBody;
   };
 
@@ -161,23 +143,29 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               activeOpacity={disabled ? 1 : 0.7}
               style={[styles.optionButton, getOptionStyle(option)]}
             >
-              {/* Checkbox/Radio */}
-              <View
-                style={[
-                  styles.checkbox,
-                  isMultipleChoice ? styles.checkboxSquare : styles.checkboxRound,
-                  getCheckboxStyle(option),
-                ]}
-              >
-                {selectedAnswers.includes(option.id) && (
-                  <Check size={14} color={colors.textHeading} strokeWidth={3} />
-                )}
-              </View>
-
               {/* Option text */}
               <View style={styles.optionTextContainer}>
-                <Text style={[styles.optionText, { color: getOptionTextColor(option) }]}>
-                  <Text style={styles.optionLetter}>{String.fromCharCode(65 + index)}. </Text>
+                <Text
+                  style={[
+                    styles.optionText,
+                    {
+                      color: getOptionTextColor(option),
+                      fontWeight: selectedAnswers.includes(option.id) ? '600' : '400',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.optionLetter,
+                      {
+                        color: selectedAnswers.includes(option.id)
+                          ? colors.primaryOrange
+                          : colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {String.fromCharCode(65 + index)}.{' '}
+                  </Text>
                   {option.text}
                 </Text>
               </View>
@@ -263,10 +251,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderDefault,
   },
   questionText: {
-    fontSize: 18,
+    fontSize: 20, // 1.25x larger than option text
     color: colors.textHeading,
-    lineHeight: 28,
-    fontWeight: '400',
+    lineHeight: 30, // 1.5 line-height
+    fontWeight: '500',
     fontFamily: 'System',
   },
   optionsContainer: {
@@ -275,24 +263,10 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 16, // Increased touch target
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderWidth: 2,
-    marginRight: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSquare: {
-    borderRadius: 6,
-  },
-  checkboxRound: {
-    borderRadius: 11,
   },
   optionTextContainer: {
     flex: 1,
@@ -300,9 +274,10 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     lineHeight: 24,
+    fontWeight: '400',
   },
   optionLetter: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textMuted,
   },
   resultContainer: {

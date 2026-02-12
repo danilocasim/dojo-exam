@@ -13,26 +13,26 @@ export interface TimerProps {
   onPersist?: () => void;
 }
 
-// AWS Dark Color Palette
+// AWS Modern Color Palette
 const colors = {
   // Backgrounds
-  surface: '#161E2D',
-  surfaceHover: '#1D2939',
+  surface: '#1F2937', // Slate for cards
+  surfaceHover: '#374151',
   // Borders
-  borderDefault: '#374151',
+  borderDefault: '#374151', // Gray border
   // Text
-  textHeading: '#FFFFFF',
+  textHeading: '#F9FAFB',
   textBody: '#D1D5DB',
   textMuted: '#9CA3AF',
   // Warning states
-  warningBg: '#7D4E00',
+  warningBg: 'rgba(255, 153, 0, 0.15)',
   warningBorder: '#FF9900',
   warningText: '#FFB84D',
   // Critical states
-  criticalBg: '#7F1D1D',
-  criticalBorder: '#DC2626',
+  criticalBg: 'rgba(239, 68, 68, 0.15)',
+  criticalBorder: '#EF4444',
   criticalText: '#FCA5A5',
-  criticalDot: '#DC2626',
+  criticalDot: '#EF4444',
 };
 
 /**

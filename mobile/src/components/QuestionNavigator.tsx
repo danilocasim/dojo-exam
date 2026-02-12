@@ -12,27 +12,27 @@ import {
 import { ChevronLeft, ChevronRight, Flag, Grid3x3, X, Check } from 'lucide-react-native';
 import { ExamAnswer } from '../storage/schema';
 
-// AWS Dark Color Palette
+// AWS Modern Color Palette
 const colors = {
   // Backgrounds
-  background: '#232F3E', // AWS Squid Ink
-  surface: '#161E2D', // Deep Navy
-  surfaceHover: '#1D2939',
+  background: '#232F3E', // AWS Deep Navy
+  surface: '#1F2937', // Slate for cards
+  surfaceHover: '#374151',
   // Borders
-  borderDefault: '#374151',
-  borderSubtle: '#2D3B4E',
+  borderDefault: '#374151', // Gray border
+  borderSubtle: '#4B5563',
   // Text
-  textHeading: '#FFFFFF',
+  textHeading: '#F9FAFB',
   textBody: '#D1D5DB',
   textMuted: '#9CA3AF',
   textDisabled: '#6B7280',
   // Accents
   primaryOrange: '#FF9900', // AWS Orange
   secondaryOrange: '#EC7211',
-  primaryOrangeDark: '#7D4E00',
+  primaryOrangeDark: 'rgba(255, 153, 0, 0.2)',
   // Status
-  success: '#059669',
-  successDark: '#064E3B',
+  success: '#10B981',
+  successDark: 'rgba(16, 185, 129, 0.15)',
   transparent: 'transparent',
 };
 

@@ -12,35 +12,37 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Trophy, XCircle, BookOpen, Home, AlertCircle, CheckCircle2 } from 'lucide-react-native';
+import { CircularProgress } from '../components/CircularProgress';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { getExamResult, formatTimeSpent } from '../services';
 import { ExamResult, DomainScore } from '../storage/schema';
 import { useExamStore } from '../stores';
 
-// AWS Dark Color Palette
+// AWS Modern Color Palette
 const colors = {
   // Backgrounds
-  background: '#232F3E', // AWS Squid Ink
-  surface: '#161E2D', // Deep Navy
-  surfaceHover: '#1D2939',
+  background: '#232F3E', // AWS Deep Navy
+  surface: '#1F2937', // Slate for cards
+  surfaceHover: '#374151',
   // Borders
-  borderDefault: '#374151',
+  borderDefault: '#374151', // Gray border
+  trackGray: '#4B5563', // Dark track for progress bars
   // Text
-  textHeading: '#FFFFFF',
-  textBody: '#D1D5DB',
+  textHeading: '#F9FAFB', // Pure white for headings
+  textBody: '#D1D5DB', // Light Gray for body
   textMuted: '#9CA3AF',
   // Accents
-  primaryOrange: '#FF9900',
+  primaryOrange: '#FF9900', // AWS Orange
   secondaryOrange: '#EC7211',
-  orangeDark: '#7D4E00',
+  orangeDark: 'rgba(255, 153, 0, 0.2)',
   orangeLight: '#FFB84D',
   // Status
-  success: '#059669',
+  success: '#10B981', // Modern Emerald
   successLight: '#6EE7B7',
-  successDark: '#064E3B',
-  error: '#DC2626',
+  successDark: 'rgba(16, 185, 129, 0.15)',
+  error: '#EF4444', // Modern Red
   errorLight: '#FCA5A5',
-  errorDark: '#7F1D1D',
+  errorDark: 'rgba(239, 68, 68, 0.15)',
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ExamResults'>;
@@ -98,9 +100,9 @@ export const ExamResultsScreen: React.FC = () => {
   };
 
   const getScoreColor = (score: number, passingScore: number = 70) => {
-    if (score >= passingScore) return colors.successLight;
-    if (score >= passingScore - 10) return colors.orangeLight;
-    return colors.errorLight;
+    if (score >= passingScore) return colors.success;
+    if (score >= passingScore - 10) return colors.primaryOrange;
+    return colors.error;
   };
 
   const getDomainBarColor = (percentage: number) => {
@@ -169,14 +171,18 @@ export const ExamResultsScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Score */}
+          {/* Score - Circular Progress */}
           <View style={styles.scoreContainer}>
-            <View style={styles.scoreCircle}>
-              <Text style={[styles.scoreValue, { color: getScoreColor(result.score) }]}>
-                {result.score}
-              </Text>
+            <CircularProgress
+              percentage={result.score}
+              size={140}
+              strokeWidth={10}
+              color={getScoreColor(result.score)}
+              trackColor={colors.trackGray}
+            >
+              <Text style={[styles.scoreValue, { color: colors.textHeading }]}>{result.score}</Text>
               <Text style={styles.scorePercent}>%</Text>
-            </View>
+            </CircularProgress>
             <Text style={styles.passingNote}>Passing: 70%</Text>
           </View>
         </View>
@@ -390,20 +396,11 @@ const styles = StyleSheet.create({
   },
   scoreContainer: {
     alignItems: 'center',
-  },
-  scoreCircle: {
-    backgroundColor: colors.surface,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.borderDefault,
+    paddingTop: 8,
   },
   scoreValue: {
-    fontSize: 40,
-    fontWeight: 'bold',
+    fontSize: 44,
+    fontWeight: '700',
   },
   scorePercent: {
     color: colors.textMuted,
@@ -429,8 +426,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '700',
   },
   statLabel: {
     fontSize: 12,
@@ -476,9 +473,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   domainBarContainer: {
-    height: 6,
-    backgroundColor: colors.borderDefault,
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: colors.trackGray,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   domainBarFill: {
@@ -492,7 +489,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.secondaryOrange,
+    borderColor: colors.primaryOrange,
   },
   weakAreasHeader: {
     flexDirection: 'row',
