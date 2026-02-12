@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Trophy, XCircle, ChevronLeft, ChevronRight, Clock, BarChart2 } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Clock, BarChart2 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { getExamHistory, ExamHistoryEntry } from '../services/review.service';
 
@@ -96,75 +96,37 @@ export const ExamHistoryScreen: React.FC = () => {
     return colors.error;
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 70) return colors.successDark;
-    if (score >= 60) return colors.orangeDark;
-    return colors.errorDark;
-  };
-
   const renderExamEntry = ({ item }: { item: ExamHistoryEntry }) => (
     <TouchableOpacity
       onPress={() => handleReviewExam(item.attempt.id)}
       activeOpacity={0.7}
-      style={styles.entryCard}
+      style={styles.entryRow}
     >
-      <View style={styles.entryHeader}>
-        {/* Pass/Fail badge */}
-        <View
-          style={[
-            styles.statusBadge,
-            item.passed ? styles.statusBadgePassed : styles.statusBadgeFailed,
-          ]}
-        >
-          {item.passed ? (
-            <Trophy size={14} color={colors.textHeading} strokeWidth={2} />
-          ) : (
-            <XCircle size={14} color={colors.textHeading} strokeWidth={2} />
-          )}
-          <Text style={styles.statusBadgeText}>{item.passed ? 'PASSED' : 'FAILED'}</Text>
-        </View>
-        <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
-      </View>
+      {/* Pass/Fail indicator */}
+      <View
+        style={[styles.statusDot, { backgroundColor: item.passed ? colors.success : colors.error }]}
+      />
 
-      <View style={styles.entryBody}>
-        {/* Score */}
-        <View style={[styles.scoreCircle, { backgroundColor: getScoreBgColor(item.score) }]}>
+      {/* Main info */}
+      <View style={styles.entryInfo}>
+        <View style={styles.entryTopRow}>
           <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>
             {item.score}%
           </Text>
-        </View>
-
-        {/* Details */}
-        <View style={styles.entryDetails}>
           <Text style={styles.entryDetailText}>
-            {item.correctCount}/{item.totalQuestions} correct
+            {item.correctCount}/{item.totalQuestions}
           </Text>
           <View style={styles.entryDetailRow}>
-            <Clock size={12} color={colors.textMuted} strokeWidth={2} />
+            <Clock size={11} color={colors.textMuted} strokeWidth={2} />
             <Text style={styles.entryDetailMuted}>{item.timeSpent}</Text>
           </View>
         </View>
-
-        {/* Score Bar */}
-        <View style={styles.scoreBarContainer}>
-          <View
-            style={[
-              styles.scoreBarFill,
-              {
-                width: `${item.score}%`,
-                backgroundColor: getScoreColor(item.score),
-              },
-            ]}
-          />
-        </View>
-      </View>
-
-      {/* Date */}
-      <View style={styles.entryFooter}>
         <Text style={styles.dateText}>
           {formatDate(item.attempt.completedAt ?? item.attempt.startedAt)}
         </Text>
       </View>
+
+      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
     </TouchableOpacity>
   );
 
@@ -221,7 +183,7 @@ export const ExamHistoryScreen: React.FC = () => {
           renderItem={renderExamEntry}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
         />
       )}
     </SafeAreaView>
@@ -275,92 +237,48 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 32,
   },
-  entryCard: {
+  entryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: colors.borderDefault,
-  },
-  entryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 6,
-  },
-  statusBadgePassed: {
-    backgroundColor: colors.success,
-  },
-  statusBadgeFailed: {
-    backgroundColor: colors.error,
-  },
-  statusBadgeText: {
-    color: colors.textHeading,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  entryBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
   },
-  scoreCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  entryInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  entryTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 10,
   },
   scoreText: {
     fontSize: 16,
     fontWeight: '700',
   },
-  entryDetails: {
-    flex: 1,
-    gap: 4,
-  },
   entryDetailText: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textBody,
     fontWeight: '500',
   },
   entryDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   entryDetailMuted: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textMuted,
-  },
-  scoreBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 68,
-    right: 0,
-    height: 4,
-    backgroundColor: colors.trackGray,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  scoreBarFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  entryFooter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.borderDefault,
-    paddingTop: 8,
   },
   dateText: {
     fontSize: 12,

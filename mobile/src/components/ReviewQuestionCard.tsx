@@ -1,7 +1,7 @@
 // T063: ReviewQuestionCard - displays question with user's answer, correct answer, explanation
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { Lightbulb, CheckCircle2, XCircle } from 'lucide-react-native';
+import { CheckCircle2, XCircle } from 'lucide-react-native';
 import { QuestionOption, QuestionType } from '../storage/schema';
 import { ReviewItem } from '../services/review.service';
 
@@ -117,40 +117,53 @@ export const ReviewQuestionCard: React.FC<ReviewQuestionCardProps> = ({ item }) 
           ))}
         </View>
 
-        {/* Result indicator */}
-        <View
-          style={[
-            styles.resultContainer,
-            isCorrect ? styles.resultCorrect : styles.resultIncorrect,
-          ]}
-        >
-          <View style={styles.resultIcon}>
-            {isCorrect ? (
-              <CheckCircle2 size={24} color={colors.success} strokeWidth={2} />
-            ) : (
-              <XCircle size={24} color={colors.error} strokeWidth={2} />
-            )}
-          </View>
-          <Text
-            style={[
-              styles.resultText,
-              { color: isCorrect ? colors.successText : colors.errorText },
-            ]}
-          >
-            {isCorrect ? 'Correct!' : 'Incorrect'}
-          </Text>
-        </View>
-
-        {/* Explanation */}
+        {/* Explanation - shown directly after options */}
         {question.explanation && (
           <View style={styles.explanationBox}>
             <View style={styles.explanationHeader}>
               <View style={styles.explanationIcon}>
-                <Lightbulb size={16} color={colors.primaryOrange} strokeWidth={2} />
+                {isCorrect ? (
+                  <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
+                ) : (
+                  <XCircle size={16} color={colors.error} strokeWidth={2} />
+                )}
               </View>
-              <Text style={styles.explanationLabel}>Explanation</Text>
+              <Text
+                style={[
+                  styles.explanationLabel,
+                  { color: isCorrect ? colors.success : colors.error },
+                ]}
+              >
+                {isCorrect ? 'Correct' : 'Incorrect'} — Explanation
+              </Text>
             </View>
             <Text style={styles.explanationText}>{question.explanation}</Text>
+          </View>
+        )}
+
+        {/* Fallback when no explanation: just show result */}
+        {!question.explanation && (
+          <View
+            style={[
+              styles.resultContainer,
+              isCorrect ? styles.resultCorrect : styles.resultIncorrect,
+            ]}
+          >
+            <View style={styles.resultIcon}>
+              {isCorrect ? (
+                <CheckCircle2 size={20} color={colors.success} strokeWidth={2} />
+              ) : (
+                <XCircle size={20} color={colors.error} strokeWidth={2} />
+              )}
+            </View>
+            <Text
+              style={[
+                styles.resultText,
+                { color: isCorrect ? colors.successText : colors.errorText },
+              ]}
+            >
+              {isCorrect ? 'Correct!' : 'Incorrect'}
+            </Text>
           </View>
         )}
       </View>
@@ -232,8 +245,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultContainer: {
-    marginTop: 28,
-    padding: 16,
+    marginTop: 24,
+    padding: 14,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -257,7 +270,7 @@ const styles = StyleSheet.create({
   explanationBox: {
     marginTop: 24,
     backgroundColor: colors.surface,
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.borderDefault,
@@ -271,11 +284,9 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   explanationLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: colors.primaryOrange,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.3,
   },
   explanationText: {
     fontSize: 15,

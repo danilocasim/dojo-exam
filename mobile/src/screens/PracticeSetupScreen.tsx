@@ -166,19 +166,6 @@ export const PracticeSetupScreen: React.FC = () => {
         </View>
 
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Info card */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoIconContainer}>
-              <BookOpen size={20} color={colors.primaryOrange} strokeWidth={2} />
-            </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Practice by Domain</Text>
-              <Text style={styles.infoSubtitle}>
-                Answer questions at your own pace with immediate feedback and explanations.
-              </Text>
-            </View>
-          </View>
-
           {/* Domain selector */}
           <View style={styles.section}>
             <DomainSelector
@@ -309,40 +296,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.orangeDark,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.primaryOrange,
-    marginBottom: 20,
-    gap: 12,
-  },
-  infoIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 153, 0, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoTextContainer: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.orangeLight,
-    marginBottom: 4,
-  },
-  infoSubtitle: {
-    fontSize: 13,
-    color: colors.textBody,
-    lineHeight: 19,
-  },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   countCard: {
     flexDirection: 'row',

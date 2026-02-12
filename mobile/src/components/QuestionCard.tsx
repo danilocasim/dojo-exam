@@ -119,7 +119,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
       <View style={styles.content}>
         {/* Question type badge */}
         <View style={styles.badgeRow}>
@@ -221,9 +225,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 20,
     paddingBottom: 24,
   },
   badgeRow: {

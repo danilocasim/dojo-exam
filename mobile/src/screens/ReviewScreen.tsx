@@ -330,25 +330,28 @@ export const ReviewScreen: React.FC = () => {
               {/* Weak areas */}
               {reviewData.domainBreakdown.some((d) => d.percentage < 70) && (
                 <View style={styles.weakAreasCard}>
-                  <View style={styles.weakAreasHeader}>
-                    <AlertCircle
-                      size={16}
-                      color={colors.orangeLight}
-                      strokeWidth={2}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+                  <View style={styles.weakAreasAccent} />
+                  <View style={styles.weakAreasContent}>
+                    <View style={styles.weakAreasHeader}>
+                      <AlertCircle
+                        size={16}
+                        color={colors.primaryOrange}
+                        strokeWidth={2}
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+                    </View>
+                    {reviewData.domainBreakdown
+                      .filter((d) => d.percentage < 70)
+                      .sort((a, b) => a.percentage - b.percentage)
+                      .map((domain) => (
+                        <View key={domain.domainId} style={styles.weakAreaItem}>
+                          <View style={styles.weakAreaDot} />
+                          <Text style={styles.weakAreaName}>{domain.domainName}</Text>
+                          <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
+                        </View>
+                      ))}
                   </View>
-                  {reviewData.domainBreakdown
-                    .filter((d) => d.percentage < 70)
-                    .sort((a, b) => a.percentage - b.percentage)
-                    .map((domain) => (
-                      <View key={domain.domainId} style={styles.weakAreaItem}>
-                        <View style={styles.weakAreaDot} />
-                        <Text style={styles.weakAreaName}>{domain.domainName}</Text>
-                        <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
-                      </View>
-                    ))}
                 </View>
               )}
             </ScrollView>
@@ -679,13 +682,22 @@ const styles = StyleSheet.create({
 
   // Weak areas
   weakAreasCard: {
+    flexDirection: 'row',
     marginTop: 20,
-    backgroundColor: colors.orangeDark,
+    backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 16,
     borderWidth: 1,
-    borderColor: colors.primaryOrange,
+    borderColor: colors.borderDefault,
+    overflow: 'hidden',
     marginBottom: 16,
+  },
+  weakAreasAccent: {
+    width: 4,
+    backgroundColor: colors.primaryOrange,
+  },
+  weakAreasContent: {
+    flex: 1,
+    padding: 16,
   },
   weakAreasHeader: {
     flexDirection: 'row',
@@ -695,7 +707,7 @@ const styles = StyleSheet.create({
   weakAreasTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.orangeLight,
+    color: colors.textHeading,
   },
   weakAreaItem: {
     flexDirection: 'row',
@@ -710,12 +722,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   weakAreaName: {
-    color: colors.orangeLight,
+    color: colors.textBody,
     flex: 1,
     fontSize: 14,
   },
   weakAreaPercent: {
-    color: colors.primaryOrange,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -755,15 +767,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 20,
     gap: 8,
+    justifyContent: 'flex-start',
   },
   gridItem: {
-    width: 44,
-    height: 44,
+    width: '18%',
+    aspectRatio: 1,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.borderDefault,
+    minHeight: 50,
   },
   gridItemCorrect: {
     backgroundColor: colors.successDark,

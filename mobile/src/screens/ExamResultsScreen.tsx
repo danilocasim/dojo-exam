@@ -245,25 +245,28 @@ export const ExamResultsScreen: React.FC = () => {
         {/* Weak Areas */}
         {result.domainBreakdown.some((d) => d.percentage < 70) && (
           <View style={styles.weakAreasCard}>
-            <View style={styles.weakAreasHeader}>
-              <AlertCircle
-                size={18}
-                color={colors.orangeLight}
-                strokeWidth={2}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+            <View style={styles.weakAreasAccent} />
+            <View style={styles.weakAreasContent}>
+              <View style={styles.weakAreasHeader}>
+                <AlertCircle
+                  size={18}
+                  color={colors.primaryOrange}
+                  strokeWidth={2}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.weakAreasTitle}>Areas to Improve</Text>
+              </View>
+              {result.domainBreakdown
+                .filter((d) => d.percentage < 70)
+                .sort((a, b) => a.percentage - b.percentage)
+                .map((domain) => (
+                  <View key={domain.domainId} style={styles.weakAreaItem}>
+                    <View style={styles.weakAreaDot} />
+                    <Text style={styles.weakAreaName}>{domain.domainName}</Text>
+                    <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
+                  </View>
+                ))}
             </View>
-            {result.domainBreakdown
-              .filter((d) => d.percentage < 70)
-              .sort((a, b) => a.percentage - b.percentage)
-              .map((domain) => (
-                <View key={domain.domainId} style={styles.weakAreaItem}>
-                  <View style={styles.weakAreaDot} />
-                  <Text style={styles.weakAreaName}>{domain.domainName}</Text>
-                  <Text style={styles.weakAreaPercent}>{domain.percentage}%</Text>
-                </View>
-              ))}
           </View>
         )}
 
@@ -483,13 +486,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   weakAreasCard: {
+    flexDirection: 'row',
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: colors.orangeDark,
+    backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 16,
     borderWidth: 1,
-    borderColor: colors.primaryOrange,
+    borderColor: colors.borderDefault,
+    overflow: 'hidden',
+  },
+  weakAreasAccent: {
+    width: 4,
+    backgroundColor: colors.primaryOrange,
+  },
+  weakAreasContent: {
+    flex: 1,
+    padding: 16,
   },
   weakAreasHeader: {
     flexDirection: 'row',
@@ -499,7 +511,7 @@ const styles = StyleSheet.create({
   weakAreasTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.orangeLight,
+    color: colors.textHeading,
   },
   weakAreaItem: {
     flexDirection: 'row',
@@ -514,12 +526,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   weakAreaName: {
-    color: colors.orangeLight,
+    color: colors.textBody,
     flex: 1,
     fontSize: 14,
   },
   weakAreaPercent: {
-    color: colors.primaryOrange,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },

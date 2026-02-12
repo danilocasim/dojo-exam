@@ -53,6 +53,26 @@ export const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
     );
   }
 
+  // With only 1-2 data points, show a simple message instead of a sparse chart
+  if (scoreHistory.length <= 2) {
+    const latestScore = scoreHistory[scoreHistory.length - 1]?.score ?? 0;
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Score Trend</Text>
+        <View style={styles.earlyContainer}>
+          <Text style={styles.earlyScore}>{latestScore}%</Text>
+          <Text style={styles.earlyLabel}>
+            {scoreHistory.length === 1 ? 'First exam' : '2 exams completed'}
+          </Text>
+          <Text style={styles.earlyHint}>
+            Complete {scoreHistory.length === 1 ? '2 more exams' : '1 more exam'} to see your trend
+            chart
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   // Calculate trend direction
   const trend = calculateTrend(scoreHistory);
   const latestScore = scoreHistory[scoreHistory.length - 1]?.score ?? 0;
@@ -70,8 +90,8 @@ export const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
           )}
           {trend === 'declining' && (
             <>
-              <TrendingDown size={14} color={colors.error} strokeWidth={2} />
-              <Text style={[styles.trendText, { color: colors.error }]}>Declining</Text>
+              <TrendingDown size={14} color={colors.primaryOrange} strokeWidth={2} />
+              <Text style={[styles.trendText, { color: colors.primaryOrange }]}>Needs Work</Text>
             </>
           )}
           {trend === 'stable' && (
@@ -275,6 +295,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  earlyContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    gap: 4,
+  },
+  earlyScore: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: colors.textHeading,
+  },
+  earlyLabel: {
+    fontSize: 14,
+    color: colors.textBody,
+    fontWeight: '500',
+  },
+  earlyHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 8,
   },
 });
 

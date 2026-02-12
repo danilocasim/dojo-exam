@@ -175,15 +175,16 @@ export const AnalyticsScreen: React.FC = () => {
             {/* Domain Performance */}
             <DomainPerformanceCard domains={analyticsData.domainPerformance} />
 
-            {/* T073: Weak Domains Section */}
-            {analyticsData.weakDomains.length > 0 && (
-              <WeakDomainsSection
-                weakDomains={analyticsData.weakDomains}
-                onPractice={(domainId: string) => {
-                  navigation.navigate('PracticeSetup');
-                }}
-              />
-            )}
+            {/* T073: Weak Domains Section - only show when there's contrast (some strong + some weak) */}
+            {analyticsData.weakDomains.length > 0 &&
+              analyticsData.domainPerformance.some((d) => d.percentage >= 70) && (
+                <WeakDomainsSection
+                  weakDomains={analyticsData.weakDomains}
+                  onPractice={(domainId: string) => {
+                    navigation.navigate('PracticeSetup');
+                  }}
+                />
+              )}
           </>
         )}
       </ScrollView>
@@ -252,42 +253,45 @@ interface WeakDomainsSectionProps {
 const WeakDomainsSection: React.FC<WeakDomainsSectionProps> = ({ weakDomains, onPractice }) => {
   return (
     <View style={styles.weakCard}>
-      <View style={styles.weakHeader}>
-        <AlertTriangle size={16} color={colors.error} strokeWidth={2} />
-        <Text style={styles.weakTitle}>Areas to Improve</Text>
-      </View>
-      <Text style={styles.weakSubtext}>
-        These domains are below 70%. Focus your practice sessions here.
-      </Text>
-
-      {weakDomains.map((domain) => (
-        <View key={domain.domainId} style={styles.weakDomainRow}>
-          <View style={styles.weakDomainInfo}>
-            <Text style={styles.weakDomainName}>{domain.domainName}</Text>
-            <View style={styles.weakProgressRow}>
-              <View style={styles.weakProgressBar}>
-                <View
-                  style={[
-                    styles.weakProgressFill,
-                    { width: `${Math.min(domain.percentage, 100)}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.weakPercentage}>{domain.percentage}%</Text>
-            </View>
-            <Text style={styles.weakGapText}>
-              {domain.gap} points below passing • {domain.correct}/{domain.total} correct
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.practiceButton}
-            onPress={() => onPractice(domain.domainId)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.practiceButtonText}>Practice</Text>
-          </TouchableOpacity>
+      <View style={styles.weakAccent} />
+      <View style={styles.weakContent}>
+        <View style={styles.weakHeader}>
+          <AlertTriangle size={16} color={colors.primaryOrange} strokeWidth={2} />
+          <Text style={styles.weakTitle}>Areas to Improve</Text>
         </View>
-      ))}
+        <Text style={styles.weakSubtext}>
+          These domains are below 70%. Focus your practice sessions here.
+        </Text>
+
+        {weakDomains.map((domain) => (
+          <View key={domain.domainId} style={styles.weakDomainRow}>
+            <View style={styles.weakDomainInfo}>
+              <Text style={styles.weakDomainName}>{domain.domainName}</Text>
+              <View style={styles.weakProgressRow}>
+                <View style={styles.weakProgressBar}>
+                  <View
+                    style={[
+                      styles.weakProgressFill,
+                      { width: `${Math.min(domain.percentage, 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.weakPercentage}>{domain.percentage}%</Text>
+              </View>
+              <Text style={styles.weakGapText}>
+                {domain.gap} points below passing • {domain.correct}/{domain.total} correct
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.practiceButton}
+              onPress={() => onPractice(domain.domainId)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.practiceButtonText}>Practice</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
@@ -442,14 +446,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.borderDefault,
   },
 
-  // Weak domains section (T073)
+  // Weak domains section (T073) - subtle left accent bar instead of red border
   weakCard: {
-    backgroundColor: colors.errorDark,
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
     borderRadius: 14,
-    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.error,
+    borderColor: colors.borderDefault,
+    overflow: 'hidden',
+  },
+  weakAccent: {
+    width: 4,
+    backgroundColor: colors.primaryOrange,
+  },
+  weakContent: {
+    flex: 1,
+    padding: 16,
   },
   weakHeader: {
     flexDirection: 'row',
@@ -464,7 +477,7 @@ const styles = StyleSheet.create({
   },
   weakSubtext: {
     fontSize: 13,
-    color: colors.errorLight,
+    color: colors.textMuted,
     marginBottom: 16,
   },
   weakDomainRow: {
@@ -472,7 +485,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(239, 68, 68, 0.2)',
+    borderTopColor: colors.borderDefault,
   },
   weakDomainInfo: {
     flex: 1,
@@ -493,19 +506,19 @@ const styles = StyleSheet.create({
   weakProgressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: colors.trackGray,
     borderRadius: 3,
     overflow: 'hidden',
   },
   weakProgressFill: {
     height: '100%',
-    backgroundColor: colors.error,
+    backgroundColor: colors.primaryOrange,
     borderRadius: 3,
   },
   weakPercentage: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: colors.error,
+    color: colors.primaryOrange,
     width: 36,
     textAlign: 'right',
   },
@@ -516,7 +529,7 @@ const styles = StyleSheet.create({
   practiceButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: colors.error,
+    backgroundColor: colors.primaryOrange,
     borderRadius: 8,
   },
   practiceButtonText: {

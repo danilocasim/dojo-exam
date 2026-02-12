@@ -468,17 +468,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    justifyContent: 'flex-start',
   },
   gridButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
+    width: '18%',
+    aspectRatio: 1,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+    minHeight: 50,
   },
   gridButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
 });
