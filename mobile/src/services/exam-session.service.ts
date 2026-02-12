@@ -8,6 +8,7 @@ import {
   updateRemainingTime,
   deleteExamAttempt,
 } from '../storage/repositories/exam-attempt.repository';
+import { incrementExamCount } from '../storage/repositories/user-stats.repository';
 import {
   createExamAnswersBatch,
   getAnswersByExamAttemptId,
@@ -408,6 +409,9 @@ export const submitExam = async (examAttemptId: string): Promise<ExamResult> => 
 
   // Mark exam as complete
   await completeExamAttempt(examAttemptId, score, passed);
+
+  // T074: Update aggregate user stats
+  await incrementExamCount(timeSpentMs, totalQuestions);
 
   return {
     examAttemptId,

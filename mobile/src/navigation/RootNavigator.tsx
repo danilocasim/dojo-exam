@@ -11,6 +11,7 @@ import {
   PracticeSetupScreen,
   PracticeScreen,
   PracticeSummaryScreen,
+  AnalyticsScreen,
 } from '../screens';
 
 // Color constants matching the app theme
@@ -40,6 +41,9 @@ export type RootStackParamList = {
   // Review flow screens
   ExamHistory: undefined;
   ReviewScreen: { attemptId: string };
+
+  // Analytics
+  Analytics: undefined;
 
   // Settings
   Settings: undefined;
@@ -178,6 +182,13 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="ReviewScreen"
           component={ReviewScreen}
+          options={{ headerShown: false }}
+        />
+
+        {/* Analytics */}
+        <Stack.Screen
+          name="Analytics"
+          component={AnalyticsScreen}
           options={{ headerShown: false }}
         />
 

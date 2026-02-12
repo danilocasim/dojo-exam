@@ -19,6 +19,7 @@ import {
   getQuestionById,
 } from '../storage/repositories/question.repository';
 import { PracticeSession, PracticeAnswer, Question, Difficulty, DomainId } from '../storage/schema';
+import { incrementPracticeCount } from '../storage/repositories/user-stats.repository';
 
 /**
  * Practice session state containing all current session info
@@ -162,7 +163,19 @@ const checkAnswer = (selectedAnswers: string[], correctAnswers: string[]): boole
  * End/complete a practice session
  */
 export const endPracticeSession = async (sessionId: string): Promise<void> => {
+  // Get session data to capture stats before completing
+  const session = await getPracticeSessionById(sessionId);
+  const answers = await getPracticeAnswersBySessionId(sessionId);
+
   await completePracticeSession(sessionId);
+
+  // T074: Update aggregate user stats
+  if (session) {
+    const startedAt = new Date(session.startedAt).getTime();
+    const completedAt = Date.now();
+    const timeSpentMs = completedAt - startedAt;
+    await incrementPracticeCount(answers.length, timeSpentMs);
+  }
 };
 
 /**

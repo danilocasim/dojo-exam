@@ -19,7 +19,6 @@ import {
   AlertTriangle,
   ClipboardList,
   BarChart2,
-  Settings,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
@@ -350,27 +349,27 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => navigation.navigate('ExamHistory')}
+              onPress={() => navigation.navigate('Analytics')}
               activeOpacity={0.7}
               style={styles.actionCard}
             >
               <View style={styles.actionIconMinimal}>
                 <BarChart2 size={22} color={colors.primaryOrange} strokeWidth={1.5} />
               </View>
-              <Text style={styles.actionTitle}>History</Text>
-              <Text style={styles.actionSubtitle}>Past exams</Text>
+              <Text style={styles.actionTitle}>Analytics</Text>
+              <Text style={styles.actionSubtitle}>Performance</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => navigation.navigate('Settings')}
+              onPress={() => navigation.navigate('ExamHistory')}
               activeOpacity={0.7}
               style={styles.actionCard}
             >
               <View style={styles.actionIconMinimal}>
-                <Settings size={22} color={colors.textMuted} strokeWidth={1.5} />
+                <ClipboardList size={22} color={colors.textMuted} strokeWidth={1.5} />
               </View>
-              <Text style={styles.actionTitle}>Settings</Text>
-              <Text style={styles.actionSubtitle}>Configure</Text>
+              <Text style={styles.actionTitle}>History</Text>
+              <Text style={styles.actionSubtitle}>Past exams</Text>
             </TouchableOpacity>
           </View>
         </View>

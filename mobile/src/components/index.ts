@@ -13,3 +13,8 @@ export { DifficultySelector } from './DifficultySelector';
 // Review components (T063, T064)
 export { ReviewQuestionCard } from './ReviewQuestionCard';
 export { ReviewFilter } from './ReviewFilter';
+
+// Analytics components (T070, T071, T072)
+export { ScoreTrendChart } from './analytics/ScoreTrendChart';
+export { DomainPerformanceCard } from './analytics/DomainPerformanceCard';
+export { StudyStatsCard } from './analytics/StudyStatsCard';

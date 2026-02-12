@@ -36,3 +36,15 @@ export {
   selectReviewStats,
 } from './review.store';
 export type { ReviewState, ReviewActions, ReviewStore } from './review.store';
+
+// Analytics store (T068)
+export {
+  useAnalyticsStore,
+  selectOverallStats,
+  selectStudyStats,
+  selectScoreHistory,
+  selectDomainPerformance,
+  selectWeakDomains,
+  selectHasData,
+} from './analytics.store';
+export type { AnalyticsState, AnalyticsActions, AnalyticsStore } from './analytics.store';
