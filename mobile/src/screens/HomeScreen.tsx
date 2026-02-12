@@ -300,7 +300,7 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.logoIcon}>
               <Cloud size={16} color={colors.textHeading} strokeWidth={2.5} />
             </View>
-            <Text style={styles.appTitle}>CloudPrep</Text>
+            <Text style={styles.appTitle}>Tutorials Dojo</Text>
           </View>
           <Text style={styles.headerBadge}>CLF-C02</Text>
         </View>

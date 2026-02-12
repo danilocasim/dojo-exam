@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { AdminStats } from '../services/api';
 import { useSelectedExamType } from '../components/Layout';
+import { colors, radius } from '../theme';
 
-/**
- * T099: Dashboard page with stats overview
- */
 export function DashboardPage() {
   const { selectedExamType, examTypes } = useSelectedExamType();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -15,165 +13,59 @@ export function DashboardPage() {
   useEffect(() => {
     if (!selectedExamType) return;
     setLoading(true);
-    api
-      .getStats(selectedExamType)
-      .then(setStats)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    api.getStats(selectedExamType).then(setStats).catch(() => {}).finally(() => setLoading(false));
   }, [selectedExamType]);
 
-  if (loading) {
-    return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
-        Loading stats...
-      </div>
-    );
-  }
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: colors.subtle }}>Loading stats...</div>;
+  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: colors.subtle }}>No data available</div>;
 
-  if (!stats) {
-    return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>
-        No data available
-      </div>
-    );
-  }
+  const statCards = [
+    { label: 'Total', value: stats.totalQuestions, color: colors.primary },
+    { label: 'Draft', value: stats.byStatus.draft, color: colors.muted },
+    { label: 'Pending', value: stats.byStatus.pending, color: colors.warning },
+    { label: 'Approved', value: stats.byStatus.approved, color: colors.success },
+    { label: 'Archived', value: stats.byStatus.archived, color: colors.error },
+  ];
 
   return (
     <div>
-      <h1 style={styles.title}>
-        Dashboard{currentExamType ? ` — ${currentExamType.displayName}` : ''}
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.heading, marginBottom: 24 }}>
+        Dashboard{currentExamType ? ` \u2014 ${currentExamType.displayName}` : ''}
       </h1>
 
-      <div style={styles.statsGrid}>
-        <StatCard
-          label="Total Questions"
-          value={stats.totalQuestions}
-          color="#1677ff"
-        />
-        <StatCard label="Draft" value={stats.byStatus.draft} color="#999" />
-        <StatCard
-          label="Pending Review"
-          value={stats.byStatus.pending}
-          color="#d48806"
-        />
-        <StatCard
-          label="Approved"
-          value={stats.byStatus.approved}
-          color="#389e0d"
-        />
-        <StatCard
-          label="Archived"
-          value={stats.byStatus.archived}
-          color="#cf1322"
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14, marginBottom: 32 }}>
+        {statCards.map((c) => (
+          <div key={c.label} style={{ background: colors.surfaceRaised, borderRadius: radius.md, padding: '20px 16px', border: `1px solid ${colors.border}`, textAlign: 'center' }}>
+            <div style={{ fontSize: 30, fontWeight: 700, lineHeight: 1, marginBottom: 6, color: c.color }}>{c.value}</div>
+            <div style={{ fontSize: 13, color: colors.subtle }}>{c.label}</div>
+          </div>
+        ))}
       </div>
 
-      <h2 style={styles.sectionTitle}>Questions by Domain</h2>
-      <div style={styles.domainGrid}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: colors.body, marginBottom: 14 }}>By Domain</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
         {Object.entries(stats.byDomain).map(([domain, count]) => {
-          const domainInfo = currentExamType?.domains.find(
-            (d) => d.id === domain,
-          );
+          const info = currentExamType?.domains.find((d) => d.id === domain);
+          const pct = info ? Math.min(100, Math.round((count / info.questionCount) * 100)) : 0;
           return (
-            <div key={domain} style={styles.domainCard}>
-              <div style={styles.domainName}>{domainInfo?.name || domain}</div>
-              <div style={styles.domainCount}>{count}</div>
-              {domainInfo && (
-                <div style={styles.domainTarget}>
-                  Target: {domainInfo.questionCount}
+            <div key={domain} style={{ background: colors.surfaceRaised, borderRadius: radius.md, padding: 16, border: `1px solid ${colors.border}` }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: colors.body, marginBottom: 8 }}>{info?.name || domain}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 24, fontWeight: 700, color: colors.primary }}>{count}</span>
+                {info && <span style={{ fontSize: 12, color: colors.subtle }}>/ {info.questionCount} target</span>}
+              </div>
+              {info && (
+                <div style={{ marginTop: 8, height: 4, background: colors.border, borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? colors.success : colors.primary, borderRadius: 2, transition: 'width 0.3s' }} />
                 </div>
               )}
             </div>
           );
         })}
         {Object.keys(stats.byDomain).length === 0 && (
-          <div style={{ color: '#999', fontSize: 14, padding: 16 }}>
-            No questions yet for this exam type
-          </div>
+          <div style={{ color: colors.subtle, fontSize: 14, padding: 16 }}>No questions yet</div>
         )}
       </div>
     </div>
   );
 }
-
-function StatCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <div style={styles.statCard}>
-      <div style={{ ...styles.statValue, color }}>{value}</div>
-      <div style={styles.statLabel}>{label}</div>
-    </div>
-  );
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  title: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: '#1a1a2e',
-    marginBottom: 24,
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-    gap: 16,
-    marginBottom: 32,
-  },
-  statCard: {
-    background: '#fff',
-    borderRadius: 6,
-    padding: 20,
-    border: '1px solid #e8e8e8',
-    textAlign: 'center',
-  },
-  statValue: {
-    fontSize: 32,
-    fontWeight: 700,
-    lineHeight: 1,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#666',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 600,
-    color: '#1a1a2e',
-    marginBottom: 16,
-  },
-  domainGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: 12,
-  },
-  domainCard: {
-    background: '#fff',
-    borderRadius: 6,
-    padding: 16,
-    border: '1px solid #e8e8e8',
-  },
-  domainName: {
-    fontSize: 14,
-    fontWeight: 500,
-    color: '#333',
-    marginBottom: 4,
-  },
-  domainCount: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: '#1677ff',
-  },
-  domainTarget: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-};

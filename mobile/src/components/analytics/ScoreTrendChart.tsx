@@ -39,7 +39,7 @@ const BAR_GAP = 6;
  */
 export const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
   scoreHistory,
-  passingScore = 70,
+  passingScore = 72,
 }) => {
   if (scoreHistory.length === 0) {
     return (

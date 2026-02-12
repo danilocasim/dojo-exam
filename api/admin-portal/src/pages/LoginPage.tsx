@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { colors, radius, shadow } from '../theme';
 
-/**
- * T092: Login page for admin portal
- */
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,33 +28,22 @@ export function LoginPage() {
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <h1 style={styles.title}>CloudPrep Admin</h1>
-        <p style={styles.subtitle}>Sign in to manage questions</p>
+        <div style={styles.logoRow}>
+          <span style={{ fontSize: 32, color: colors.primary }}>{'\u2601'}</span>
+          <span style={styles.logoText}>CloudPrep</span>
+        </div>
+        <p style={styles.subtitle}>Admin Portal</p>
 
         {error && <div style={styles.error}>{error}</div>}
 
         <label style={styles.label}>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={styles.input}
-            placeholder="admin@cloudprep.app"
-          />
+          <span style={styles.labelText}>Email</span>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={styles.input} placeholder="admin@cloudprep.io" />
         </label>
 
         <label style={styles.label}>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={styles.input}
-            placeholder="••••••••"
-          />
+          <span style={styles.labelText}>Password</span>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={styles.input} placeholder={'\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'} />
         </label>
 
         <button type="submit" disabled={loading} style={styles.button}>
@@ -69,67 +56,29 @@ export function LoginPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: '#f0f2f5',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh',
+    background: `linear-gradient(135deg, ${colors.background} 0%, #1A2332 100%)`, padding: 20,
   },
   form: {
-    background: '#fff',
-    padding: 40,
-    borderRadius: 8,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    width: 380,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
+    background: colors.surfaceRaised, padding: '40px 36px', borderRadius: radius.lg,
+    border: `1px solid ${colors.border}`, boxShadow: shadow.lg,
+    width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 20,
   },
-  title: {
-    margin: 0,
-    fontSize: 24,
-    fontWeight: 700,
-    textAlign: 'center',
-    color: '#1a1a2e',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
+  logoRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  logoText: { fontSize: 26, fontWeight: 700, color: colors.heading, letterSpacing: '-0.5px' },
+  subtitle: { margin: 0, fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: -8 },
   error: {
-    background: '#fff2f0',
-    border: '1px solid #ffccc7',
-    borderRadius: 4,
-    padding: '8px 12px',
-    color: '#cf1322',
-    fontSize: 13,
+    background: colors.errorMuted, border: '1px solid rgba(239,68,68,0.3)',
+    borderRadius: radius.sm, padding: '10px 14px', color: colors.errorText, fontSize: 13,
   },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    fontSize: 13,
-    fontWeight: 500,
-    color: '#333',
-  },
+  label: { display: 'flex', flexDirection: 'column', gap: 6 },
+  labelText: { fontSize: 13, fontWeight: 500, color: colors.muted },
   input: {
-    padding: '8px 12px',
-    border: '1px solid #d9d9d9',
-    borderRadius: 4,
-    fontSize: 14,
-    outline: 'none',
+    padding: '10px 14px', background: colors.surface, border: `1px solid ${colors.border}`,
+    borderRadius: radius.sm, fontSize: 14, color: colors.heading, outline: 'none',
   },
   button: {
-    padding: '10px 16px',
-    background: '#1677ff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 4,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: 8,
+    padding: '12px 20px', background: colors.primary, color: '#1A1A2E', border: 'none',
+    borderRadius: radius.sm, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4, letterSpacing: '0.3px',
   },
 };

@@ -4,24 +4,19 @@ import { api } from '../services/api';
 import type { AdminQuestion } from '../services/api';
 import { useSelectedExamType } from '../components/Layout';
 import { QuestionCard } from '../components/QuestionCard';
+import { colors, radius } from '../theme';
 
-/**
- * T094: Question list page with filters and pagination
- */
 export function QuestionListPage() {
   const navigate = useNavigate();
-  const { selectedExamType } = useSelectedExamType();
+  const { selectedExamType, examTypes } = useSelectedExamType();
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-
-  // Filters
   const [status, setStatus] = useState('');
   const [domain, setDomain] = useState('');
   const [difficulty, setDifficulty] = useState('');
-  const { examTypes } = useSelectedExamType();
   const currentExamType = examTypes.find((et) => et.id === selectedExamType);
   const domains = currentExamType?.domains || [];
 
@@ -29,219 +24,71 @@ export function QuestionListPage() {
     if (!selectedExamType) return;
     setLoading(true);
     try {
-      const data = await api.getQuestions({
-        examTypeId: selectedExamType,
-        status: status || undefined,
-        domain: domain || undefined,
-        difficulty: difficulty || undefined,
-        page,
-        limit: 20,
-      });
-      setQuestions(data.questions);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch {
-      // error handled by api service
-    } finally {
-      setLoading(false);
-    }
+      const data = await api.getQuestions({ examTypeId: selectedExamType, status: status || undefined, domain: domain || undefined, difficulty: difficulty || undefined, page, limit: 20 });
+      setQuestions(data.questions); setTotal(data.total); setTotalPages(data.totalPages);
+    } catch {} finally { setLoading(false); }
   }, [selectedExamType, status, domain, difficulty, page]);
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+  useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
+  useEffect(() => { setPage(1); }, [selectedExamType, status, domain, difficulty]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [selectedExamType, status, domain, difficulty]);
+  const selectStyle: React.CSSProperties = {
+    padding: '8px 12px', background: colors.surfaceRaised, border: `1px solid ${colors.border}`,
+    borderRadius: radius.sm, fontSize: 13, color: colors.body, cursor: 'pointer', outline: 'none',
+  };
 
   return (
     <div>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Questions</h1>
-        <button
-          onClick={() => navigate('/questions/new')}
-          style={styles.createBtn}
-        >
-          + New Question
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.heading, margin: 0 }}>Questions</h1>
+        <button onClick={() => navigate('/questions/new')} style={{
+          padding: '9px 22px', background: colors.primary, color: '#1A1A2E', border: 'none',
+          borderRadius: radius.sm, cursor: 'pointer', fontSize: 14, fontWeight: 700,
+        }}>+ New Question</button>
       </div>
 
-      <div style={styles.filters}>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          style={styles.filterSelect}
-        >
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={selectStyle}>
           <option value="">All Statuses</option>
           <option value="DRAFT">Draft</option>
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
           <option value="ARCHIVED">Archived</option>
         </select>
-
-        <select
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          style={styles.filterSelect}
-        >
+        <select value={domain} onChange={(e) => setDomain(e.target.value)} style={selectStyle}>
           <option value="">All Domains</option>
-          {domains.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
+          {domains.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-
-        <select
-          value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value)}
-          style={styles.filterSelect}
-        >
+        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} style={selectStyle}>
           <option value="">All Difficulties</option>
           <option value="EASY">Easy</option>
           <option value="MEDIUM">Medium</option>
           <option value="HARD">Hard</option>
         </select>
-
-        <span style={styles.count}>
-          {total} question{total !== 1 ? 's' : ''}
-        </span>
+        <span style={{ fontSize: 13, color: colors.subtle, marginLeft: 'auto' }}>{total} question{total !== 1 ? 's' : ''}</span>
       </div>
 
       {loading ? (
-        <div style={styles.loading}>Loading questions...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: colors.subtle }}>Loading...</div>
       ) : questions.length === 0 ? (
-        <div style={styles.empty}>
-          No questions found.{' '}
-          <button
-            onClick={() => navigate('/questions/new')}
-            style={styles.emptyLink}
-          >
-            Create one
-          </button>
+        <div style={{ textAlign: 'center', padding: 60, color: colors.subtle }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>{'\uD83D\uDCDD'}</div>
+          <p style={{ marginBottom: 8 }}>No questions found</p>
+          <button onClick={() => navigate('/questions/new')} style={{ background: 'none', border: 'none', color: colors.primary, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Create one</button>
         </div>
       ) : (
-        <div style={styles.list}>
-          {questions.map((q) => (
-            <QuestionCard
-              key={q.id}
-              question={q}
-              onClick={() => navigate(`/questions/${q.id}`)}
-            />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {questions.map((q) => <QuestionCard key={q.id} question={q} onClick={() => navigate(`/questions/${q.id}`)} />)}
         </div>
       )}
 
       {totalPages > 1 && (
-        <div style={styles.pagination}>
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            style={styles.pageBtn}
-          >
-            ← Previous
-          </button>
-          <span style={styles.pageInfo}>
-            Page {page} of {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            style={styles.pageBtn}
-          >
-            Next →
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 24 }}>
+          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={{ ...selectStyle, opacity: page <= 1 ? 0.4 : 1 }}>{'\u2190'} Prev</button>
+          <span style={{ fontSize: 13, color: colors.subtle }}>Page {page} / {totalPages}</span>
+          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} style={{ ...selectStyle, opacity: page >= totalPages ? 0.4 : 1 }}>Next {'\u2192'}</button>
         </div>
       )}
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: '#1a1a2e',
-    margin: 0,
-  },
-  createBtn: {
-    padding: '8px 20px',
-    background: '#1677ff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 4,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  filters: {
-    display: 'flex',
-    gap: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  filterSelect: {
-    padding: '6px 12px',
-    border: '1px solid #d9d9d9',
-    borderRadius: 4,
-    fontSize: 13,
-    background: '#fff',
-  },
-  count: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 'auto',
-  },
-  loading: {
-    textAlign: 'center',
-    padding: 40,
-    color: '#999',
-  },
-  empty: {
-    textAlign: 'center',
-    padding: 40,
-    color: '#999',
-    fontSize: 14,
-  },
-  emptyLink: {
-    background: 'none',
-    border: 'none',
-    color: '#1677ff',
-    cursor: 'pointer',
-    fontSize: 14,
-    textDecoration: 'underline',
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
-  pagination: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    marginTop: 24,
-  },
-  pageBtn: {
-    padding: '6px 16px',
-    border: '1px solid #d9d9d9',
-    borderRadius: 4,
-    background: '#fff',
-    cursor: 'pointer',
-    fontSize: 13,
-  },
-  pageInfo: {
-    fontSize: 13,
-    color: '#666',
-  },
-};
