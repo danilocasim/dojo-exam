@@ -1,0 +1,238 @@
+openapi: 3.0.3
+info:
+  title: CloudPrep Mobile - Question Bank API
+  description: |
+    Minimal API for delivering question bank updates to the CloudPrep Mobile app.
+    This API is read-only and serves content only; no user data is transmitted.
+  version: 1.0.0
+  contact:
+    name: CloudPrep Team
+
+servers:
+  - url: https://api.cloudprep.app/v1
+    description: Production
+  - url: http://localhost:3000/v1
+    description: Development
+
+paths:
+  /questions:
+    get:
+      operationId: getQuestions
+      summary: Get question bank updates
+      description: |
+        Returns questions updated since the specified version.
+        If no version is provided, returns the full question bank.
+        Questions are returned in version order (oldest first).
+      parameters:
+        - name: since
+          in: query
+          description: Return questions with version greater than this value
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            example: 42
+        - name: limit
+          in: query
+          description: Maximum number of questions to return (default 100, max 500)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        '200':
+          description: Question bank data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionBankResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /questions/version:
+    get:
+      operationId: getLatestVersion
+      summary: Get latest question bank version
+      description: |
+        Returns the current latest version number.
+        Use this to check if updates are available before fetching questions.
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: API health check
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  schemas:
+    Question:
+      type: object
+      required:
+        - id
+        - text
+        - type
+        - domain
+        - difficulty
+        - options
+        - correctAnswers
+        - explanation
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique question identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        text:
+          type: string
+          minLength: 20
+          description: Question text (may include markdown)
+          example: "Which AWS service provides a virtual private cloud environment?"
+        type:
+          type: string
+          enum: [single-choice, multiple-choice, true-false]
+          description: Question type
+          example: "single-choice"
+        domain:
+          type: string
+          enum: [cloud-concepts, security, technology, billing]
+          description: AWS Cloud Practitioner exam domain
+          example: "technology"
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          description: Question difficulty level
+          example: "medium"
+        options:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Option'
+          description: Answer options
+        correctAnswers:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: IDs of correct option(s)
+          example: ["a"]
+        explanation:
+          type: string
+          minLength: 50
+          description: Explanation of the correct answer
+          example: "Amazon VPC (Virtual Private Cloud) allows you to provision a logically isolated section of the AWS Cloud..."
+        version:
+          type: integer
+          minimum: 1
+          description: Question version for sync tracking
+          example: 43
+        createdAt:
+          type: string
+          format: date-time
+          description: When question was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When question was last updated
+
+    Option:
+      type: object
+      required:
+        - id
+        - text
+      properties:
+        id:
+          type: string
+          description: Option identifier (a, b, c, d, etc.)
+          example: "a"
+        text:
+          type: string
+          description: Option text
+          example: "Amazon VPC"
+
+    QuestionBankResponse:
+      type: object
+      required:
+        - questions
+        - latestVersion
+        - hasMore
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+          description: List of questions
+        latestVersion:
+          type: integer
+          description: Latest version number in the full question bank
+          example: 156
+        hasMore:
+          type: boolean
+          description: Whether more questions are available (pagination)
+          example: false
+        nextSince:
+          type: integer
+          description: Value to use for 'since' parameter to get next page (only present if hasMore is true)
+          example: 142
+
+    VersionResponse:
+      type: object
+      required:
+        - latestVersion
+        - questionCount
+      properties:
+        latestVersion:
+          type: integer
+          description: Latest version number
+          example: 156
+        questionCount:
+          type: integer
+          description: Total number of approved questions
+          example: 243
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          description: When question bank was last updated
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "INVALID_PARAMETER"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Parameter 'since' must be a non-negative integer"
