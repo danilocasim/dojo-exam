@@ -227,7 +227,9 @@ export const HomeScreen: React.FC = () => {
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.successLight }]}>{EXAM_CONFIG.PASSING_SCORE}%</Text>
+                <Text style={[styles.statValue, { color: colors.successLight }]}>
+                  {EXAM_CONFIG.PASSING_SCORE}%
+                </Text>
                 <Text style={styles.statLabel}>To Pass</Text>
               </View>
             </View>
@@ -298,7 +300,10 @@ export const HomeScreen: React.FC = () => {
                 ) : (
                   <View style={styles.startButtonContent}>
                     <Text style={styles.startButtonTitle}>Start Exam</Text>
-                    <Text style={styles.startButtonSubtitle}>{EXAM_CONFIG.QUESTIONS_PER_EXAM} questions • {EXAM_CONFIG.TIME_LIMIT_MINUTES} minutes</Text>
+                    <Text style={styles.startButtonSubtitle}>
+                      {EXAM_CONFIG.QUESTIONS_PER_EXAM} questions • {EXAM_CONFIG.TIME_LIMIT_MINUTES}{' '}
+                      minutes
+                    </Text>
                   </View>
                 )}
               </LinearGradient>
@@ -315,7 +320,8 @@ export const HomeScreen: React.FC = () => {
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.warningText}>
-                  Need at least {EXAM_CONFIG.QUESTIONS_PER_EXAM} questions to start. Current: {questionCount}
+                  Need at least {EXAM_CONFIG.QUESTIONS_PER_EXAM} questions to start. Current:{' '}
+                  {questionCount}
                 </Text>
               </View>
             </View>

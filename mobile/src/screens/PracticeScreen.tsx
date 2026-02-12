@@ -17,9 +17,9 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 import {
   usePracticeStore,
   selectCurrentPracticeQuestion,
-  selectPracticeProgress,
   selectIsCurrentQuestionAnswered,
 } from '../stores/practice.store';
+import { useShallow } from 'zustand/react/shallow';
 import { QuestionCard } from '../components/QuestionCard';
 import { FeedbackCard } from '../components/FeedbackCard';
 
@@ -56,7 +56,12 @@ export const PracticeScreen: React.FC = () => {
 
   // Derived state
   const currentQuestion = usePracticeStore(selectCurrentPracticeQuestion);
-  const progress = usePracticeStore(selectPracticeProgress);
+  const progress = usePracticeStore(
+    useShallow((state) => ({
+      answered: state.answers.length,
+      correct: state.answers.filter((a) => a.isCorrect).length,
+    })),
+  );
   const isAnswered = usePracticeStore(selectIsCurrentQuestionAnswered);
 
   // Actions

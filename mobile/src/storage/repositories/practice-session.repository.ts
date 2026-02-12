@@ -112,10 +112,7 @@ export const completePracticeSession = async (id: string): Promise<void> => {
 /**
  * Increment session counters after answering a question
  */
-export const incrementSessionCounters = async (
-  id: string,
-  isCorrect: boolean,
-): Promise<void> => {
+export const incrementSessionCounters = async (id: string, isCorrect: boolean): Promise<void> => {
   const db = await getDatabase();
   if (isCorrect) {
     await db.runAsync(
@@ -149,9 +146,7 @@ export const deleteAllPracticeSessions = async (): Promise<void> => {
 /**
  * Get practice sessions by domain
  */
-export const getPracticeSessionsByDomain = async (
-  domain: DomainId,
-): Promise<PracticeSession[]> => {
+export const getPracticeSessionsByDomain = async (domain: DomainId): Promise<PracticeSession[]> => {
   const db = await getDatabase();
   const rows = await db.getAllAsync<PracticeSessionRow>(
     'SELECT * FROM PracticeSession WHERE domain = ? ORDER BY startedAt DESC',
