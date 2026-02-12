@@ -56,9 +56,10 @@ npx tailwindcss init
 ```
 
 Edit `tailwind.config.js`:
+
 ```javascript
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: { extend: {} },
   plugins: [],
 };
@@ -217,9 +218,9 @@ export interface ExamAnswer {
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   'cloud-concepts': 'Cloud Concepts',
-  'security': 'Security and Compliance',
-  'technology': 'Technology',
-  'billing': 'Billing and Pricing',
+  security: 'Security and Compliance',
+  technology: 'Technology',
+  billing: 'Billing and Pricing',
 };
 
 export const EXAM_CONFIG = {
@@ -229,9 +230,9 @@ export const EXAM_CONFIG = {
   expiryHours: 24,
   domainQuotas: {
     'cloud-concepts': 16,
-    'security': 20,
-    'technology': 22,
-    'billing': 7,
+    security: 20,
+    technology: 22,
+    billing: 7,
   },
 } as const;
 ```
@@ -271,11 +272,13 @@ npm run test:e2e
 ## Environment Configuration
 
 Create `app/.env`:
+
 ```
 API_URL=http://localhost:3000/v1
 ```
 
 Create `app/.env.production`:
+
 ```
 API_URL=https://api.cloudprep.app/v1
 ```

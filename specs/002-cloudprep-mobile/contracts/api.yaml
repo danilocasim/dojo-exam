@@ -110,27 +110,27 @@ components:
           type: string
           format: uuid
           description: Unique question identifier
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          example: '550e8400-e29b-41d4-a716-446655440000'
         text:
           type: string
           minLength: 20
           description: Question text (may include markdown)
-          example: "Which AWS service provides a virtual private cloud environment?"
+          example: 'Which AWS service provides a virtual private cloud environment?'
         type:
           type: string
           enum: [single-choice, multiple-choice, true-false]
           description: Question type
-          example: "single-choice"
+          example: 'single-choice'
         domain:
           type: string
           enum: [cloud-concepts, security, technology, billing]
           description: AWS Cloud Practitioner exam domain
-          example: "technology"
+          example: 'technology'
         difficulty:
           type: string
           enum: [easy, medium, hard]
           description: Question difficulty level
-          example: "medium"
+          example: 'medium'
         options:
           type: array
           minItems: 2
@@ -143,12 +143,12 @@ components:
           items:
             type: string
           description: IDs of correct option(s)
-          example: ["a"]
+          example: ['a']
         explanation:
           type: string
           minLength: 50
           description: Explanation of the correct answer
-          example: "Amazon VPC (Virtual Private Cloud) allows you to provision a logically isolated section of the AWS Cloud..."
+          example: 'Amazon VPC (Virtual Private Cloud) allows you to provision a logically isolated section of the AWS Cloud...'
         version:
           type: integer
           minimum: 1
@@ -172,11 +172,11 @@ components:
         id:
           type: string
           description: Option identifier (a, b, c, d, etc.)
-          example: "a"
+          example: 'a'
         text:
           type: string
           description: Option text
-          example: "Amazon VPC"
+          example: 'Amazon VPC'
 
     QuestionBankResponse:
       type: object
@@ -231,7 +231,7 @@ components:
         error:
           type: string
           description: Error code
-          example: "INVALID_PARAMETER"
+          example: 'INVALID_PARAMETER'
         message:
           type: string
           description: Human-readable error message

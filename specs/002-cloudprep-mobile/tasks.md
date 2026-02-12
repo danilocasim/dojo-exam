@@ -12,6 +12,7 @@
 ## Path Conventions
 
 Based on plan.md structure:
+
 - **Mobile app**: `app/src/`
 - **API**: `api/src/`
 - **Contracts**: `contracts/`
@@ -240,21 +241,27 @@ Phase 3 (US1)  Phase 4 (US2)  Phase 7 (US5)    [parallel]   │
 ## Parallel Execution Opportunities
 
 ### Within Phase 2 (Foundation)
+
 - T014, T015 can run in parallel (utilities with no dependencies)
 
 ### Within Phase 3 (US1)
+
 - T027, T028, T029, T030, T031, T032 can all run in parallel (UI components)
 
 ### Within Phase 4 (US2)
+
 - T044, T045, T046, T047 can run in parallel (UI components)
 
 ### Within Phase 5 (US3)
+
 - T056, T057, T058, T059 can run in parallel (UI components)
 
 ### Within Phase 6 (US4)
+
 - T069, T070, T071, T072, T073 can run in parallel (UI components)
 
 ### Cross-Phase Parallelism
+
 - Phase 3 (US1) and Phase 4 (US2) can run in parallel after Phase 2
 - Phase 7 (US5 API) can start after Phase 2, independent of other user stories
 
@@ -263,9 +270,11 @@ Phase 3 (US1)  Phase 4 (US2)  Phase 7 (US5)    [parallel]   │
 ## Implementation Strategy
 
 ### MVP Scope (Minimum Viable Product)
+
 **Phases 1-4**: Setup + Foundation + US1 (Exam) + US2 (Practice)
 
 This delivers:
+
 - ✅ Full timed exam simulation (core value proposition)
 - ✅ Domain-based practice mode
 - ✅ Offline-first with bundled questions
@@ -274,9 +283,11 @@ This delivers:
 **Estimated Tasks**: 52 tasks (T001-T052)
 
 ### Full Release
+
 **All Phases**: MVP + US3 (Review) + US4 (Analytics) + US5 (Sync) + Polish
 
 Adds:
+
 - ✅ Exam review with explanations
 - ✅ Performance analytics dashboard
 - ✅ Cloud question bank sync
@@ -288,14 +299,14 @@ Adds:
 
 ## Summary
 
-| Phase | User Story | Tasks | Parallelizable |
-|-------|------------|-------|----------------|
-| 1 | Setup | 9 | 4 |
-| 2 | Foundation | 11 | 2 |
-| 3 | US1 - Exam Mode | 19 | 6 |
-| 4 | US2 - Practice Mode | 13 | 4 |
-| 5 | US3 - Review Mode | 11 | 4 |
-| 6 | US4 - Analytics | 13 | 5 |
-| 7 | US5 - Sync | 15 | 1 |
-| 8 | Polish | 9 | 0 |
-| **Total** | | **100** | **26** |
+| Phase     | User Story          | Tasks   | Parallelizable |
+| --------- | ------------------- | ------- | -------------- |
+| 1         | Setup               | 9       | 4              |
+| 2         | Foundation          | 11      | 2              |
+| 3         | US1 - Exam Mode     | 19      | 6              |
+| 4         | US2 - Practice Mode | 13      | 4              |
+| 5         | US3 - Review Mode   | 11      | 4              |
+| 6         | US4 - Analytics     | 13      | 5              |
+| 7         | US5 - Sync          | 15      | 1              |
+| 8         | Polish              | 9       | 0              |
+| **Total** |                     | **100** | **26**         |

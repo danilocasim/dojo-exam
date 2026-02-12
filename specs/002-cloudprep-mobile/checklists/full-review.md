@@ -101,17 +101,17 @@
 
 ## Summary
 
-| Category | Items | Coverage Focus |
-|----------|-------|----------------|
-| Requirement Completeness | CHK001-CHK008 | Missing requirements |
-| Requirement Clarity | CHK009-CHK015 | Vague or unquantified terms |
-| Requirement Consistency | CHK016-CHK019 | Alignment conflicts |
-| Acceptance Criteria Quality | CHK020-CHK023 | Measurability |
-| Scenario Coverage | CHK024-CHK029 | Missing flows |
-| Edge Case Coverage | CHK030-CHK034 | Boundary conditions |
-| Non-Functional Requirements | CHK035-CHK039 | NFR gaps |
-| Dependencies & Assumptions | CHK040-CHK043 | External risks |
-| Ambiguities & Conflicts | CHK044-CHK047 | Unclear specifications |
+| Category                    | Items         | Coverage Focus              |
+| --------------------------- | ------------- | --------------------------- |
+| Requirement Completeness    | CHK001-CHK008 | Missing requirements        |
+| Requirement Clarity         | CHK009-CHK015 | Vague or unquantified terms |
+| Requirement Consistency     | CHK016-CHK019 | Alignment conflicts         |
+| Acceptance Criteria Quality | CHK020-CHK023 | Measurability               |
+| Scenario Coverage           | CHK024-CHK029 | Missing flows               |
+| Edge Case Coverage          | CHK030-CHK034 | Boundary conditions         |
+| Non-Functional Requirements | CHK035-CHK039 | NFR gaps                    |
+| Dependencies & Assumptions  | CHK040-CHK043 | External risks              |
+| Ambiguities & Conflicts     | CHK044-CHK047 | Unclear specifications      |
 
 **Total Items**: 47  
 **Traceability**: 85% of items reference spec section or gap marker

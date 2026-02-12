@@ -9,7 +9,7 @@
 
 CloudPrep Mobile is a paid mobile application designed to help users prepare for the AWS Cloud Practitioner certification exam. The app provides realistic exam simulations, targeted practice sessions, comprehensive review capabilities, and performance analytics—all optimized for mobile learning.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Take Timed Exam Simulation (Priority: P1)
 
@@ -100,20 +100,17 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 
 - What happens when a user answers a question but loses network connectivity during exam mode?
   - Answer: Exams run fully offline; answers are stored locally and synced when connectivity resumes.
-  
 - How does the system handle a user attempting to resume an exam after 24 hours?
   - Answer: The exam attempt is marked as abandoned and scored based on answers submitted; user can start a new exam.
-  
 - What happens if a user completes an exam but there is a sync failure?
   - Answer: Results are stored locally and displayed immediately; background sync retries automatically.
-  
 - How does the system handle questions with multiple correct answers when user selects partial answers?
   - Answer: For multiple-choice questions, all correct options must be selected for full credit; partial credit is not awarded.
 
 - What happens when the question bank has fewer than 65 approved questions?
   - Answer: The app notifies admin; exams cannot be generated until minimum question threshold is met per domain.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -184,7 +181,7 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 - **Domain**: One of four AWS Cloud Practitioner exam domains used for categorization and analytics.
 - **Analytics Record**: Aggregated performance data per user including scores over time, domain breakdowns, and study statistics; stored locally.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
