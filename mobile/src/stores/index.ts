@@ -13,3 +13,14 @@ export {
   useHasInProgressExam,
 } from './exam.store';
 export type { ExamState, ExamActions, ExamStore } from './exam.store';
+
+// Practice store (T052)
+export {
+  usePracticeStore,
+  selectCurrentPracticeQuestion,
+  selectPracticeProgress,
+  selectIsCurrentQuestionAnswered,
+  selectHasNextPracticeQuestion,
+  selectHasPreviousPracticeQuestion,
+} from './practice.store';
+export type { PracticeState, PracticeActions, PracticeStore } from './practice.store';

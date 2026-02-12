@@ -63,3 +63,18 @@ export {
   getScoreColor,
 } from './scoring.service';
 export type { ScoreSummary, OverallStats } from './scoring.service';
+
+// Practice service exports (T051)
+export {
+  startPracticeSession,
+  submitPracticeAnswer,
+  endPracticeSession,
+  getPracticeSummary,
+  getAvailableQuestionCount,
+  deletePracticeSessionWithAnswers,
+} from './practice.service';
+export type {
+  PracticeSessionState,
+  PracticeAnswerResult,
+  PracticeSummary,
+} from './practice.service';

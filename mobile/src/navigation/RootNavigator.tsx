@@ -3,8 +3,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// Import actual screens (T041, T042, T046)
-import { HomeScreen, ExamScreen, ExamResultsScreen } from '../screens';
+// Import actual screens (T041, T042, T046, T053, T054, T058)
+import {
+  HomeScreen,
+  ExamScreen,
+  ExamResultsScreen,
+  PracticeSetupScreen,
+  PracticeScreen,
+  PracticeSummaryScreen,
+} from '../screens';
 
 // Color constants matching the app theme
 const colors = {
@@ -87,10 +94,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// Placeholder screens (remaining to be implemented in future tasks)
-const PracticeSetupScreen = () => <PlaceholderScreen name="Practice Setup" />;
-const PracticeScreen = () => <PlaceholderScreen name="Practice" />;
-const PracticeSummaryScreen = () => <PlaceholderScreen name="Practice Summary" />;
+// Practice screens now imported from ../screens (T053, T054, T058)
 const ExamHistoryScreen = () => <PlaceholderScreen name="Exam History" />;
 const ReviewScreen = () => <PlaceholderScreen name="Review" />;
 const SettingsScreen = () => <PlaceholderScreen name="Settings" />;
@@ -144,7 +148,7 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="PracticeSetup"
           component={PracticeSetupScreen}
-          options={{ title: 'Practice Mode' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="PracticeScreen"
@@ -158,7 +162,10 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="PracticeSummary"
           component={PracticeSummaryScreen}
-          options={{ title: 'Session Summary' }}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
         />
 
         {/* Review Flow */}

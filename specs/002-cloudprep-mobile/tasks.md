@@ -116,16 +116,16 @@
 
 ### Mobile Tasks (US2)
 
-- [ ] T049 [P] [US2] Create PracticeSessionRepository in mobile/src/storage/repositories/practice-session.repository.ts
-- [ ] T050 [P] [US2] Create PracticeAnswerRepository in mobile/src/storage/repositories/practice-answer.repository.ts
-- [ ] T051 [US2] Implement PracticeService (start session, submit answer, end session) in mobile/src/services/practice.service.ts
-- [ ] T052 [US2] Create practiceStore using Zustand in mobile/src/stores/practice.store.ts
-- [ ] T053 [US2] Create PracticeSetupScreen (domain/difficulty selection) in mobile/src/screens/PracticeSetupScreen.tsx
-- [ ] T054 [US2] Create PracticeScreen with immediate feedback display in mobile/src/screens/PracticeScreen.tsx
-- [ ] T055 [P] [US2] Create FeedbackCard component (correct/incorrect, explanation) in mobile/src/components/FeedbackCard.tsx
-- [ ] T056 [P] [US2] Create DomainSelector component in mobile/src/components/DomainSelector.tsx
-- [ ] T057 [P] [US2] Create DifficultySelector component in mobile/src/components/DifficultySelector.tsx
-- [ ] T058 [US2] Create PracticeSummaryScreen (session results) in mobile/src/screens/PracticeSummaryScreen.tsx
+- [x] T049 [P] [US2] Create PracticeSessionRepository in mobile/src/storage/repositories/practice-session.repository.ts
+- [x] T050 [P] [US2] Create PracticeAnswerRepository in mobile/src/storage/repositories/practice-answer.repository.ts
+- [x] T051 [US2] Implement PracticeService (start session, submit answer, end session) in mobile/src/services/practice.service.ts
+- [x] T052 [US2] Create practiceStore using Zustand in mobile/src/stores/practice.store.ts
+- [x] T053 [US2] Create PracticeSetupScreen (domain/difficulty selection) in mobile/src/screens/PracticeSetupScreen.tsx
+- [x] T054 [US2] Create PracticeScreen with immediate feedback display in mobile/src/screens/PracticeScreen.tsx
+- [x] T055 [P] [US2] Create FeedbackCard component (correct/incorrect, explanation) in mobile/src/components/FeedbackCard.tsx
+- [x] T056 [P] [US2] Create DomainSelector component in mobile/src/components/DomainSelector.tsx
+- [x] T057 [P] [US2] Create DifficultySelector component in mobile/src/components/DifficultySelector.tsx
+- [x] T058 [US2] Create PracticeSummaryScreen (session results) in mobile/src/screens/PracticeSummaryScreen.tsx
 
 **Checkpoint**: User Story 2 complete - users can practice by domain with feedback
 
