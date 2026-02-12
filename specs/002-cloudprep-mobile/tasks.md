@@ -201,16 +201,16 @@
 
 ### Admin Portal Tasks (US5)
 
-- [ ] T091 [US5] Initialize React SPA in api/admin-portal/ with Vite
-- [ ] T092 [P] [US5] Create LoginPage component in api/admin-portal/src/pages/LoginPage.tsx
-- [ ] T093 [P] [US5] Create ApiService with JWT interceptor in api/admin-portal/src/services/api.ts
-- [ ] T094 [US5] Create QuestionListPage with filters and pagination in api/admin-portal/src/pages/QuestionListPage.tsx
-- [ ] T095 [P] [US5] Create QuestionForm component (create/edit) in api/admin-portal/src/components/QuestionForm.tsx
-- [ ] T096 [P] [US5] Create QuestionCard component with status badges in api/admin-portal/src/components/QuestionCard.tsx
-- [ ] T097 [US5] Create QuestionDetailPage with approve/archive actions in api/admin-portal/src/pages/QuestionDetailPage.tsx
-- [ ] T098 [P] [US5] Create ExamTypeSwitcher component in api/admin-portal/src/components/ExamTypeSwitcher.tsx
-- [ ] T099 [US5] Create DashboardPage with stats overview in api/admin-portal/src/pages/DashboardPage.tsx
-- [ ] T100 [US5] Configure NestJS to serve admin portal static files in api/src/main.ts
+- [x] T091 [US5] Initialize React SPA in api/admin-portal/ with Vite
+- [x] T092 [P] [US5] Create LoginPage component in api/admin-portal/src/pages/LoginPage.tsx
+- [x] T093 [P] [US5] Create ApiService with JWT interceptor in api/admin-portal/src/services/api.ts
+- [x] T094 [US5] Create QuestionListPage with filters and pagination in api/admin-portal/src/pages/QuestionListPage.tsx
+- [x] T095 [P] [US5] Create QuestionForm component (create/edit) in api/admin-portal/src/components/QuestionForm.tsx
+- [x] T096 [P] [US5] Create QuestionCard component with status badges in api/admin-portal/src/components/QuestionCard.tsx
+- [x] T097 [US5] Create QuestionDetailPage with approve/archive actions in api/admin-portal/src/pages/QuestionDetailPage.tsx
+- [x] T098 [P] [US5] Create ExamTypeSwitcher component in api/admin-portal/src/components/ExamTypeSwitcher.tsx
+- [x] T099 [US5] Create DashboardPage with stats overview in api/admin-portal/src/pages/DashboardPage.tsx
+- [x] T100 [US5] Configure NestJS to serve admin portal static files in api/src/app.module.ts
 
 **Checkpoint**: User Story 5 complete - admins can manage questions via portal
 

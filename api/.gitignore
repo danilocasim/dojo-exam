@@ -11,6 +11,8 @@ node_modules/
 
 # Build
 dist/
+admin-portal/dist/
+admin-portal/node_modules/
 
 # Test coverage
 coverage/
