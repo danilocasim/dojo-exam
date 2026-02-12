@@ -58,17 +58,17 @@
 
 ### Mobile Foundation
 
-- [ ] T020 Setup SQLite database initialization in mobile/src/storage/database.ts
-- [ ] T021 [P] Create mobile app config with EXAM_TYPE_ID in mobile/src/config/app.config.ts
-- [ ] T022 Create SQLite schema for Question table in mobile/src/storage/schema.ts
-- [ ] T023 [P] Create SQLite schema for ExamAttempt and ExamAnswer tables in mobile/src/storage/schema.ts
-- [ ] T024 [P] Create SQLite schema for PracticeSession and PracticeAnswer tables in mobile/src/storage/schema.ts
-- [ ] T025 [P] Create SQLite schema for SyncMeta and UserStats tables in mobile/src/storage/schema.ts
-- [ ] T026 Setup React Navigation with NavigationContainer in mobile/src/navigation/
-- [ ] T027 Configure NativeWind/Tailwind in mobile/tailwind.config.js
-- [ ] T028 [P] Create Axios API client with base URL config in mobile/src/services/api.ts
-- [ ] T029 Implement SyncService for fetching exam type config and questions in mobile/src/services/sync.service.ts
-- [ ] T030 Create initial question bank bundle for offline-first in mobile/assets/questions/
+- [x] T020 Setup SQLite database initialization in mobile/src/storage/database.ts
+- [x] T021 [P] Create mobile app config with EXAM_TYPE_ID in mobile/src/config/app.config.ts
+- [x] T022 Create SQLite schema for Question table in mobile/src/storage/schema.ts
+- [x] T023 [P] Create SQLite schema for ExamAttempt and ExamAnswer tables in mobile/src/storage/schema.ts
+- [x] T024 [P] Create SQLite schema for PracticeSession and PracticeAnswer tables in mobile/src/storage/schema.ts
+- [x] T025 [P] Create SQLite schema for SyncMeta and UserStats tables in mobile/src/storage/schema.ts
+- [x] T026 Setup React Navigation with NavigationContainer in mobile/src/navigation/
+- [x] T027 Configure NativeWind/Tailwind in mobile/tailwind.config.js
+- [x] T028 [P] Create Axios API client with base URL config in mobile/src/services/api.ts
+- [x] T029 Implement SyncService for fetching exam type config and questions in mobile/src/services/sync.service.ts
+- [x] T030 Create initial question bank bundle for offline-first in mobile/assets/questions/
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -82,27 +82,27 @@
 
 ### Backend Tasks (US1)
 
-- [ ] T031 [P] [US1] Implement GET /exam-types/{examTypeId}/questions endpoint in api/src/exam-types/exam-types.controller.ts
-- [ ] T032 [P] [US1] Implement GET /exam-types/{examTypeId}/questions/version endpoint in api/src/exam-types/exam-types.controller.ts
-- [ ] T033 [US1] Create QuestionBankResponse and VersionResponse DTOs in api/src/exam-types/dto/
+- [x] T031 [P] [US1] Implement GET /exam-types/{examTypeId}/questions endpoint in api/src/exam-types/exam-types.controller.ts
+- [x] T032 [P] [US1] Implement GET /exam-types/{examTypeId}/questions/version endpoint in api/src/exam-types/exam-types.controller.ts
+- [x] T033 [US1] Create QuestionBankResponse and VersionResponse DTOs in api/src/exam-types/dto/
 
 ### Mobile Tasks (US1)
 
-- [ ] T034 [US1] Create QuestionRepository for SQLite CRUD in mobile/src/storage/repositories/question.repository.ts
-- [ ] T035 [P] [US1] Create ExamAttemptRepository for SQLite CRUD in mobile/src/storage/repositories/exam-attempt.repository.ts
-- [ ] T036 [P] [US1] Create ExamAnswerRepository for SQLite CRUD in mobile/src/storage/repositories/exam-answer.repository.ts
-- [ ] T037 [US1] Implement ExamGeneratorService (weighted random selection by domain) in mobile/src/services/exam-generator.service.ts
-- [ ] T038 [US1] Implement ExamSessionService (start, save answer, navigate, submit) in mobile/src/services/exam-session.service.ts
-- [ ] T039 [US1] Implement ScoringService (calculate score, pass/fail, domain breakdown) in mobile/src/services/scoring.service.ts
-- [ ] T040 [US1] Create examStore using Zustand for exam state management in mobile/src/stores/exam.store.ts
-- [ ] T041 [US1] Create HomeScreen with "Start Exam" button in mobile/src/screens/HomeScreen.tsx
-- [ ] T042 [US1] Create ExamScreen with question display, options, navigation in mobile/src/screens/ExamScreen.tsx
-- [ ] T043 [P] [US1] Create QuestionCard component with option selection in mobile/src/components/QuestionCard.tsx
-- [ ] T044 [P] [US1] Create Timer component with countdown display in mobile/src/components/Timer.tsx
-- [ ] T045 [P] [US1] Create QuestionNavigator component (flag, jump to question) in mobile/src/components/QuestionNavigator.tsx
-- [ ] T046 [US1] Create ExamResultsScreen with score and domain breakdown in mobile/src/screens/ExamResultsScreen.tsx
-- [ ] T047 [US1] Implement exam resumption logic (check for in-progress exam on app launch) in mobile/src/services/exam-session.service.ts
-- [ ] T048 [US1] Handle exam expiration (24h limit) and mark as abandoned in mobile/src/services/exam-session.service.ts
+- [x] T034 [US1] Create QuestionRepository for SQLite CRUD in mobile/src/storage/repositories/question.repository.ts
+- [x] T035 [P] [US1] Create ExamAttemptRepository for SQLite CRUD in mobile/src/storage/repositories/exam-attempt.repository.ts
+- [x] T036 [P] [US1] Create ExamAnswerRepository for SQLite CRUD in mobile/src/storage/repositories/exam-answer.repository.ts
+- [x] T037 [US1] Implement ExamGeneratorService (weighted random selection by domain) in mobile/src/services/exam-generator.service.ts
+- [x] T038 [US1] Implement ExamSessionService (start, save answer, navigate, submit) in mobile/src/services/exam-session.service.ts
+- [x] T039 [US1] Implement ScoringService (calculate score, pass/fail, domain breakdown) in mobile/src/services/scoring.service.ts
+- [x] T040 [US1] Create examStore using Zustand for exam state management in mobile/src/stores/exam.store.ts
+- [x] T041 [US1] Create HomeScreen with "Start Exam" button in mobile/src/screens/HomeScreen.tsx
+- [x] T042 [US1] Create ExamScreen with question display, options, navigation in mobile/src/screens/ExamScreen.tsx
+- [x] T043 [P] [US1] Create QuestionCard component with option selection in mobile/src/components/QuestionCard.tsx
+- [x] T044 [P] [US1] Create Timer component with countdown display in mobile/src/components/Timer.tsx
+- [x] T045 [P] [US1] Create QuestionNavigator component (flag, jump to question) in mobile/src/components/QuestionNavigator.tsx
+- [x] T046 [US1] Create ExamResultsScreen with score and domain breakdown in mobile/src/screens/ExamResultsScreen.tsx
+- [x] T047 [US1] Implement exam resumption logic (check for in-progress exam on app launch) in mobile/src/services/exam-session.service.ts
+- [x] T048 [US1] Handle exam expiration (24h limit) and mark as abandoned in mobile/src/services/exam-session.service.ts
 
 **Checkpoint**: User Story 1 complete - users can take full timed exams with scoring
 

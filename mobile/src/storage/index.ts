@@ -1,2 +1,4 @@
 // SQLite storage exports
-export {};
+export { getDatabase, initializeDatabase, closeDatabase, resetDatabase } from './database';
+
+export * from './schema';
