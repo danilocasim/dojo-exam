@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -7,6 +7,10 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma';
 import { ExamTypesModule } from './exam-types';
 import { AdminModule } from './admin';
+import {
+  RequestLoggerMiddleware,
+  RateLimitMiddleware,
+} from './common/middleware';
 
 @Module({
   imports: [
@@ -28,4 +32,9 @@ import { AdminModule } from './admin';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+    consumer.apply(RateLimitMiddleware).forRoutes('*');
+  }
+}

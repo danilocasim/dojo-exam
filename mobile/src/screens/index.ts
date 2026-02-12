@@ -14,3 +14,6 @@ export { ReviewScreen } from './ReviewScreen';
 
 // Analytics screen (T069)
 export { AnalyticsScreen } from './AnalyticsScreen';
+
+// Settings screen (T107)
+export { SettingsScreen } from './SettingsScreen';

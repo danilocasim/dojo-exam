@@ -91,3 +91,15 @@ export {
   getWeakDomains,
 } from './analytics.service';
 export type { AnalyticsData, ScoreHistoryEntry, StudyStats, WeakDomain } from './analytics.service';
+
+// Network connectivity service (T106)
+export {
+  checkConnectivity,
+  getNetworkStatus,
+  refreshNetworkStatus,
+  onNetworkStatusChange,
+  startNetworkMonitoring,
+  stopNetworkMonitoring,
+  isOnline,
+} from './network.service';
+export type { NetworkStatus } from './network.service';

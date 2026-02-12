@@ -220,17 +220,17 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T101 [P] Implement health check endpoint GET /health in api/src/app.controller.ts
-- [ ] T102 [P] Add API request logging middleware in api/src/common/middleware/
-- [ ] T103 [P] Add mobile app error boundary component in mobile/src/components/ErrorBoundary.tsx
-- [ ] T104 [P] Create loading states and skeleton screens for mobile UI
-- [ ] T105 Implement background sync retry logic in mobile/src/services/sync.service.ts
-- [ ] T106 [P] Add network connectivity detection in mobile/src/services/network.service.ts
-- [ ] T107 Create SettingsScreen with sync status in mobile/src/screens/SettingsScreen.tsx
-- [ ] T108 [P] Add API rate limiting middleware in api/src/common/middleware/
-- [ ] T109 [P] Add Prisma query logging in development mode
-- [ ] T110 Run quickstart.md validation - verify full setup works end-to-end
-- [ ] T111 [P] Security review: verify no user data transmitted to servers (FR-030 compliance) in mobile/src/services/
+- [x] T101 [P] Implement health check endpoint GET /health in api/src/app.controller.ts
+- [x] T102 [P] Add API request logging middleware in api/src/common/middleware/
+- [x] T103 [P] Add mobile app error boundary component in mobile/src/components/ErrorBoundary.tsx
+- [x] T104 [P] Create loading states and skeleton screens for mobile UI
+- [x] T105 Implement background sync retry logic in mobile/src/services/sync.service.ts
+- [x] T106 [P] Add network connectivity detection in mobile/src/services/network.service.ts
+- [x] T107 Create SettingsScreen with sync status in mobile/src/screens/SettingsScreen.tsx
+- [x] T108 [P] Add API rate limiting middleware in api/src/common/middleware/
+- [x] T109 [P] Add Prisma query logging in development mode
+- [x] T110 Run quickstart.md validation - verify full setup works end-to-end
+- [x] T111 [P] Security review: verify no user data transmitted to servers (FR-030 compliance) in mobile/src/services/
 
 ---
 

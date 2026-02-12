@@ -7,6 +7,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { initializeDatabase } from './src/storage/database';
 import { performFullSync } from './src/services/sync.service';
 import { getTotalQuestionCount } from './src/storage/repositories/question.repository';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -123,9 +124,11 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <RootNavigator />
-      <StatusBar style="light" />
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <RootNavigator />
+        <StatusBar style="light" />
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

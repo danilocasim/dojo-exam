@@ -102,7 +102,8 @@ const styles = StyleSheet.create({
 import { ExamHistoryScreen } from '../screens/ExamHistoryScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
 
-const SettingsScreen = () => <PlaceholderScreen name="Settings" />;
+// Settings screen (T107)
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 /**
  * Root navigation component
@@ -193,7 +194,7 @@ export const RootNavigator: React.FC = () => {
         />
 
         {/* Settings */}
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

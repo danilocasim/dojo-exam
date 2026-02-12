@@ -18,3 +18,15 @@ export { ReviewFilter } from './ReviewFilter';
 export { ScoreTrendChart } from './analytics/ScoreTrendChart';
 export { DomainPerformanceCard } from './analytics/DomainPerformanceCard';
 export { StudyStatsCard } from './analytics/StudyStatsCard';
+
+// Error handling (T103)
+export { ErrorBoundary } from './ErrorBoundary';
+
+// Loading states (T104)
+export {
+  Skeleton,
+  QuestionCardSkeleton,
+  HistoryItemSkeleton,
+  StatsCardSkeleton,
+  ListPageSkeleton,
+} from './Skeleton';

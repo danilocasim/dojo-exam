@@ -11,6 +11,19 @@ import {
 import { get, isApiError } from './api';
 
 // =============================================================================
+// Retry Configuration
+// =============================================================================
+
+const RETRY_CONFIG = {
+  /** Maximum number of retry attempts */
+  MAX_RETRIES: 3,
+  /** Base delay in ms (exponential backoff: delay * 2^attempt) */
+  BASE_DELAY_MS: 1000,
+  /** Maximum delay between retries */
+  MAX_DELAY_MS: 30000,
+} as const;
+
+// =============================================================================
 // API Response Types (from contracts/api.yaml)
 // =============================================================================
 
@@ -78,7 +91,53 @@ export interface SyncResult {
   questionsUpdated: number;
   latestVersion: number;
   error?: string;
+  retriesUsed?: number;
 }
+
+/**
+ * Wait for a specified duration
+ */
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Execute an async function with exponential backoff retry
+ */
+const withRetry = async <T>(
+  fn: () => Promise<T>,
+  label: string,
+  maxRetries: number = RETRY_CONFIG.MAX_RETRIES,
+): Promise<{ result: T; retriesUsed: number }> => {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      return { result, retriesUsed: attempt };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on 4xx client errors (except 408, 429)
+      if (isApiError(error)) {
+        const status = error.response?.status;
+        if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+          throw lastError;
+        }
+      }
+
+      if (attempt < maxRetries) {
+        const backoff = Math.min(
+          RETRY_CONFIG.BASE_DELAY_MS * Math.pow(2, attempt),
+          RETRY_CONFIG.MAX_DELAY_MS,
+        );
+        console.warn(`[SyncService] ${label} attempt ${attempt + 1} failed, retrying in ${backoff}ms...`);
+        await delay(backoff);
+      }
+    }
+  }
+
+  throw lastError || new Error(`${label} failed after ${maxRetries} retries`);
+};
 
 /**
  * Map API question type to local SQLite enum
@@ -279,7 +338,7 @@ const upsertQuestions = async (
 
 /**
  * Sync questions from API to local database
- * Fetches all questions since the last sync version
+ * Fetches all questions since the last sync version with retry support
  */
 export const syncQuestions = async (examTypeId: string = EXAM_TYPE_ID): Promise<SyncResult> => {
   console.warn(`[SyncService] syncQuestions called for examType: ${examTypeId}`);
@@ -291,11 +350,17 @@ export const syncQuestions = async (examTypeId: string = EXAM_TYPE_ID): Promise<
     let latestVersion = lastVersion;
     let hasMore = true;
     let sinceVersion: number | undefined = lastVersion > 0 ? lastVersion : undefined;
+    let totalRetries = 0;
 
-    // Fetch all pages of questions
+    // Fetch all pages of questions with retry
     while (hasMore) {
       console.warn(`[SyncService] Fetching questions since version ${sinceVersion}`);
-      const response = await fetchQuestions(examTypeId, sinceVersion);
+      const currentSince = sinceVersion;
+      const { result: response, retriesUsed } = await withRetry(
+        () => fetchQuestions(examTypeId, currentSince),
+        `fetchQuestions(since=${currentSince})`,
+      );
+      totalRetries += retriesUsed;
       console.warn(
         `[SyncService] Fetched ${response.questions.length} questions, hasMore=${response.hasMore}`,
       );
@@ -316,13 +381,14 @@ export const syncQuestions = async (examTypeId: string = EXAM_TYPE_ID): Promise<
     await saveSyncMeta(SYNC_META_KEYS.LAST_SYNC_AT, new Date().toISOString());
 
     console.warn(
-      `[SyncService] Sync complete: added=${totalAdded}, updated=${totalUpdated}, latestVersion=${latestVersion}`,
+      `[SyncService] Sync complete: added=${totalAdded}, updated=${totalUpdated}, latestVersion=${latestVersion}, retries=${totalRetries}`,
     );
     return {
       success: true,
       questionsAdded: totalAdded,
       questionsUpdated: totalUpdated,
       latestVersion,
+      retriesUsed: totalRetries,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error during sync';
@@ -357,7 +423,7 @@ export const isSyncNeeded = async (): Promise<boolean> => {
 };
 
 /**
- * Full sync: fetch exam type config + sync questions
+ * Full sync: fetch exam type config + sync questions (with retry)
  */
 export const performFullSync = async (examTypeId: string = EXAM_TYPE_ID): Promise<SyncResult> => {
   console.warn(`[SyncService] performFullSync called for examType: ${examTypeId}`);
@@ -366,13 +432,16 @@ export const performFullSync = async (examTypeId: string = EXAM_TYPE_ID): Promis
     console.warn('[SyncService] Resetting sync version to 0 for fresh sync...');
     await saveSyncMeta(SYNC_META_KEYS.LAST_SYNC_VERSION, '0');
 
-    // Fetch and save exam type config
+    // Fetch and save exam type config with retry
     console.warn('[SyncService] Fetching exam type config...');
-    const config = await fetchExamTypeConfig(examTypeId);
+    const { result: config } = await withRetry(
+      () => fetchExamTypeConfig(examTypeId),
+      'fetchExamTypeConfig',
+    );
     await saveExamTypeConfig(config);
     console.warn(`[SyncService] Config saved: ${config.questionCount} questions required`);
 
-    // Sync questions
+    // Sync questions (already has internal retry)
     return await syncQuestions(examTypeId);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error during full sync';
