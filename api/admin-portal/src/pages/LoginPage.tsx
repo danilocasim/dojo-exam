@@ -29,8 +29,8 @@ export function LoginPage() {
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.logoRow}>
-          <span style={{ fontSize: 32, color: colors.primary }}>
-            {'\u2601'}
+          <span style={{ fontSize: 28, fontWeight: 800, color: '#1A1A2E', background: colors.primary, width: 44, height: 44, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            D
           </span>
           <span style={styles.logoText}>Dojo Exam</span>
         </div>

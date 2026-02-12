@@ -62,7 +62,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <span
             style={{ fontSize: 17, fontWeight: 700, color: colors.heading }}
           >
-            <span style={{ color: colors.primary }}>{'\u2601'}</span> Dojo Exam
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#1A1A2E', background: colors.primary, width: 26, height: 26, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>D</span> Dojo Exam
           </span>
           <div style={{ width: 32 }} />
         </header>
@@ -82,8 +82,8 @@ export function Layout({ children }: { children: ReactNode }) {
               marginBottom: 20,
             }}
           >
-            <span style={{ fontSize: 24, color: colors.primary }}>
-              {'\u2601'}
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#1A1A2E', background: colors.primary, width: 32, height: 32, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              D
             </span>
             <span
               style={{
