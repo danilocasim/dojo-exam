@@ -19,7 +19,7 @@ export class PrismaService
   constructor() {
     const connectionString =
       process.env.DATABASE_URL ||
-      'postgresql://postgres:postgres@localhost:5432/cloudprep';
+      'postgresql://postgres:postgres@localhost:5432/dojoexam';
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
 

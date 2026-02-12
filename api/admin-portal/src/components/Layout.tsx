@@ -1,4 +1,10 @@
-import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  type ReactNode,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ExamTypeSwitcher } from './ExamTypeSwitcher';
@@ -6,9 +12,17 @@ import type { ExamType } from '../services/api';
 import { api } from '../services/api';
 import { colors, radius } from '../theme';
 
-interface ExamTypeContextType { selectedExamType: string; examTypes: ExamType[]; }
-const ExamTypeContext = createContext<ExamTypeContextType>({ selectedExamType: '', examTypes: [] });
-export function useSelectedExamType() { return useContext(ExamTypeContext); }
+interface ExamTypeContextType {
+  selectedExamType: string;
+  examTypes: ExamType[];
+}
+const ExamTypeContext = createContext<ExamTypeContextType>({
+  selectedExamType: '',
+  examTypes: [],
+});
+export function useSelectedExamType() {
+  return useContext(ExamTypeContext);
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const { admin, logout } = useAuth();
@@ -18,8 +32,13 @@ export function Layout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    api.getExamTypes()
-      .then((types) => { setExamTypes(types); if (types.length > 0 && !selectedExamType) setSelectedExamType(types[0].id); })
+    api
+      .getExamTypes()
+      .then((types) => {
+        setExamTypes(types);
+        if (types.length > 0 && !selectedExamType)
+          setSelectedExamType(types[0].id);
+      })
       .catch(() => {});
   }, [selectedExamType]);
 
@@ -34,43 +53,165 @@ export function Layout({ children }: { children: ReactNode }) {
       <InjectCSS />
       <div className="cp-layout">
         <header className="cp-mobile-bar">
-          <button className="cp-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            className="cp-hamburger"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
             {menuOpen ? '\u2715' : '\u2630'}
           </button>
-          <span style={{ fontSize: 17, fontWeight: 700, color: colors.heading }}>
-            <span style={{ color: colors.primary }}>{'\u2601'}</span> CloudPrep
+          <span
+            style={{ fontSize: 17, fontWeight: 700, color: colors.heading }}
+          >
+            <span style={{ color: colors.primary }}>{'\u2601'}</span> Dojo Exam
           </span>
           <div style={{ width: 32 }} />
         </header>
 
-        {menuOpen && <div className="cp-overlay" onClick={() => setMenuOpen(false)} />}
+        {menuOpen && (
+          <div className="cp-overlay" onClick={() => setMenuOpen(false)} />
+        )}
 
         <aside className={'cp-sidebar' + (menuOpen ? ' cp-sidebar-open' : '')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 24, borderBottom: `1px solid ${colors.borderLight}`, marginBottom: 20 }}>
-            <span style={{ fontSize: 24, color: colors.primary }}>{'\u2601'}</span>
-            <span style={{ fontSize: 20, fontWeight: 700, color: colors.heading, letterSpacing: '-0.5px' }}>CloudPrep</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              paddingBottom: 24,
+              borderBottom: `1px solid ${colors.borderLight}`,
+              marginBottom: 20,
+            }}
+          >
+            <span style={{ fontSize: 24, color: colors.primary }}>
+              {'\u2601'}
+            </span>
+            <span
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: colors.heading,
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Dojo Exam
+            </span>
           </div>
 
-          <ExamTypeSwitcher examTypes={examTypes} selected={selectedExamType} onChange={setSelectedExamType} />
+          <ExamTypeSwitcher
+            examTypes={examTypes}
+            selected={selectedExamType}
+            onChange={setSelectedExamType}
+          />
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, marginTop: 20 }}>
-            <SideLink to="/" active={isActive('/')} onClick={() => setMenuOpen(false)}>Dashboard</SideLink>
-            <SideLink to="/questions" active={isActive('/questions')} onClick={() => setMenuOpen(false)}>Questions</SideLink>
+          <nav
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              flex: 1,
+              marginTop: 20,
+            }}
+          >
+            <SideLink
+              to="/"
+              active={isActive('/')}
+              onClick={() => setMenuOpen(false)}
+            >
+              Dashboard
+            </SideLink>
+            <SideLink
+              to="/questions"
+              active={isActive('/questions')}
+              onClick={() => setMenuOpen(false)}
+            >
+              Questions
+            </SideLink>
           </nav>
 
-          <div style={{ textAlign: 'center', paddingBottom: 12, fontSize: 11, color: colors.subtle, letterSpacing: '0.3px' }}>
-            Powered by <span style={{ color: colors.primary, fontWeight: 600 }}>Tutorials Dojo</span>
+          <div
+            style={{
+              textAlign: 'center',
+              paddingBottom: 12,
+              fontSize: 11,
+              color: colors.subtle,
+              letterSpacing: '0.3px',
+            }}
+          >
+            Powered by{' '}
+            <span style={{ color: colors.primary, fontWeight: 600 }}>
+              Tutorials Dojo
+            </span>
           </div>
 
-          <div style={{ borderTop: `1px solid ${colors.borderLight}`, paddingTop: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: colors.primaryMuted, color: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+          <div
+            style={{
+              borderTop: `1px solid ${colors.borderLight}`,
+              paddingTop: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: colors.primaryMuted,
+                color: colors.primary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
               {(admin?.name || admin?.email || '?')[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: colors.body, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin?.name || 'Admin'}</div>
-              <div style={{ fontSize: 11, color: colors.subtle, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin?.email}</div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: colors.body,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {admin?.name || 'Admin'}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: colors.subtle,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {admin?.email}
+              </div>
             </div>
-            <button onClick={logout} title="Sign out" style={{ background: 'none', border: `1px solid ${colors.border}`, color: colors.muted, borderRadius: radius.sm, width: 30, height: 30, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <button
+              onClick={logout}
+              title="Sign out"
+              style={{
+                background: 'none',
+                border: `1px solid ${colors.border}`,
+                color: colors.muted,
+                borderRadius: radius.sm,
+                width: 30,
+                height: 30,
+                cursor: 'pointer',
+                fontSize: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
               {'\u2197'}
             </button>
           </div>
@@ -86,13 +227,34 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function SideLink({ to, active, children, onClick }: { to: string; active: boolean; children: ReactNode; onClick?: () => void }) {
+function SideLink({
+  to,
+  active,
+  children,
+  onClick,
+}: {
+  to: string;
+  active: boolean;
+  children: ReactNode;
+  onClick?: () => void;
+}) {
   return (
-    <Link to={to} onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: radius.sm,
-      color: active ? colors.primary : colors.muted, background: active ? colors.primaryMuted : 'transparent',
-      textDecoration: 'none', fontSize: 14, fontWeight: active ? 600 : 500,
-    }}>
+    <Link
+      to={to}
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 14px',
+        borderRadius: radius.sm,
+        color: active ? colors.primary : colors.muted,
+        background: active ? colors.primaryMuted : 'transparent',
+        textDecoration: 'none',
+        fontSize: 14,
+        fontWeight: active ? 600 : 500,
+      }}
+    >
       {children}
     </Link>
   );

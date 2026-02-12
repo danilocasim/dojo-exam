@@ -115,7 +115,7 @@ export default function App() {
           <Text style={{ fontSize: 40 }}>☁️</Text>
         </View>
         <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 8 }}>
-          CloudPrep
+          Dojo Exam
         </Text>
         <ActivityIndicator size="large" color="#f59e0b" style={{ marginTop: 16 }} />
         <Text style={{ marginTop: 16, color: '#94a3b8', fontWeight: '500' }}>{syncStatus}</Text>

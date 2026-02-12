@@ -12,7 +12,7 @@ export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     return db;
   }
 
-  db = await SQLite.openDatabaseAsync('cloudprep.db');
+  db = await SQLite.openDatabaseAsync('dojoexam.db');
   return db;
 };
 

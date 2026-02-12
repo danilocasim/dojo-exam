@@ -1,4 +1,4 @@
-// CloudPrep Mobile - Prisma Schema
+// Dojo Exam - Prisma Schema
 // Multi-tenant exam question bank
 
 generator client {

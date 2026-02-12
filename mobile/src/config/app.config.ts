@@ -70,7 +70,7 @@ export const PRACTICE_CONFIG = {
  */
 export const STORAGE_CONFIG = {
   /** SQLite database name */
-  DATABASE_NAME: 'cloudprep.db',
+  DATABASE_NAME: 'dojoexam.db',
 
   /** Maximum question bank size in MB */
   MAX_QUESTION_BANK_MB: 50,

@@ -545,7 +545,6 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
-
       </ScrollView>
     </SafeAreaView>
   );

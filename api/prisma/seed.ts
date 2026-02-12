@@ -7,7 +7,7 @@ import * as path from 'path';
 
 const connectionString =
   process.env.DATABASE_URL ||
-  'postgresql://postgres:postgres@localhost:5432/cloudprep';
+  'postgresql://postgres:postgres@localhost:5432/dojoexam';
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -77,12 +77,12 @@ async function main() {
   const passwordHash = await bcrypt.hash('admin123', 10);
 
   const admin = await prisma.admin.upsert({
-    where: { email: 'admin@cloudprep.io' },
+    where: { email: 'admin@tutorialsdojo.com' },
     update: {},
     create: {
-      email: 'admin@cloudprep.io',
+      email: 'admin@tutorialsdojo.com',
       passwordHash,
-      name: 'CloudPrep Admin',
+      name: 'Dojo Exam Admin',
     },
   });
 
