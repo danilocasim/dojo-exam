@@ -64,6 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(err.message || 'Login failed');
     }
     const data = await res.json();
+    // Persist to localStorage immediately so api.ts can read the token
+    // before the next React render cycle
+    localStorage.setItem('admin_token', data.token);
+    localStorage.setItem('admin_user', JSON.stringify(data.admin));
     setToken(data.token);
     setAdmin(data.admin);
   }, []);
