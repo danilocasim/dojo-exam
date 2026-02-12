@@ -300,7 +300,10 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.logoIcon}>
               <Cloud size={16} color={colors.textHeading} strokeWidth={2.5} />
             </View>
-            <Text style={styles.appTitle}>Tutorials Dojo</Text>
+            <View>
+              <Text style={styles.appTitle}>Dojo Exam</Text>
+              <Text style={styles.brandSubtitle}>by Tutorials Dojo</Text>
+            </View>
           </View>
           <Text style={styles.headerBadge}>CLF-C02</Text>
         </View>
@@ -543,7 +546,6 @@ export const HomeScreen: React.FC = () => {
           ))}
         </ScrollView>
 
-        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -591,7 +593,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  appTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textHeading },
+  appTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textHeading, lineHeight: 22 },
+  brandSubtitle: { fontSize: 10, color: colors.textMuted, letterSpacing: 0.3, marginTop: 1 },
   headerBadge: {
     fontSize: 11,
     fontWeight: '600',

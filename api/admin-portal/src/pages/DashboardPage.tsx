@@ -48,17 +48,19 @@ export function DashboardPage() {
           const info = currentExamType?.domains.find((d) => d.id === domain);
           const pct = info ? Math.min(100, Math.round((count / info.questionCount) * 100)) : 0;
           return (
-            <div key={domain} style={{ background: colors.surfaceRaised, borderRadius: radius.md, padding: 16, border: `1px solid ${colors.border}` }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: colors.body, marginBottom: 8 }}>{info?.name || domain}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontSize: 24, fontWeight: 700, color: colors.primary }}>{count}</span>
-                {info && <span style={{ fontSize: 12, color: colors.subtle }}>/ {info.questionCount} target</span>}
-              </div>
-              {info && (
-                <div style={{ marginTop: 8, height: 4, background: colors.border, borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? colors.success : colors.primary, borderRadius: 2, transition: 'width 0.3s' }} />
+            <div key={domain} style={{ background: colors.surfaceRaised, borderRadius: radius.md, padding: 16, border: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: colors.body, marginBottom: 10, minHeight: 40 }}>{info?.name || domain}</div>
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: info ? 10 : 0 }}>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: colors.primary, lineHeight: 1 }}>{count}</span>
+                  {info && <span style={{ fontSize: 12, color: colors.subtle, whiteSpace: 'nowrap' }}>/ {info.questionCount} target ({pct}%)</span>}
                 </div>
-              )}
+                {info && (
+                  <div style={{ height: 6, background: colors.border, borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? colors.success : colors.primary, borderRadius: 3, transition: 'width 0.3s' }} />
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

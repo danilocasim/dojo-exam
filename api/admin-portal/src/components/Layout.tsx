@@ -58,6 +58,10 @@ export function Layout({ children }: { children: ReactNode }) {
             <SideLink to="/questions" active={isActive('/questions')} onClick={() => setMenuOpen(false)}>Questions</SideLink>
           </nav>
 
+          <div style={{ textAlign: 'center', paddingBottom: 12, fontSize: 11, color: colors.subtle, letterSpacing: '0.3px' }}>
+            Powered by <span style={{ color: colors.primary, fontWeight: 600 }}>Tutorials Dojo</span>
+          </div>
+
           <div style={{ borderTop: `1px solid ${colors.borderLight}`, paddingTop: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 34, height: 34, borderRadius: '50%', background: colors.primaryMuted, color: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
               {(admin?.name || admin?.email || '?')[0].toUpperCase()}

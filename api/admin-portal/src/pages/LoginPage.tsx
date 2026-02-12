@@ -50,6 +50,9 @@ export function LoginPage() {
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
+      <div style={styles.poweredBy}>
+        Powered by <span style={{ color: colors.primary, fontWeight: 600 }}>Tutorials Dojo</span>
+      </div>
     </div>
   );
 }
@@ -80,5 +83,8 @@ const styles: Record<string, React.CSSProperties> = {
   button: {
     padding: '12px 20px', background: colors.primary, color: '#1A1A2E', border: 'none',
     borderRadius: radius.sm, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4, letterSpacing: '0.3px',
+  },
+  poweredBy: {
+    marginTop: 24, fontSize: 12, color: colors.subtle, textAlign: 'center', letterSpacing: '0.3px',
   },
 };
