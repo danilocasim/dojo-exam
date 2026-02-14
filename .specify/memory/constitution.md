@@ -1,50 +1,36 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Exam-App Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Mobile-First Offline Architecture
+Every feature must preserve the app's offline-first capability. Network dependencies are only acceptable during initial setup or explicit sync operations. Local storage (SQLite, AsyncStorage) is the source of truth for all user-facing data.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Test Coverage for User Stories
+Every user story with an "Independent Test" section in spec.md MUST have corresponding automated or documented manual test tasks. Integration tests are required for:
+- New API endpoints (backend unit + contract tests)
+- Native module integrations (manual E2E on physical device)
+- User flows crossing mobile-backend boundary
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. API Contract Documentation
+All backend endpoints must be documented in OpenAPI format before implementation. Mobile apps consume these contracts as the single source of truth for request/response schemas.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Simplicity & Minimal Dependencies
+Prefer existing dependencies over adding new ones. New native modules require explicit justification in plan.md with alternatives considered. Backend endpoints should be stateless pass-throughs when possible.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Multi-Tenant by Design
+The backend serves multiple exam types (AWS CCP, SAA, etc.) through a single codebase. Any new backend feature must consider multi-tenant architecture — avoid hardcoding exam-specific logic.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Development Workflow
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Spec → Plan → Tasks → Implement → Test cycle is mandatory
+- Constitution compliance checked in plan.md before Phase 0
+- Breaking changes to core architecture (offline-first, multi-tenant) require explicit amendment documentation
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes ad-hoc decisions. Amendments require:
+1. Documentation of rationale in `.specify/memory/amendments/`
+2. Update to affected feature specs
+3. Version bump below
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: February 15, 2026 | **Last Amended**: February 15, 2026

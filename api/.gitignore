@@ -23,3 +23,6 @@ coverage/
 # IDE
 .idea/
 *.swp
+
+# GCP service account keys
+google-service-account*.json
