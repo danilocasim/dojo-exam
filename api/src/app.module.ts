@@ -7,6 +7,9 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma';
 import { ExamTypesModule } from './exam-types';
 import { AdminModule } from './admin';
+import { AuthModule } from './auth/auth.module';
+import { ExamAttemptModule } from './exam-attempts/exam-attempt.module';
+import { SyncModule } from './sync/sync.module';
 import {
   RequestLoggerMiddleware,
   RateLimitMiddleware,
@@ -28,6 +31,9 @@ import {
     PrismaModule,
     ExamTypesModule,
     AdminModule,
+    AuthModule,
+    ExamAttemptModule,
+    SyncModule,
   ],
   controllers: [AppController],
   providers: [AppService],

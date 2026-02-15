@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,9 +26,11 @@ import {
   Zap,
   ChevronRight,
   Target,
+  User,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
+import { useAuthStore } from '../stores/auth-store';
 import { hasInProgressExam, abandonCurrentExam } from '../services';
 import { getInProgressExamAttempt } from '../storage/repositories/exam-attempt.repository';
 import { getTotalQuestionCount } from '../storage/repositories/question.repository';
@@ -113,6 +116,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { startExam, resumeExam, isLoading, error, setError } = useExamStore();
+  const { isSignedIn, user } = useAuthStore();
 
   const [hasInProgress, setHasInProgress] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
@@ -301,11 +305,35 @@ export const HomeScreen: React.FC = () => {
               <Cloud size={16} color={colors.textHeading} strokeWidth={2.5} />
             </View>
             <View>
-              <Text style={styles.appTitle}>Dojo Exam</Text>
+              <View style={styles.headerTitleRow}>
+                <Text style={styles.appTitle}>Dojo Exam</Text>
+                <Text style={styles.headerBadge}>CLF-C02</Text>
+              </View>
               <Text style={styles.brandSubtitle}>by Tutorials Dojo</Text>
             </View>
           </View>
-          <Text style={styles.headerBadge}>CLF-C02</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Auth')}
+            activeOpacity={0.7}
+            style={styles.headerProfileBtn}
+          >
+            {isSignedIn && user ? (
+              user.picture ? (
+                <Image source={{ uri: user.picture }} style={styles.headerAvatarImg} />
+              ) : (
+                <View style={styles.headerAvatar}>
+                  <Text style={styles.headerAvatarText}>
+                    {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )
+            ) : (
+              <View style={[styles.headerAvatar, styles.headerAvatarGuest]}>
+                <User size={16} color={colors.textMuted} strokeWidth={2} />
+              </View>
+            )}
+            {isSignedIn && <View style={styles.onlineDot} />}
+          </TouchableOpacity>
         </View>
 
         {/* ── Inline Stats Strip ── */}
@@ -756,6 +784,50 @@ const styles = StyleSheet.create({
   actionIconWrap: { marginBottom: 10 },
   actionTitle: { fontSize: 13, fontWeight: '600', color: colors.textHeading },
   actionSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+
+  // Header Profile
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerProfileBtn: {
+    position: 'relative',
+  },
+  headerAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.primaryOrange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  headerAvatarGuest: {
+    backgroundColor: colors.surfaceHover,
+    borderWidth: 1.5,
+    borderColor: colors.borderDefault,
+  },
+  headerAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.success,
+    borderWidth: 2.5,
+    borderColor: colors.background,
+  },
 });
 
 export default HomeScreen;

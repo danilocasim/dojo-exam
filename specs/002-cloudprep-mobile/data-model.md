@@ -15,7 +15,7 @@ This document defines data models for both:
 
 ## Backend Database (PostgreSQL + Prisma)
 
-### Entity Relationship Diagram
+### Entity Relationship Diagram - Phase 1 + Phase 2
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -59,8 +59,45 @@ This document defines data models for both:
 │  │ approvedById(FK) │                                                       │
 │  │ approvedAt       │                                                       │
 │  └──────────────────┘                                                       │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+│         ▲                                                                    │
+│         │ (Phase 2 NEW) FK examTypeId                                       │
+│         │                                                                    │
+│  ┌──────────────────────────┐    ┌──────────────────────────┐              │
+│  │        User (NEW)        │    │   ExamAttempt (NEW)      │              │
+│  ├──────────────────────────┤    ├──────────────────────────┤              │
+│  │ id (PK, UUID)            │◀───│ id (PK, UUID)            │              │
+│  │ googleId (UNIQUE)        │    │ userId (FK, nullable)    │◀─────────┐  │
+│  │ email                    │    │ examTypeId (FK)          │          │  │
+│  │ oauthToken               │    │ score (0-100)            │          │  │
+│  │ createdAt                │    │ passed (boolean)         │          │  │
+│  │ lastLoginAt              │    │ duration (seconds)       │          │  │
+│  │ updatedAt                │    │ submittedAt              │          │  │
+│  └──────────────────────────┘    │ syncStatus (ENUM)        │          │  │
+│                                  │ syncedAt                 │          │  │
+│                                  │ syncRetries (int)        │          │  │
+│                                  │ createdAt                │          │  │
+│                                  │ updatedAt                │          │  │
+│                                  └──────────────────────────┘          │  │
+│                                                                        │  │
+│                                   (User can have many ExamAttempts)   │  │
+│                                                                        │  │
+│  ┌──────────────────────────┐ (NEW - Mobile SQLite)                  │  │
+│  │   OfflineQueue (SQLite)  │                                        │  │
+│  ├──────────────────────────┤                                        │  │
+│  │ id (PK)                  │                                        │  │
+│  │ examAttemptId (UUID)     │────────────────────────────────────────┘  │
+│  │ payload (JSON)           │   Mobile exam waiting for sync             │
+│  │ createdAt                │                                            │
+│  │ retryCount               │                                            │
+│  │ nextRetryAt              │                                            │
+│  │ lastError                │                                            │
+│  └──────────────────────────┘                                            │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Note: Phase 1 (Question, Admin) stores question bank content.
+Phase 2 (User, ExamAttempt) adds authentication and exam persistence.
+SyncStatus: pending = queued locally, synced = on backend, failed = backend error.
 ```
 
 ### Prisma Schema
@@ -403,6 +440,113 @@ Aggregated user statistics (single row, updated on activity).
 
 ---
 
+# Phase 2 Data Model: Authentication & Cloud Sync (NEW)
+
+## Backend Entities (Prisma / PostgreSQL)
+
+### User (NEW - Phase 2)
+
+Cloud-backed user identity linked to Google OAuth.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| **id** | UUID | PK, auto-generated | User primary key |
+| **googleId** | STRING | UNIQUE, NOT NULL | Google account ID from OAuth |
+| **email** | STRING | UNIQUE, NOT NULL | User email from Google account |
+| **name** | STRING | NULL | User name from Google account |
+| **oauthToken** | STRING | NULL | Refresh token (encrypted in storage) |
+| **jwtToken** | STRING | NULL | Current JWT if cached (optional) |
+| **createdAt** | TIMESTAMP | NOT NULL, auto-generated | Account creation timestamp |
+| **updatedAt** | TIMESTAMP | NOT NULL, auto-updated | Last update timestamp |
+| **lastLoginAt** | TIMESTAMP | NULL | Last successful login time |
+
+**Indexes**: googleId, email, createdAt
+
+**Relationships**: User ← ExamAttempt (1-to-many, userId FK)
+
+**Validation**:
+- googleId must be 21-chars alphanumeric (Google standard)
+- email must match email format
+- createdAt must be in ISO 8601 format
+
+**Notes**:
+- User is optional for backward compatibility (unsigned users have no User record)
+- User creation happens on first Google sign-in (POST `/auth/google/callback`)
+
+### ExamAttempt (UPDATED - Phase 2 Extension)
+
+Extended to support cloud sync and user tracking.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| **id** | UUID | PK, auto-generated | Exam attempt primary key |
+| **examTypeId** | STRING | FK → ExamType.id, NOT NULL | Exam type identifier |
+| **userId** | UUID | FK → User.id, NULL | User who took exam (NULL if unsigned) |
+| **startedAt** | TIMESTAMP | NOT NULL | Exam start time |
+| **submittedAt** | TIMESTAMP | NULL | Exam submission time (NULL if in-progress) |
+| **expiresAt** | TIMESTAMP | NOT NULL | Time limit expiration |
+| **status** | ENUM | 'in-progress', 'completed', 'abandoned' | Current exam status |
+| **score** | INTEGER | NULL, 0-100 | Exam score percentage |
+| **passed** | BOOLEAN | NULL | Whether user passed (NULL if not completed) |
+| **syncStatus** | ENUM | 'pending', 'synced', 'failed' | Cloud sync status (NEW) |
+| **syncedAt** | TIMESTAMP | NULL | When exam was synced to cloud (NEW) |
+| **syncRetries** | INTEGER | DEFAULT 0 | Number of failed sync attempts (NEW) |
+
+**Indexes**: userId, examTypeId, submittedAt, syncStatus
+
+**Relationships**:
+- ExamAttempt ← ExamAnswer (1-to-many)
+- ExamAttempt ← User (many-to-1)
+
+**Validation**:
+- submittedAt >= startedAt
+- expiresAt > startedAt
+- score between 0-100 if status='completed'
+- syncStatus must be one of enum values
+
+**Notes**:
+- userId is nullable for backward compatibility (Phase 1 exams have no userId)
+- syncStatus tracks whether exam was posted to `/exam-attempts` endpoint
+- syncRetries incremented on each failed POST attempt
+
+---
+
+## Mobile Entities (SQLite Extensions - Phase 2)
+
+### OfflineQueue (NEW - Phase 2)
+
+Tracks exam submissions pending cloud sync.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| **id** | TEXT | PK, auto-generated | Queue entry primary key |
+| **examAttemptId** | TEXT | FK → ExamAttempt.id, NOT NULL | Exam to sync |
+| **status** | ENUM | 'pending', 'in-progress', 'synced', 'failed' | Sync attempt status |
+| **payload** | JSON | NOT NULL | ExamAttempt data to POST |
+| **error** | TEXT | NULL | Last error message |
+| **retries** | INTEGER | DEFAULT 0 | Number of sync attempts |
+| **nextRetryAt** | TIMESTAMP | NULL | When to retry (exponential backoff) |
+| **createdAt** | TIMESTAMP | NOT NULL, auto-generated | Queue entry creation |
+| **updatedAt** | TIMESTAMP | NOT NULL, auto-updated | Last update |
+| **syncedAt** | TIMESTAMP | NULL | When successfully synced |
+
+**Indexes**: examAttemptId, status, nextRetryAt
+
+**Validation**:
+- payload must contain examAttemptId, score, passed, answers (JSON serialized)
+- retries must be >= 0
+- nextRetryAt must be >= now()
+
+**Lifecycle**:
+1. User completes exam → OfflineQueue entry created with `status: pending`
+2. If online → POST to `/exam-attempts` immediately, set `status: synced`, record syncedAt
+3. If offline → Wait for connectivity, try again
+4. On failure → Exponential backoff (1s, 2s, 4s, 8s, 16s, 32s), nextRetryAt updated
+5. After max retries (12, ~63 min window) → `status: failed`, notify user
+6. User can retry manually from History screen → resets retries counter
+
+---
+
 ## Domain Enums
 
 ### QuestionType
@@ -493,3 +637,50 @@ const getStrength = (pct: number): 'strong' | 'moderate' | 'weak' => {
 - All entities stored in SQLite; no network required for CRUD
 - Questions pre-bundled in app; sync adds/updates only
 - ExamAttempt.expiresAt checked on app launch; expired → abandoned
+
+## Implementation Status (February 15, 2026)
+
+### ✅ Backend Schema (PostgreSQL + Prisma)
+
+| Entity | Status | Fields | Location |
+|--------|--------|--------|----------|
+| **ExamType** | ✅ | id, name, domains (JSON), passingScore, timeLimit | api/prisma/schema.prisma |
+| **Question** | ✅ | id, examTypeId, text, type, domain, difficulty, options (JSON), status | api/prisma/schema.prisma |
+| **Admin** | ✅ | id, email, passwordHash | api/prisma/schema.prisma |
+| **SyncVersion** | ✅ | examTypeId, version, updatedAt | api/prisma/schema.prisma |
+| **User** | 📋 NEW (Phase 2) | id, googleId, email, name, oauthToken, createdAt, updatedAt, lastLoginAt | api/prisma/schema.prisma |
+| **User** | ✅ | id (device-local) | implicit in mobile storage |
+| **ExamAttempt** | ✅ | id, examTypeId, startedAt, submittedAt, status, expiresAt | mobile SQLite |
+| **ExamAttempt** | 📋 UPDATED (Phase 2) | **NEW**: userId (FK), syncStatus, syncedAt, syncRetries | mobile SQLite + api/prisma/schema.prisma |
+| **ExamAnswer** | ✅ | id, examAttemptId, questionId, selectedOptions, isFlagged | mobile SQLite |
+| **PracticeSession** | ✅ | id, startedAt, endedAt, domain, difficulty | mobile SQLite |
+| **PracticeAnswer** | ✅ | id, sessionId, questionId, selectedOptions | mobile SQLite |
+| **UserStats** | ✅ | id, totalExamsCompleted, totalQuestionsAnswered, totalTimeSpent | mobile SQLite |
+| **OfflineQueue** | 📋 NEW (Phase 2) | id, examAttemptId, status, payload (JSON), error, retries, nextRetryAt, createdAt, synced At | mobile SQLite |
+
+### ✅ Database Migrations
+
+| Migration | Status | Details |
+|-----------|--------|---------|
+| **20260212070024_init** | ✅ Applied | Initial schema with ExamType, Question, Admin, SyncVersion models |
+
+### ✅ Repositories Implemented
+
+**Mobile (SQLite)**:
+- QuestionRepository (T034)
+- ExamAttemptRepository (T035)
+- ExamAnswerRepository (T036)
+- PracticeSessionRepository (T049)
+- PracticeAnswerRepository (T050)
+- UserStatsRepository (T066)
+
+**Backend (Prisma)**:
+- PrismaService with CRUD operations
+- Implicit repositories through service layer
+
+### ✅ Relationships Verified
+
+- ExamType ← Question (1-to-many, examTypeId FK)
+- ExamAttempt ← ExamAnswer (1-to-many)
+- PracticeSession ← PracticeAnswer (1-to-many)
+- All foreign keys implemented with proper constraints

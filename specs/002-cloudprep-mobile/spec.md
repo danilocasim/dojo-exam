@@ -2,7 +2,8 @@
 
 **Feature Branch**: `002-cloudprep-mobile`  
 **Created**: February 12, 2026  
-**Status**: Draft  
+**Last Updated**: February 15, 2026 (Phase 2 user stories added)  
+**Status**: Phase 1 Complete + Phase 2 Planned  
 **Input**: CloudPrep Mobile - AWS Cloud Practitioner exam preparation mobile app
 
 ## Overview
@@ -96,6 +97,57 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 
 ---
 
+### User Story 6 - Google Sign-In (Authentication) (Priority: P2)
+
+As an exam taker, I want to sign in with my Google account, so that my exam progress syncs across devices and persists on the backend.
+
+**Why this priority**: Cross-device sync enables users to continue their progress on different devices and provides data durability beyond app reinstalls.
+
+**Independent Test**: Can be fully tested by tapping "Sign in with Google" on app launch, completing the OAuth flow, and verifying exam data syncs to the backend.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user opens the app for the first time, **When** they tap "Sign in with Google", **Then** the Google OAuth flow completes successfully.
+2. **Given** the user authenticates with Google, **When** authentication completes, **Then** backend creates or retrieves User record in Prisma with Google ID.
+3. **Given** authentication is successful, **When** the flow completes, **Then** JWT token is returned and stored securely in AsyncStorage.
+4. **Given** a user is signed in, **When** they make API requests, **Then** their User ID is automatically included for backend tracking.
+
+---
+
+### User Story 7 - Exam History Persistence (Priority: P2)
+
+As a signed-in user, I want my exam attempts saved to the cloud backend, so that I can see my progress history even after reinstalling the app.
+
+**Why this priority**: Backend persistence transforms the app from a single-device tool to a cross-device learning platform, enabling account portability and data durability.
+
+**Independent Test**: Can be fully tested by taking an exam while signed in, verifying POST to backend completes, then checking that history persists after app reinstall.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user completes a timed exam while signed in, **When** they submit exam results, **Then** results POST to `/exam-attempts` endpoint with all exam data.
+2. **Given** exam data is submitted, **When** the POST succeeds, **Then** ExamAttempt record is created in Prisma with userId, score, pass/fail, time spent, and answers array.
+3. **Given** an offline exam submission, **When** the user is offline, **Then** exam is queued locally and syncs when connectivity resumes.
+4. **Given** a user switches devices or reinstalls, **When** they sign into the same Google account, **Then** they can retrieve all historical exam attempts via GET `/exam-attempts`.
+
+---
+
+### User Story 8 - Analytics Dashboard Sync (Priority: P2)
+
+As a signed-in user, I want to view my exam statistics from the cloud backend, so that I can track my learning progress across devices with real-time data.
+
+**Why this priority**: Centralized analytics enable data-driven learning insights and motivate continued practice through progress visualization.
+
+**Independent Test**: Can be fully tested by taking multiple exams while signed in, then viewing analytics screen which displays server-calculated statistics.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user has completed multiple exams while signed in, **When** they navigate to analytics, **Then** the app fetches aggregated statistics via GET `/exam-attempts/analytics`.
+2. **Given** analytics data is retrieved, **When** the response loads, **Then** dashboard displays total attempts, overall pass rate, average score, and average time per exam.
+3. **Given** user has completed exams of multiple exam types, **When** analytics loads, **Then** breakdown by exam type (AWS CCP, SAA, etc.) is displayed separately.
+4. **Given** user is viewing analytics, **When** recent exam attempts section loads, **Then** list displays last 10 exam attempts with date, exam type, score, and pass/fail status.
+
+---
+
 ### Edge Cases
 
 - What happens when a user answers a question but loses network connectivity during exam mode?
@@ -109,6 +161,10 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 
 - What happens when the question bank has fewer than 65 approved questions?
   - Answer: The app notifies admin; exams cannot be generated until minimum question threshold is met per domain.
+- What happens if a user logs out and logs back in?
+  - Answer: User data is linked to Google ID; logging back in with same account restores access to all previous exam history.
+- How are exams taken offline handled when the user signs in later?
+  - Answer: Offline exams remain stored locally with device-level analytics; signed-in exams are synced to backend immediately upon completion or when connectivity returns.
 
 ## Requirements _(mandatory)_
 
@@ -125,7 +181,7 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 - **FR-003**: System MUST auto-save answers as users navigate between questions.
 - **FR-004**: System MUST allow users to flag questions for later review within the exam.
 - **FR-005**: System MUST support question navigation (next, previous, jump to specific question).
-- **FR-006**: System MUST persist exam state to allow resumption within 24 hours if interrupted.
+- **FR-006**: System MUST persist exam state to allow resumption if interrupted. Exams remain resumable for 24 hours from the time they are started (expiresAt = startedAt + 24 hours); after 24 hours, the exam is marked as abandoned and scored based on currently submitted answers.
 - **FR-007**: System MUST calculate and display score upon exam completion with pass/fail status (70% threshold).
 
 #### Practice Mode
@@ -147,39 +203,53 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 
 - **FR-017**: System MUST track and display overall score trends across all exams.
 - **FR-018**: System MUST calculate and display per-domain performance averages.
-- **FR-019**: System MUST identify and highlight weak domains (below 70% average).
-- **FR-020**: System MUST display total study statistics (questions answered, time spent, exams completed).
+- **FR-019**: System MUST identify and highlight weak domains with visual indicators based on average performance: **Strong** = 80%+ average, **Moderate** = 70-79% average, **Weak** = below 70% average.
+- **FR-020**: System MUST display total study statistics (total questions answered, average accuracy, time spent studying, number of exams completed). Time spent studying is the sum of active exam time (from exam start to submission) plus practice session durations, tracked per session.
 
 #### Question Management
 
-- **FR-021**: System MUST support three question types: single-choice, multiple-choice, and true/false.
-- **FR-022**: System MUST require all questions to have: text, type, domain, difficulty, correct answer(s), at least 3 distractors (for choice questions), and explanation.
-- **FR-023**: System MUST enforce an approval workflow—only approved questions appear in exams.
-- **FR-024**: System MUST allow admins to edit, archive, and restore questions.
-- **FR-025**: System MUST validate question quality (minimum character counts, no duplicate questions).
+- **FR-021**: System MUST support three question types with distinct validation rules:
+  - **Single-choice**: User selects exactly one correct answer; one distractor is mandatory.
+  - **Multiple-choice**: User selects all applicable correct answers (≥2 correct answers possible); all correct answers must be selected for full credit; partial credit is NOT awarded.
+  - **True/False**: Binary question with only two options (true/false); distractors not required.
+- **FR-022**: System MUST require all questions to have: text, type, domain, difficulty, correct answer(s), distractors (at least 3 for single/multiple-choice, not required for true/false), and explanation.
+- **FR-023**: System MUST enforce an approval workflow—questions start in "pending" status; only admins can approve questions, and only approved questions appear in exams or practice sessions.
+- **FR-024**: System MUST allow admins to edit, archive, and restore questions; archived questions no longer appear in new exams but historical exam data is preserved.
+- **FR-025**: System MUST validate question quality with the following rules: (1) Question text minimum 20 characters, (2) Explanation minimum 50 characters, (3) At least 4 answer options for single/multiple-choice questions, (4) No duplicate questions (exact text match, case-insensitive); admin is warned before saving a potential duplicate.
 
 #### Data and Offline Support
 
-- **FR-026**: System MUST function fully offline for exam and practice modes.
-- **FR-027**: System MUST check for question bank updates when device is online and download new content.
+- **FR-026**: System MUST function fully offline for exam and practice modes; no network connectivity required during active exam or practice sessions.
+- **FR-027**: System MUST check for question bank updates when device is online. App MUST check for updates on launch; background update checks MUST occur at least every 24 hours when the device is connected to the network. When new content is detected, the app MUST download updated question bank within 5 minutes.
 - **FR-028**: System MUST securely store user answers and progress locally on device only.
 - **FR-029**: System MUST download and cache approved question bank for offline access.
 - **FR-030**: System MUST NOT transmit user progress, answers, or analytics to remote servers.
 
 #### Performance
 
-- **FR-031**: App MUST launch and display home screen within 3 seconds on supported devices.
-- **FR-032**: Screen transitions MUST complete within 300 milliseconds.
-- **FR-033**: Question rendering (text, options, images) MUST complete within 100 milliseconds.
+- **FR-031**: App MUST launch and display home screen within 3 seconds on OnePlus Nord 2 or equivalent (SnapDragon 695, 8GB RAM, Android 13) and iPhone 13+ (A15 Bionic, 6GB RAM, iOS 15+).
+- **FR-032**: Screen transitions MUST complete within 300 milliseconds (measured on same baseline devices).
+- **FR-033**: Question rendering (text, options, images) MUST complete within 100 milliseconds (measured on same baseline devices).
+
+#### Authentication and Cloud Sync
+
+- **FR-034**: System MUST provide Google OAuth sign-in flow accessible from app launch screen with clear "Sign in with Google" button.
+- **FR-035**: System MUST securely store Google ID and JWT token in AsyncStorage upon successful authentication; JWT used for all subsequent API requests.
+- **FR-036**: System MUST create or retrieve User record in Prisma (backend) upon successful OAuth with userId linked to Google ID.
+- **FR-037**: System MUST support exam submission to backend via POST `/exam-attempts` including score, pass/fail, time spent, and anonymized answers; ExamAttempt record stored with userId.
+- **FR-038**: System MUST queue offline exam submissions locally and sync automatically when connectivity resumes. Retry logic uses exponential backoff with sequence: 1s, 2s, 4s, 8s, 16s, 32s (capped), maximum 12 attempts (~63 minute window before marking failed).
+- **FR-039**: System MUST retrieve exam history via GET `/exam-attempts` endpoint and display in chronological order; support pagination (default 20 per page).
+- **FR-040**: System MUST fetch aggregated analytics from GET `/exam-attempts/analytics` endpoint returning total attempts, pass rate, average score, average time per exam type.
+- **FR-041**: System MUST display analytics breakdown by exam type (AWS CCP, Solutions Architect, etc.) with separate statistics for each.
 
 ### Key Entities
 
-- **User**: Device-local identity representing the app user; owns exam attempts, practice sessions, and analytics data; not synced to cloud.
+- **User**: Cloud-backed identity linked to Google account; owns exam attempts, practice sessions, and analytics data synced to backend; supports cross-device access.
 - **Question**: Individual exam question with text, type, domain, difficulty, answer options, correct answer(s), explanation, and approval status; delivered via cloud API.
-- **Exam Attempt**: A user's complete exam session including questions presented, answers given, time spent, score, and completion timestamp; stored locally.
-- **Practice Session**: A focused practice activity including domain/difficulty filters, questions answered, and performance metrics; stored locally.
-- **Domain**: One of four AWS Cloud Practitioner exam domains used for categorization and analytics.
-- **Analytics Record**: Aggregated performance data per user including scores over time, domain breakdowns, and study statistics; stored locally.
+- **Exam Attempt**: A user's complete exam session including questions presented, answers given, time spent, score, and completion timestamp; synced to backend if signed in, stored locally if offline.
+- **Practice Session**: A focused practice activity including domain/difficulty filters, questions answered, and performance metrics; stored locally only.
+- **Domain**: One of four AWS Cloud Practitioner exam domains (or more for multi-exam setups) used for categorization and analytics.
+- **Analytics Record**: Aggregated performance data per user including scores over time, domain breakdowns, and study statistics; calculated server-side from ExamAttempt records.
 - **ExamType**: Backend entity representing a certification exam (e.g., AWS CCP, Solutions Architect); contains exam metadata (name, passing score, time limit, domain weights); questions are associated with an ExamType; mobile apps filter by their exam type.
 
 ## Success Criteria _(mandatory)_
@@ -198,12 +268,18 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 - **SC-010**: Admin can create and approve a new question in under 3 minutes.
 - **SC-011**: App launches and displays home screen within 3 seconds.
 - **SC-012**: All screen transitions complete within 300 milliseconds.
+- **SC-013**: Users can complete Google OAuth sign-in flow in under 10 seconds; 95% success rate on first attempt.
+- **SC-014**: Exam results sync to backend within 5 seconds of submission when online; offline queue reliability ≥99%.
+- **SC-015**: Signed-in users can retrieve full exam history across app reinstalls (100% data recovery).
+- **SC-016**: Analytics page loads aggregated statistics from server within 2 seconds; displays at least 5 data points (attempt count, pass rate, avg score, avg time, breakdown by exam type).
 
 ## Clarifications
 
 ### Session 2026-02-12
 
 - Q: How should user data and progress be identified and persisted across device changes or reinstalls? → A: Device-only storage; no cross-device sync; data lost on reinstall.
+- **[UPDATED]**: Clarification now outdated for authenticated users - see new user stories 6-8 for cloud sync capability.
+
 - Q: What backend architecture supports question bank updates while keeping user data local? → A: Simple cloud API serves question bank snapshots; no user data stored remotely; content delivery only.
 - Q: What are the performance targets for app responsiveness? → A: App launch under 3 seconds; screen transitions under 300ms; question rendering under 100ms.
 - Q: What database technology should power the backend question bank API and admin portal? → A: PostgreSQL with Prisma ORM.
@@ -228,13 +304,73 @@ As an admin, I want to create, edit, and manage exam questions so that the quest
 - Admin access is handled through a separate web-based admin portal, not within the mobile app.
 - Initial question bank is seeded before app launch with at least 200 approved questions.
 - AWS Cloud Practitioner exam format (65 questions, 90 minutes, 70% passing) remains stable.
-- Users accept offline-first architecture where data syncs opportunistically.
-- User progress and exam history are stored locally on device only; reinstalling the app resets all user data.
+- Users can optionally sign in with Google to enable cross-device sync and cloud persistence (new requirement).
+- Users accept offline-first architecture where exams and practice work fully offline; cloud sync is optional for signed-in users.
+- Question bank updates (FR-027) apply to all users regardless of authentication status; exam history sync is auth-dependent only. Phase 1 unsigned-only functionality unchanged.
+- Unsigned users: exam progress and history stored locally only; data lost on reinstall (backward compatible).
+- Signed-in users: exam history and analytics synced to backend; full data recovery after app reinstall (new requirement).
 - Question bank updates are delivered via a lightweight cloud API; the app polls for updates when online.
-- No user-identifiable information is transmitted to or stored on remote servers.
 - Backend API and admin portal use PostgreSQL as the database with Prisma ORM for data access.
 - Backend is multi-tenant: one shared API and admin portal manages questions for all certification exams; each mobile app filters questions by its exam type.
-- Future exam apps (e.g., AWS Solutions Architect) will share the same backend infrastructure.
+- Google OAuth tokens are securely stored and refreshed automatically; token expiration handled gracefully.
+- Server-side analytics calculated from ExamAttempt records; real-time aggregation for performance updates.
+- Future exam apps (e.g., AWS Solutions Architect) will share the same backend infrastructure and auth system.
+
+## Clarifications
+
+### Session 2026-02-15 (Phase 2 Consistency Review)
+
+- **Q**: What is the exact exponential backoff sequence for offline exam sync retries? → **A**: 1s, 2s, 4s, 8s, 16s, 32s (capped), maximum 12 attempts (~63 minute window before marking failed).
+- **Q**: How long should JWT access vs refresh tokens be valid? → **A**: Access tokens 1 hour expiry (short-lived), refresh tokens 7 days expiry (long-lived).
+- **Q**: Should T139 (sync processor) automatically trigger when connectivity restores? → **A**: Yes, auto-triggered by onConnectivityChange() state transition from offline→online (T137 dependency).
+- **Q**: Does T112 (User model) require a database migration? → **A**: Yes, explicit migration `api/prisma/migrations/[timestamp]_add_user_model` should be created as part of T112.
+- **Q**: How do question bank updates (FR-027) apply to Phase 2? → **A**: Question bank sync applies to all users regardless of auth; exam history sync is auth-dependent only. Phase 1 unsigned-only functionality unchanged.
+- **Q**: Who owns unit tests for auth services (T113, T114, T115, T133, T131)? → **A**: Service unit tests written as part of implementation tasks (T113, T114, T115, etc.) and verified in T143 E2E auth flow test.
+- **Q**: How does offline/online fallback work in CloudAnalyticsScreen (T142)? → **A**: Fetch /exam-attempts/analytics when online, display cached local analytics if offline, show 'Sync to cloud' button when connectivity restored.
+- **Q**: What does ExamAttempt.syncStatus enum mean for each value? → **A**: pending = queued locally not yet sent, synced = successfully persisted on backend, failed = backend received but processing error.
+- **Q**: Are T137 and T138 parallelizable? Can T140 run in parallel? → **A**: T137 and T138 can parallelize (different files, no dependencies); T140 depends on both T137 and T138 completion.
+- **Q**: How is "aggregation" performed in Analytics Service (T124)? → **A**: Synchronous server-side aggregation via Prisma queries on-demand at endpoint (not pre-calculated).
+
+## Implementation Status (as of February 15, 2026)
+
+### ✅ Phase 1 Complete (Original US1-US5, FR-001-FR-033)
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Backend API** | ✅ Complete | 15+ endpoints, JWT auth, approval workflow |
+| **Mobile App** | ✅ Complete | 10 screens, 8 services, SQLite offline |
+| **Admin Portal** | ✅ Complete | React SPA, question CRUD, multi-tenant |
+| **Original Requirements** | ✅ 33/33 FRs | FR-001 to FR-033 fully implemented |
+| **Test Coverage** | ✅ 99 tests | 58 unit tests + 21 performance benchmarks + 20 API tests |
+| **Documentation** | ✅ Complete | spec.md, plan.md, tasks.md, data-model.md, contracts/ |
+
+### ⏳ Phase 2 Pending (NEW US6-US8, FR-034-FR-041, SC-013-SC-016)
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Google OAuth** | 📋 Planned | FR-034, FR-035, FR-036 (authentication flow) |
+| **Cloud Sync (Exams)** | 📋 Planned | FR-037, FR-038, FR-039 (POST/GET `/exam-attempts`) |
+| **Analytics Backend** | 📋 Planned | FR-040, FR-041 (GET `/exam-attempts/analytics`) |
+| **User Backend Models** | 📋 Planned | Prisma User model with Google ID linkage |
+| **Test Coverage** | 📋 Planned | Auth tests, sync retry tests, analytics tests (new test tasks T115-T125) |
+
+### Test Infrastructure (Phase 1)
+
+**Mobile Service Tests** (58 test cases):
+- ExamGeneratorService: 14 cases (FR-001 domain weighting)
+- ExamSessionService: 18 cases (FR-003-007 exam flow)
+- ScoringService: 26 cases (FR-007, FR-016-020 scoring & analytics)
+
+**API Service Tests** (20 test cases):
+- AdminAuthService: 6 cases (FR-023 JWT authentication)
+- QuestionsService: 14 cases (FR-021-025 question validation & workflow)
+
+**Performance Benchmarks** (21 test cases):
+- T111a (FR-031): App launch profiling (<3s target)
+- T111b (FR-032): Screen transition timing (<300ms target)
+- T111c (FR-033): Question rendering (<100ms target)
+
+**Test Organization**: `mobile/__tests__/` and `api/test/` with Jest configuration, mocking patterns, coverage thresholds (60% global, 80% services).
 
 ## Out of Scope
 
