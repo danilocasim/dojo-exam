@@ -11,6 +11,7 @@ import { getTotalQuestionCount } from './src/storage/repositories/question.repos
 import { initializeGoogleSignIn } from './src/services/auth-service';
 import { TokenRefreshService } from './src/services/token-refresh-service';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { IntegrityBlockedScreen } from './src/components/IntegrityBlockedScreen';
 import { useAuthStore } from './src/stores/auth-store';
 import { checkIntegrity } from './src/services/play-integrity.service';
 
@@ -18,6 +19,9 @@ export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState('Initializing...');
   const [error, setError] = useState<string | null>(null);
+  const [integrityBlockedMessage, setIntegrityBlockedMessage] = useState<string | null>(null);
+  const [integrityShowRetry, setIntegrityShowRetry] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const handleAppStateChange = (state: AppStateStatus) => {
     if (state === 'active') {
@@ -51,10 +55,28 @@ export default function App() {
         // Initialize SQLite database and Play Integrity check in parallel
         setSyncStatus('Setting up database and verifying integrity...');
         const [, integrityResult] = await Promise.all([initializeDatabase(), checkIntegrity()]);
+
+        // Block on ALL integrity failures when not verified
         if (!integrityResult.verified) {
-          console.warn('[App] Integrity verification did not pass:', integrityResult.error);
+          if (integrityResult.error?.type === 'DEFINITIVE') {
+            // Permanent block — sideloaded/re-signed APK
+            setIntegrityBlockedMessage(
+              integrityResult.error.message ||
+                'For security reasons, this app must be downloaded from Google Play.',
+            );
+            setIntegrityShowRetry(false);
+          } else {
+            // Transient / network error — show retry option
+            setIntegrityBlockedMessage(
+              integrityResult.error?.message ||
+                'Unable to verify your installation. Please check your internet connection and try again.',
+            );
+            setIntegrityShowRetry(true);
+          }
+          setIsReady(true);
+          return;
         }
-        console.warn('[App] Database initialized');
+        console.warn('[App] Integrity verified, proceeding with app initialization');
 
         // If user was signed in (persisted in AsyncStorage), switch to their database
         const authState = useAuthStore.getState();
@@ -114,7 +136,23 @@ export default function App() {
       subscription.remove();
       stopPersistence();
     };
-  }, []);
+  }, [retryCount]);
+
+  if (integrityBlockedMessage) {
+    return (
+      <IntegrityBlockedScreen
+        message={integrityBlockedMessage}
+        showRetry={integrityShowRetry}
+        onRetry={() => {
+          setIntegrityBlockedMessage(null);
+          setIntegrityShowRetry(false);
+          setIsReady(false);
+          setSyncStatus('Retrying verification...');
+          setRetryCount((c) => c + 1);
+        }}
+      />
+    );
+  }
 
   if (error) {
     return (

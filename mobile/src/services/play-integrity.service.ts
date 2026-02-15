@@ -146,6 +146,27 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
     };
   }
 
+  const isDefinitiveFailure =
+    response.verdict.appRecognitionVerdict === 'UNRECOGNIZED_VERSION' ||
+    response.verdict.appLicensingVerdict === 'UNLICENSED' ||
+    response.verdict.deviceRecognitionVerdict === 'UNKNOWN';
+
+  if (isDefinitiveFailure) {
+    console.warn('[PlayIntegrity] Definitive integrity failure:', {
+      appRecognitionVerdict: response.verdict.appRecognitionVerdict,
+      appLicensingVerdict: response.verdict.appLicensingVerdict,
+      deviceRecognitionVerdict: response.verdict.deviceRecognitionVerdict,
+    });
+    return {
+      verified: false,
+      verdict: response.verdict,
+      error: {
+        type: 'DEFINITIVE',
+        message: 'For security reasons, this app must be downloaded from Google Play.',
+      },
+    };
+  }
+
   const verified = validateVerdict(response.verdict);
   if (verified) {
     await saveStatus(true, new Date().toISOString());

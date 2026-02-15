@@ -6,7 +6,7 @@
  * No navigation access or app functionality available when this screen is shown.
  */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertTriangle, ExternalLink } from 'lucide-react-native';
 
@@ -37,24 +37,25 @@ export const IntegrityBlockedScreen: React.FC<IntegrityBlockedScreenProps> = ({
    * Falls back to showing instructions if Play Store is not available
    */
   const handleOpenPlayStore = async () => {
-    // Replace with actual package name when available
-    const packageName = 'com.examapp.cloudprep'; // TODO: Replace with actual package name
+    const packageName = 'com.awsccp.examprep';
     const playStoreUrl = `market://details?id=${packageName}`;
     const webPlayStoreUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
 
     try {
-      // Try to open Play Store app first
-      const canOpen = await Linking.canOpenURL(playStoreUrl);
-      if (canOpen) {
-        await Linking.openURL(playStoreUrl);
-      } else {
-        // Fallback to web Play Store
-        await Linking.openURL(webPlayStoreUrl);
+      if (Platform.OS === 'android') {
+        const canOpen = await Linking.canOpenURL(playStoreUrl);
+        await Linking.openURL(canOpen ? playStoreUrl : webPlayStoreUrl);
+        return;
       }
+
+      await Linking.openURL(webPlayStoreUrl);
     } catch (error) {
-      console.error('[IntegrityBlockedScreen] Failed to open Play Store:', error);
-      // If both fail, user will need to manually search for the app
-      // This is an acceptable fallback per spec edge cases
+      console.warn('[IntegrityBlockedScreen] Failed to open Play Store:', error);
+      Alert.alert(
+        'Open Play Store',
+        'Search for "AWS Cloud Practitioner Exam" in the Google Play Store.',
+        [{ text: 'OK' }],
+      );
     }
   };
 

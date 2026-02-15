@@ -120,10 +120,10 @@
 
 ### Mobile Tasks (US2)
 
-- [ ] T170 [US2] Implement definitive failure detection in mobile/src/services/play-integrity.service.ts: if verdict contains UNLICENSED, UNRECOGNIZED_VERSION, or device fail → set error type: 'DEFINITIVE', return `{ verified: false, error: { type: 'DEFINITIVE', message: 'For security reasons, this app must be downloaded from Google Play.' } }`
-- [ ] T171 [US2] Update mobile/src/App.tsx to render IntegrityBlockedScreen when integrity check returns definitive failure (no RootNavigator access)
-- [ ] T172 [P] [US2] Implement "Open Play Store" button in mobile/src/components/IntegrityBlockedScreen.tsx: on press, navigate to Play Store (or show how-to message if unavailable) using `Linking.openURL()`
-- [ ] T173 [US2] Add error logging to mobile/src/services/play-integrity.service.ts: log definitive verdict details for debugging (don't expose to user)
+- [x] T170 [US2] Implement definitive failure detection in mobile/src/services/play-integrity.service.ts: if verdict contains UNLICENSED, UNRECOGNIZED_VERSION, or device fail → set error type: 'DEFINITIVE', return `{ verified: false, error: { type: 'DEFINITIVE', message: 'For security reasons, this app must be downloaded from Google Play.' } }`
+- [x] T171 [US2] Update mobile/src/App.tsx to render IntegrityBlockedScreen when integrity check returns definitive failure (no RootNavigator access)
+- [x] T172 [P] [US2] Implement "Open Play Store" button in mobile/src/components/IntegrityBlockedScreen.tsx: on press, navigate to Play Store (or show how-to message if unavailable) using `Linking.openURL()`
+- [x] T173 [US2] Add error logging to mobile/src/services/play-integrity.service.ts: log definitive verdict details for debugging (don't expose to user)
 
 **Checkpoint**: Sideloaded users blocked; no app access granted
 
