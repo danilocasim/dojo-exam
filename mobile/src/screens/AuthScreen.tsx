@@ -32,7 +32,6 @@ import {
   CheckCircle2,
   Mail,
 } from 'lucide-react-native';
-import { Image } from 'react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useAuthStore } from '../stores/auth-store';
 import { useGoogleAuthRequest, handleGoogleAuthSuccess, signOut } from '../services/auth-service';
