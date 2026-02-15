@@ -142,3 +142,86 @@ mobile/                       # Mobile app (React Native + Expo)
 - Phase 1 Setup → Phase 2 Foundation → User Stories (3-7) → Polishing
 
 ✅ **Test Coverage**: Professional test organization with mocking patterns, proper isolation, clear traceability to requirements.
+
+---
+
+# Phase 2 Planning: Authentication & Cloud Sync (NEW)
+
+**Status**: Requirements specified (US6-US8, FR-034-041, SC-013-016), detailed tasks ready for execution.
+
+**Scope**: Add optional Google OAuth authentication and cloud persistence of exam history while maintaining backward compatibility with offline-only Phase 1 design.
+
+---
+
+## Detailed Phase 2 Task Breakdown (T112-T169)
+
+**Total Effort Estimate**: ~58 dev-hours (~7 person-days, or 2 weeks at 2 developers in parallel)  
+**Execution Phases**: Backend Auth → Persistence → Mobile Integration → Testing  
+**Recommended Timeline**: 4 weeks (1 week per phase)
+
+### PHASE 2A: Backend User & Authentication Infrastructure (T112-T119, ~10 hours)
+
+**T112**: Extend Prisma User Model → Add googleId (UNIQUE), email, oauthToken fields  
+**T113**: Create Google OAuth Service → Verify ID tokens from @react-native-google-signin/google-signin  
+**T114**: Create User Service → findOrCreateByGoogleId(), updateLastLogin() operations  
+**T115**: Create JWT Service → generateTokens(), verifyAccessToken(), verifyRefreshToken() (1hr, 30min expiry)  
+**T116**: Create Auth Controller → POST /auth/google/callback, GET /auth/me, POST /auth/refresh endpoints  
+**T117**: Create JWT Auth Guard → Middleware to validate Authorization header with JWT tokens  
+**T118**: Create JWT Strategy → Passport.js adapter for JWT extraction and validation  
+**T119**: Create Auth Module → NestJS module providing GoogleOAuthService, UserService, JwtService  
+
+**Success Criteria**: All 6+ tests passing, authentication flow works from mobile sign-in through token validation.
+
+### PHASE 2B: Backend Exam Persistence & Analytics (T120-T127, ~13 hours)
+
+**T120**: Extend Prisma ExamAttempt Model → Add userId (FK, nullable), syncStatus, syncedAt, syncRetries  
+**T121**: Create Database Migration → Apply schema changes, backfill existing attempts with syncStatus='synced'  
+**T122**: Create ExamAttempt Service → CRUD operations, sync status tracking, pending queue queries  
+**T123**: Create Exam-Attempts Controller → POST /exam-attempts (submit), GET /exam-attempts (history), pagination  
+**T124**: Create Analytics Service → Server-side aggregation (totalAttempts, passRate, avgScore, byExamType)  
+**T125**: Create Analytics Controller → GET /exam-attempts/analytics with optional examTypeId filter  
+**T126**: Create Exam-Attempts Module → NestJS module integrating all exam persistence services  
+**T127**: Create Offline Sync Queue Service → Backend processor for retry logic with exponential backoff (background job)  
+
+**Success Criteria**: All endpoints return correct data structures, analytics calculations accurate, sync retry logic tested with backoff timings.
+
+### PHASE 2C: Mobile Auth & Offline Sync Integration (T128-T142, ~20 hours)
+
+**T128**: Install OAuth Library → expo-auth-session, expo-web-browser, expo-crypto; configure Client IDs in .env and app.json  
+**T129**: Create Auth Service (Mobile) → useGoogleAuthRequest() hook + handleGoogleAuthSuccess() using expo-auth-session (Expo Go compatible)  
+**T130**: Create AsyncStorage Adapter → saveTokens(), getAccessToken(), clearTokens() for JWT persistence  
+**T131**: Create API Interceptor → Auto-inject Authorization header, detect 401, trigger refresh  
+**T132**: Create Auth Context & Store → Zustand store for isSignedIn, user, accessToken  
+**T133**: Create Token Refresh Service → POST /auth/refresh, logout on failure  
+**T134**: Create Auth Screen UI → "Sign in with Google" button (expo-auth-session hook), loading, logout, profile  
+**T135**: Update Home Screen → Show user, logout if signed in, sign-in link if not  
+**T136**: Integrate Exam Submission → POST exam to /exam-attempts if signed in  
+**T137**: Create Connectivity Listener → Detect online/offline state changes  
+**T138**: Create Offline Queue Service (Mobile) → SQLite table for pending exams  
+**T139**: Create Sync Queue Processor → Process pending on restore, exponential backoff  
+**T140**: Integrate Sync with Zustand → Add sync state tracking  
+**T141**: Create Sync Status Indicator UI → Show syncing/synced/pending status  
+**T142**: Create Cloud Analytics Screen → Display /exam-attempts/analytics summary  
+
+**Success Criteria**: Full OAuth flow tested, offline queue persists, sync <5s for 50 exams, analytics correct.
+
+### PHASE 2D: Integration Testing & Documentation (T143-T150, ~15 hours)
+
+**T143**: E2E Auth Flow Test → Mocked sign-in, token storage, auto-injection  
+**T144**: Offline Queue Integration Test → Offline exam → sync on restore  
+**T145**: API Integration Test → All Phase 2 endpoints tested  
+**T146**: Analytics Engine Test → Verify aggregation calculations  
+**T147**: Sync Processor Test → Exponential backoff, max retry logic  
+**T148**: Performance Benchmarks → Cloud sync <5s, analytics <2s, refresh <500ms  
+**T149**: Manual Testing Scenarios → Sign-in, sync, token expiration flows  
+**T150**: Phase 2 Documentation → OAuth, sync, analytics, migration guides  
+
+**Success Criteria**: 4+ integration tests passing, performance targets met, docs complete.
+
+---
+
+## Next Steps
+
+1. Request `/speckit.tasks 002-cloudprep-mobile --append` to generate detailed task acceptance criteria
+2. Begin Week 1: Backend auth infrastructure (T112-T119)
+3. Phase 0 research complete; Phase 1 design artifacts updated

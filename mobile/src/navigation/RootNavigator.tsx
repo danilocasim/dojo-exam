@@ -12,6 +12,7 @@ import {
   PracticeScreen,
   PracticeSummaryScreen,
   AnalyticsScreen,
+  CloudAnalyticsScreen,
 } from '../screens';
 
 // Color constants matching the app theme
@@ -44,6 +45,10 @@ export type RootStackParamList = {
 
   // Analytics
   Analytics: undefined;
+  CloudAnalytics: undefined;
+
+  // Auth
+  Auth: undefined;
 
   // Settings
   Settings: undefined;
@@ -104,6 +109,9 @@ import { ReviewScreen } from '../screens/ReviewScreen';
 
 // Settings screen (T107)
 import { SettingsScreen } from '../screens/SettingsScreen';
+
+// Auth screen (T134)
+import { AuthScreen } from '../screens/AuthScreen';
 
 /**
  * Root navigation component
@@ -192,6 +200,16 @@ export const RootNavigator: React.FC = () => {
           component={AnalyticsScreen}
           options={{ headerShown: false }}
         />
+
+        {/* Cloud Analytics (T142) */}
+        <Stack.Screen
+          name="CloudAnalytics"
+          component={CloudAnalyticsScreen}
+          options={{ headerShown: false }}
+        />
+
+        {/* Auth (T134) */}
+        <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
 
         {/* Settings */}
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />

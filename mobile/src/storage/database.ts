@@ -63,6 +63,26 @@ export const initializeDatabase = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_exam_attempt_started_at ON ExamAttempt(startedAt);
   `);
 
+  // Create ExamSubmission table (for historical submissions with sync tracking)
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS ExamSubmission (
+      id TEXT PRIMARY KEY,
+      userId TEXT,
+      examTypeId TEXT NOT NULL,
+      score REAL NOT NULL,
+      passed INTEGER NOT NULL,
+      duration INTEGER NOT NULL,
+      submittedAt TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      syncStatus TEXT NOT NULL CHECK (syncStatus IN ('PENDING', 'SYNCED', 'FAILED')) DEFAULT 'PENDING',
+      syncRetries INTEGER NOT NULL DEFAULT 0,
+      syncedAt TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_submission_exam_type ON ExamSubmission(examTypeId);
+    CREATE INDEX IF NOT EXISTS idx_submission_sync_status ON ExamSubmission(syncStatus);
+    CREATE INDEX IF NOT EXISTS idx_submission_submitted_at ON ExamSubmission(submittedAt);
+  `);
+
   // Create ExamAnswer table
   await database.execAsync(`
     CREATE TABLE IF NOT EXISTS ExamAnswer (
@@ -157,6 +177,7 @@ export const resetDatabase = async (): Promise<void> => {
     DROP TABLE IF EXISTS PracticeAnswer;
     DROP TABLE IF EXISTS PracticeSession;
     DROP TABLE IF EXISTS ExamAnswer;
+    DROP TABLE IF EXISTS ExamSubmission;
     DROP TABLE IF EXISTS ExamAttempt;
     DROP TABLE IF EXISTS Question;
     DROP TABLE IF EXISTS SyncMeta;

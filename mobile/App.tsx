@@ -1,12 +1,15 @@
 import './src/global.css';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { initializeDatabase } from './src/storage/database';
 import { performFullSync } from './src/services/sync.service';
+import { initPersistence, stopPersistence } from './src/services/persistence.service';
 import { getTotalQuestionCount } from './src/storage/repositories/question.repository';
+import { initializeGoogleSignIn } from './src/services/auth-service';
+import { TokenRefreshService } from './src/services/token-refresh-service';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 export default function App() {
@@ -14,9 +17,35 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState('Initializing...');
   const [error, setError] = useState<string | null>(null);
 
+  const handleAppStateChange = (state: AppStateStatus) => {
+    if (state === 'active') {
+      // App came to foreground - trigger sync and token refresh
+      console.log('[App] App came to foreground, triggering sync and token refresh');
+      TokenRefreshService.refreshIfNeeded().catch((err) => {
+        console.error('[App] Token refresh failed:', err);
+      });
+    } else if (state === 'background') {
+      // App went to background
+      console.log('[App] App went to background');
+    }
+  };
+
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Initialize Google Sign-In
+        setSyncStatus('Initializing authentication...');
+        try {
+          await initializeGoogleSignIn();
+          console.log('[App] Google Sign-In initialized');
+        } catch (err) {
+          console.warn('[App] Google Sign-In initialization failed (continuing):', err);
+        }
+
+        // Setup periodic token refresh (every minute)
+        const stopTokenRefresh = TokenRefreshService.setupPeriodicRefresh(60000);
+        console.log('[App] Token refresh service started');
+
         // Initialize SQLite database
         setSyncStatus('Setting up database...');
         await initializeDatabase();
@@ -50,6 +79,13 @@ export default function App() {
         const finalCount = await getTotalQuestionCount();
         console.warn(`[App] Total questions after sync: ${finalCount}`);
 
+        // Initialize persistence service for exam attempt sync
+        setSyncStatus('Setting up sync service...');
+        await initPersistence({
+          autoSyncEnabled: true,
+          autoSyncInterval: 300000, // 5 minutes
+        });
+
         setIsReady(true);
       } catch (e) {
         console.error('[App] Initialization failed:', e);
@@ -58,6 +94,14 @@ export default function App() {
     };
 
     initialize();
+
+    // Handle app state changes
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+      stopPersistence();
+    };
   }, []);
 
   if (error) {

@@ -1,0 +1,158 @@
+import NetInfo from '@react-native-community/netinfo';
+import { useExamAttemptStore } from '../stores';
+
+export interface PersistenceConfig {
+  autoSyncEnabled: boolean;
+  autoSyncInterval: number; // ms
+  maxRetries: number;
+  retryDelay: number; // ms
+}
+
+const DEFAULT_CONFIG: PersistenceConfig = {
+  autoSyncEnabled: true,
+  autoSyncInterval: 300000, // 5 minutes
+  maxRetries: 12,
+  retryDelay: 5000, // 5 seconds
+};
+
+let syncIntervalId: NodeJS.Timeout | null = null;
+let isOnline = true;
+let isSyncing = false;
+
+/**
+ * Initialize persistence service
+ * Sets up network monitoring and automatic sync
+ * @param config - Persistence configuration
+ * @param userId - Current user ID (for authenticated sync)
+ */
+export const initPersistence = async (
+  config: Partial<PersistenceConfig> = {},
+  userId?: string,
+): Promise<void> => {
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+
+  console.log('[PersistenceService] Initializing with config:', finalConfig);
+
+  // Monitor network connectivity
+  setupNetworkMonitoring(finalConfig, userId);
+
+  // Start automatic sync if enabled
+  if (finalConfig.autoSyncEnabled) {
+    startAutoSync(finalConfig, userId);
+  }
+};
+
+/**
+ * Setup network connectivity monitoring
+ */
+const setupNetworkMonitoring = (config: PersistenceConfig, userId?: string): void => {
+  NetInfo.addEventListener((state) => {
+    const wasOnline = isOnline;
+    isOnline = state.isConnected ?? false;
+
+    if (!wasOnline && isOnline) {
+      // Network came back online
+      console.log('[PersistenceService] Network came back online');
+      syncNow(config, userId);
+    } else if (wasOnline && !isOnline) {
+      // Network went offline
+      console.log('[PersistenceService] Network went offline');
+    }
+  });
+};
+
+/**
+ * Start automatic sync on interval
+ */
+const startAutoSync = (config: PersistenceConfig, userId?: string): void => {
+  if (syncIntervalId) {
+    clearInterval(syncIntervalId);
+  }
+
+  syncIntervalId = setInterval(() => {
+    if (isOnline && !isSyncing) {
+      syncNow(config, userId);
+    }
+  }, config.autoSyncInterval);
+
+  console.log(`[PersistenceService] Auto-sync started (interval: ${config.autoSyncInterval}ms)`);
+};
+
+/**
+ * Perform sync now
+ */
+const syncNow = async (config: PersistenceConfig, userId?: string): Promise<void> => {
+  if (isSyncing || !isOnline) {
+    return;
+  }
+
+  try {
+    isSyncing = true;
+    console.log('[PersistenceService] Starting sync...');
+
+    const store = useExamAttemptStore.getState();
+
+    // Sync pending attempts first
+    const syncResult = await store.syncPendingAttempts(userId);
+    console.log(
+      `[PersistenceService] Sync complete: ${syncResult.synced} synced, ${syncResult.failed} failed`,
+    );
+
+    // If there were failures or pending items, retry failed items
+    if (syncResult.failed > 0) {
+      console.log('[PersistenceService] Retrying failed attempts...');
+      await store.retryFailedAttempts(userId);
+    }
+  } catch (error) {
+    console.error('[PersistenceService] Sync failed:', error);
+  } finally {
+    isSyncing = false;
+  }
+};
+
+/**
+ * Stop persistence service
+ */
+export const stopPersistence = (): void => {
+  if (syncIntervalId) {
+    clearInterval(syncIntervalId);
+    syncIntervalId = null;
+  }
+  console.log('[PersistenceService] Stopped');
+};
+
+/**
+ * Check if device is online
+ */
+export const isNetworkOnline = (): boolean => {
+  return isOnline;
+};
+
+/**
+ * Check if sync is in progress
+ */
+export const isSyncInProgress = (): boolean => {
+  return isSyncing;
+};
+
+/**
+ * Manually trigger sync
+ */
+export const triggerSync = async (userId?: string): Promise<void> => {
+  await syncNow(DEFAULT_CONFIG, userId);
+};
+
+/**
+ * Get sync status
+ */
+export const getSyncStatus = () => {
+  const store = useExamAttemptStore.getState();
+
+  return {
+    isOnline,
+    isSyncing,
+    pendingCount: store.pendingCount,
+    failedCount: store.failedCount,
+    lastSyncTime: store.lastSyncTime,
+  };
+};

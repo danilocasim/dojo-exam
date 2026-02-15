@@ -4,7 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-12
 
 ## Active Technologies
 
-- **Mobile**: TypeScript 5.x, React Native 0.73+, Expo SDK 50+, React Navigation 6.x, expo-sqlite, Zustand, NativeWind, Axios
+- **Mobile**: TypeScript 5.x, React Native 0.73+, Expo SDK 50+, React Navigation 6.x, expo-sqlite, expo-auth-session, Zustand, NativeWind, Axios
 - **Backend**: TypeScript 5.x, NestJS, Fastify, Prisma ORM, PostgreSQL 15+
 - **Admin Portal**: React SPA (served by NestJS)
 - **Testing**: Jest, React Native Testing Library, Detox (mobile), Supertest (API)
@@ -91,7 +91,13 @@ POST /admin/questions                     # Create question (requires examTypeId
 
 ## Recent Changes
 
-- 002-cloudprep-mobile: AWS Cloud Practitioner exam app with offline-first architecture, NestJS + Prisma backend, React Native + Expo mobile app
+- **Phase 1** (002-cloudprep-mobile): AWS Cloud Practitioner exam app - ✅ Complete (115 tasks, 99 tests)
+- **Phase 2** (002-cloudprep-mobile --append): Google OAuth + Cloud Sync - 📋 Ready (39 tasks T112-T150)
+  - User Stories: US6 (Google Sign-In), US7 (Exam History Persistence), US8 (Analytics Sync)
+  - Functional Requirements: FR-034 to FR-041 (authentication, persistence, analytics)
+  - Task breakdown: Backend Auth (8) + Persistence (8) + Mobile Integration (15) + Testing (8)
+  - Timeline: 4 weeks with 2 developers in parallel, ~58 dev-hours
+  - All design documents updated: research.md, data-model.md, contracts/api.yaml, plan.md, tasks.md
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

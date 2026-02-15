@@ -21,11 +21,17 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-sqlite"]
+    "plugins": ["expo-sqlite"],
+    "scheme": "cloudprep",
+    "extra": {
+      "googleWebClientId": "404307950460-pjn95o851nqdhkkvof74oo3otb3oe0kg.apps.googleusercontent.com",
+      "googleAndroidClientId": "404307950460-pjn95o851nqdhkkvof74oo3otb3oe0kg.apps.googleusercontent.com"
+    }
   }
 }

@@ -1,4 +1,5 @@
 // T040: Exam Store - Zustand state management for exam mode
+// T140: Extended with sync state for cloud persistence
 import { create } from 'zustand';
 import { ExamAnswer, Question, ExamResult } from '../storage/schema';
 import {
@@ -14,6 +15,9 @@ import {
   ExamSession,
 } from '../services';
 import { getAnswersByExamAttemptId } from '../storage/repositories/exam-answer.repository';
+import { useExamAttemptStore } from './exam-attempt.store';
+import { useAuthStore } from './auth-store';
+import { EXAM_TYPE_ID } from '../config';
 
 /**
  * Exam store state
@@ -35,6 +39,14 @@ export interface ExamState {
 
   // Result (after submission)
   result: ExamResult | null;
+
+  // T140: Sync state for cloud persistence
+  syncState: {
+    pendingCount: number;
+    isSyncing: boolean;
+    lastSyncedAt: Date | null;
+    lastSyncError: string | null;
+  };
 }
 
 /**
@@ -64,6 +76,10 @@ export interface ExamActions {
   // State updates
   refreshProgress: () => Promise<void>;
   setError: (error: string | null) => void;
+
+  // T140: Sync actions
+  syncToCloud: () => Promise<void>;
+  refreshSyncState: () => void;
 }
 
 export type ExamStore = ExamState & ExamActions;
@@ -81,6 +97,12 @@ const initialState: ExamState = {
   answeredCount: 0,
   flaggedCount: 0,
   result: null,
+  syncState: {
+    pendingCount: 0,
+    isSyncing: false,
+    lastSyncedAt: null,
+    lastSyncError: null,
+  },
 };
 
 /**
@@ -167,6 +189,7 @@ export const useExamStore = create<ExamStore>((set, get) => ({
 
   /**
    * Submit exam for scoring
+   * T140: Also queues result for cloud sync if user is signed in
    */
   submitExam: async () => {
     const { session } = get();
@@ -177,6 +200,32 @@ export const useExamStore = create<ExamStore>((set, get) => ({
     set({ isSubmitting: true, error: null });
     try {
       const result = await submitExamService(session.attempt.id);
+
+      // T140: Queue for cloud sync via exam-attempt store
+      try {
+        const authState = useAuthStore.getState();
+        await useExamAttemptStore.getState().submitExam({
+          examTypeId: EXAM_TYPE_ID,
+          score: result.score,
+          passed: result.passed,
+          duration: Math.round(result.timeSpentMs / 1000),
+          userId: authState.isSignedIn ? authState.user?.id : undefined,
+        });
+        // Refresh sync state
+        const attemptStore = useExamAttemptStore.getState();
+        set({
+          syncState: {
+            pendingCount: attemptStore.pendingCount,
+            isSyncing: attemptStore.isSyncing,
+            lastSyncedAt: attemptStore.lastSyncTime ?? null,
+            lastSyncError: null,
+          },
+        });
+      } catch (syncErr) {
+        console.warn('[ExamStore] Failed to queue for cloud sync:', syncErr);
+        // Non-blocking: exam submission still succeeds locally
+      }
+
       set({
         result,
         isSubmitting: false,
@@ -341,6 +390,53 @@ export const useExamStore = create<ExamStore>((set, get) => ({
    */
   setError: (error: string | null) => {
     set({ error });
+  },
+
+  /**
+   * T140: Trigger cloud sync for pending exam submissions
+   */
+  syncToCloud: async () => {
+    const authState = useAuthStore.getState();
+    if (!authState.isSignedIn) return;
+
+    try {
+      set((state) => ({
+        syncState: { ...state.syncState, isSyncing: true, lastSyncError: null },
+      }));
+
+      const userId = authState.user?.id;
+      const result = await useExamAttemptStore.getState().syncPendingAttempts(userId);
+      const attemptStore = useExamAttemptStore.getState();
+
+      set({
+        syncState: {
+          pendingCount: attemptStore.pendingCount,
+          isSyncing: false,
+          lastSyncedAt: result.synced > 0 ? new Date() : get().syncState.lastSyncedAt,
+          lastSyncError: result.failed > 0 ? `${result.failed} submission(s) failed to sync` : null,
+        },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sync failed';
+      set((state) => ({
+        syncState: { ...state.syncState, isSyncing: false, lastSyncError: message },
+      }));
+    }
+  },
+
+  /**
+   * T140: Refresh sync state from exam-attempt store
+   */
+  refreshSyncState: () => {
+    const attemptStore = useExamAttemptStore.getState();
+    set({
+      syncState: {
+        pendingCount: attemptStore.pendingCount,
+        isSyncing: attemptStore.isSyncing,
+        lastSyncedAt: attemptStore.lastSyncTime ?? null,
+        lastSyncError: null,
+      },
+    });
   },
 }));
 

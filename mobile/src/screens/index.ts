@@ -17,3 +17,9 @@ export { AnalyticsScreen } from './AnalyticsScreen';
 
 // Settings screen (T107)
 export { SettingsScreen } from './SettingsScreen';
+
+// Auth screen (T134)
+export { AuthScreen } from './AuthScreen';
+
+// Cloud Analytics screen (T142)
+export { CloudAnalyticsScreen } from './CloudAnalyticsScreen';

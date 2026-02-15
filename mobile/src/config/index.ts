@@ -15,3 +15,10 @@ export type {
   PracticeConfig,
   StorageConfig,
 } from './app.config';
+
+/**
+ * Get the API base URL from configuration
+ */
+export function getAPIURL(): string {
+  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+}

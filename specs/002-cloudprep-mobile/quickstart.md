@@ -484,21 +484,53 @@ npm run test:e2e
 Create `mobile/.env`:
 
 ```
-API_URL=http://localhost:3000/v1
-```
+EXPO_PUBLIC_API_URL=http://192.168.1.YOUR_IP:3000
 
-Create `mobile/.env.production`:
-
-```
-API_URL=https://api.cloudprep.app/v1
+# Google OAuth Client IDs (from Google Cloud Console)
+# See: https://console.cloud.google.com/apis/credentials
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=YOUR_GOOGLE_ANDROID_CLIENT_ID.apps.googleusercontent.com
 ```
 
 Create `api/.env`:
 
 ```
+# Server
+NODE_ENV=development
+PORT=3000
+
+# Database
 DATABASE_URL="postgresql://postgres:password@localhost:5432/cloudprep?schema=public"
+
+# JWT Authentication
 JWT_SECRET="your-secret-key-change-in-production"
+JWT_EXPIRES_IN="7d"
+JWT_ACCESS_SECRET="your-access-token-secret-change-in-production"
+JWT_REFRESH_SECRET="your-refresh-token-secret-change-in-production"
+
+# Google OAuth (same Web Client ID used by mobile app)
+GOOGLE_WEB_CLIENT_ID=YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com
+
+# CORS
+CORS_ENABLED=true
+CORS_ORIGIN=http://localhost:8081,http://localhost:19006
 ```
+
+### Google OAuth Setup
+
+To enable Google Sign-In, you must create OAuth credentials in Google Cloud Console:
+
+1. Go to [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create or select a project
+3. Create an **OAuth 2.0 Client ID** of type **Web application**:
+   - Name: `CloudPrep Web` (or any name)
+   - Authorized redirect URIs: `https://auth.expo.io/@YOUR_EXPO_USERNAME/cloudprep`
+   - Copy the **Client ID** → paste as `GOOGLE_WEB_CLIENT_ID` in `api/.env` AND as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `mobile/.env`
+4. (Optional) Create an **OAuth 2.0 Client ID** of type **Android**:
+   - Package name: `com.anonymous.mobile` (from `app.json`)
+   - SHA-1 fingerprint: run `cd android && ./gradlew signingReport`
+   - Copy the **Client ID** → paste as `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` in `mobile/.env`
+5. Also update `app.json` → `expo.extra.googleWebClientId` with the same Web Client ID
 
 ## Next Steps
 

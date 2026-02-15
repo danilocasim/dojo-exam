@@ -20,6 +20,14 @@ export const API_CONFIG = {
 
   /** Number of retry attempts for failed requests */
   RETRY_ATTEMPTS: 3,
+
+  /** Google OAuth Web Client ID (used by expo-auth-session and backend verification) */
+  GOOGLE_WEB_CLIENT_ID:
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com',
+
+  /** Google OAuth Android Client ID (for standalone Android builds) */
+  GOOGLE_ANDROID_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
 } as const;
 
 /**

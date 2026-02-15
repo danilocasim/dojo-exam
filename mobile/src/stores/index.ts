@@ -48,3 +48,6 @@ export {
   selectHasData,
 } from './analytics.store';
 export type { AnalyticsState, AnalyticsActions, AnalyticsStore } from './analytics.store';
+
+// ExamAttempt store (T133)
+export { useExamAttemptStore } from './exam-attempt.store';

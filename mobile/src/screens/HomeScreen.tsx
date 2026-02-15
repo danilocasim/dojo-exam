@@ -25,9 +25,13 @@ import {
   Zap,
   ChevronRight,
   Target,
+  LogOut,
+  User,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
+import { useAuthStore } from '../stores/auth-store';
+import { signOut } from '../services/auth-service';
 import { hasInProgressExam, abandonCurrentExam } from '../services';
 import { getInProgressExamAttempt } from '../storage/repositories/exam-attempt.repository';
 import { getTotalQuestionCount } from '../storage/repositories/question.repository';
@@ -113,6 +117,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { startExam, resumeExam, isLoading, error, setError } = useExamStore();
+  const { isSignedIn, user } = useAuthStore();
 
   const [hasInProgress, setHasInProgress] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
@@ -188,6 +193,15 @@ export const HomeScreen: React.FC = () => {
         }
       }
       Alert.alert('Error', message || 'Failed to start exam');
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign-out failed';
+      Alert.alert('Error', message);
     }
   };
 
@@ -307,6 +321,40 @@ export const HomeScreen: React.FC = () => {
           </View>
           <Text style={styles.headerBadge}>CLF-C02</Text>
         </View>
+
+        {/* ── Auth Info Section ── */}
+        {!isSignedIn && (
+          <TouchableOpacity style={styles.authSection} onPress={() => navigation.navigate('Auth')}>
+            <View style={styles.userInfo}>
+              <View style={[styles.userAvatar, { backgroundColor: colors.primaryOrange }]}>
+                <User size={16} color="#fff" strokeWidth={2} />
+              </View>
+              <View style={styles.userDetails}>
+                <Text style={styles.userName}>Sign in with Google</Text>
+                <Text style={styles.userEmail}>Sync exam results across devices</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+        {isSignedIn && user && (
+          <View style={styles.authSection}>
+            <View style={styles.userInfo}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>
+                  {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0)}
+                </Text>
+              </View>
+              <View style={styles.userDetails}>
+                <Text style={styles.userName}>{user.name || 'Signed In'}</Text>
+                <Text style={styles.userEmail}>{user.email}</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+              <LogOut size={16} color={colors.textMuted} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ── Inline Stats Strip ── */}
         <View style={styles.statsStrip}>
@@ -756,6 +804,60 @@ const styles = StyleSheet.create({
   actionIconWrap: { marginBottom: 10 },
   actionTitle: { fontSize: 13, fontWeight: '600', color: colors.textHeading },
   actionSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+
+  // Auth Section
+  authSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primaryOrange,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textHeading,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textHeading,
+  },
+  userEmail: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  signOutButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceHover,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 export default HomeScreen;

@@ -1,6 +1,7 @@
 // Axios API client with base URL config
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { API_CONFIG } from '../config';
+import { setupApiInterceptors } from './api-interceptor';
 
 /**
  * API error response structure (matches backend ErrorResponse DTO)
@@ -64,6 +65,9 @@ const createApiClient = (): AxiosInstance => {
     },
   );
 
+  // Setup auth interceptors (token injection, refresh on 401)
+  setupApiInterceptors(client);
+
   return client;
 };
 
@@ -71,6 +75,11 @@ const createApiClient = (): AxiosInstance => {
  * API client instance
  */
 export const apiClient = createApiClient();
+
+/**
+ * Export as 'api' for use in other services (especially auth-service)
+ */
+export const api = apiClient;
 
 /**
  * Generic GET request

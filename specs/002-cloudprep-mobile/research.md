@@ -243,4 +243,129 @@
 
 ## Open Questions Resolved
 
-All technical questions resolved. Ready for Phase 1 design.
+All Phase 1 technical questions resolved. Ready for Phase 1 design.
+
+---
+
+# Phase 2 Research: Authentication & Cloud Sync (NEW)
+
+**Date**: February 15, 2026  
+**Context**: Extend app with optional Google OAuth sign-in and cloud persistence of exam history.  
+**Goal**: Enable cross-device sync while maintaining backward compatibility (unsigned users offline-only).
+
+## 4. Google OAuth Library & Token Management
+
+**Context**: App needs to integrate Google Sign-In for user authentication.
+
+**Decision**: Use `expo-auth-session` with `expo-auth-session/providers/google` for mobile OAuth flow; store JWT tokens in AsyncStorage. This replaces the previous decision to use `@react-native-google-signin/google-signin`.
+
+**Rationale**:
+
+- `expo-auth-session` works in **Expo Go** without native builds — critical for development workflow
+- Uses web-based OAuth flow (browser popup) that works on both Android and iOS
+- No native module compilation required; no `expo-dev-client` needed during development
+- Same Google OAuth tokens (accessToken) — backend verifies via Google's userinfo API
+- Still produces JWT tokens from backend; same auth flow downstream
+- Can be used alongside `@react-native-google-signin/google-signin` for production builds if desired
+
+**Previous Decision (Superseded)**:
+
+- `@react-native-google-signin/google-signin` requires native code and does NOT work in Expo Go
+- Would require `expo-dev-client` + `npx expo run:android` for every development session
+- Retained as optional for production builds where native sign-in UX is preferred
+
+**Alternatives Considered**:
+
+- `@react-native-google-signin/google-signin`: Native UX but incompatible with Expo Go (superseded)
+- Firebase Authentication: Feature-rich but adds Google Services dependency; overkill for sign-in only
+- Auth0: Reliable but requires additional backend configuration; adds third-party dependency
+- Custom JWT endpoint: Requires more backend code; less battle-tested than managed solutions
+
+**Implementation Pattern**:
+
+1. Mobile uses `expo-auth-session/providers/google` hook → opens web-based consent screen
+2. User grants permission → returns `accessToken` (and optionally `idToken`)
+3. Mobile sends `accessToken` to backend POST `/auth/google/callback`
+4. Backend verifies `accessToken` via Google userinfo API (or `idToken` via google-auth-library)
+5. Backend creates/updates User record, returns JWT token pair
+6. Mobile stores JWT in AsyncStorage, includes in Authorization header for all requests
+
+**Token Lifecycle**:
+
+- JWT expires after 1 hour (common pattern)
+- Implement refresh endpoint POST `/auth/refresh` using refresh token stored separately
+- API interceptor detects 401 → auto-refresh using refresh token
+- If refresh fails → clear stored tokens, user must sign in again
+
+## 5. Offline Sync Queue Pattern
+
+**Context**: App must queue exam submissions when offline and sync when connectivity restores.
+
+**Decision**: SQLite-backed queue with exponential backoff retry logic and status tracking.
+
+**Rationale**:
+
+- SQLite already available for local storage; no new dependencies
+- Queue persists across app crashes (reliable)
+- Exponential backoff prevents hammering server on transient failures
+- Status tracking (pending, synced, failed) enables UI feedback to user
+- Automatic retries on connectivity restore; no manual UI needed
+- Works for any offline-first feature (exams, profile updates, etc.)
+
+**Queue Lifecycle**:
+
+1. User completes exam → ExamSession marked `submitted: true`, queued locally
+2. If online → POST to `/exam-attempts` immediately, mark `synced: true`
+3. If offline → Stay in SQLite queue with `status: pending`
+4. On connectivity restore → Batch process queue, retry failed items
+5. Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s (max 30m retry window)
+6. After max retries → mark `status: failed`, notify user
+
+**Alternatives Considered**:
+
+- Immediate sync on every network change: Inefficient, wastes power
+- Manual user-triggered sync: Bad UX; users forget
+- Cloud-only with fallback cache: Data loss if no backup; doesn't match offline-first philosophy
+- RxJS pipes: Complex; SQLite queue simpler and more durable
+
+## 6. Server-Side Analytics Aggregation
+
+**Context**: Server must compute summary statistics from exam attempts without client calculating.
+
+**Decision**: Synchronous aggregation at endpoint, with optional caching layer for heavy queries.
+
+**Rationale**:
+
+- Server-side calculation more secure (client can't manipulate stats)
+- Consistency across users (one source of truth)
+- Pagination handles large result sets efficiently
+- Synchronous queries simpler than message queues for initial implementation
+- Prisma aggregation functions make queries concise
+
+**Aggregation Endpoints**:
+
+1. GET `/exam-attempts/analytics?examTypeId=aws-ccp` → Summary (attempt count, pass rate, avg score)
+2. GET `/exam-attempts?userId=...&page=1&limit=20` → Paginated exam history (with individual scores)
+3. Breakdown: Per domain pass rate (requires parsing answers JSON or storing domain-level metrics)
+
+**Alternative**: Store pre-aggregated metrics in separate AnalyticsSnapshot table (updated via scheduled job). Deferred to Phase 3 if performance becomes issue.
+
+**Caching Consideration**:
+
+- First version: Synchronous query per request (no caching)
+- Phase 2.1 (optional): Redis cache with 5-minute TTL for aggregate stats
+- Invalidation: Cache clear on POST `/exam-attempts`
+
+## Phase 2 Research Summary
+
+| Topic | Decision | Justification |
+|-------|----------|---------------|
+| **OAuth Library** | @react-native-google-signin/google-signin | Battle-tested, native integration, simplest for sign-in-only |
+| **Token Storage** | AsyncStorage (with secure storage option) | Convenient, adequate security for JWT; can upgrade to encrypted storage later |
+| **Sync Pattern** | SQLite-backed offline queue with exponential backoff | Durable, automatic, no manual UI needed |
+| **Analytics** | Synchronous server-side aggregation with pagination | Secure, simple, scalable with pagination |
+| **Backward Compatibility** | Unsigned users stay fully offline | No changes to existing behavior; auth is opt-in |
+
+All Phase 2 unknowns resolved. Ready for Phase 1 design (data model & API contracts).
+
+

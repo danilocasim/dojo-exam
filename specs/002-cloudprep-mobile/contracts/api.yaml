@@ -17,7 +17,12 @@ info:
     - Exam type management
     - Approval workflow
     - Content management
-  version: 1.1.0
+
+    **Phase 2 Endpoints** (authentication & cloud sync, NEW):
+    - Google OAuth sign-in and token management
+    - Exam attempt submission and history retrieval
+    - Server-side analytics aggregation
+  version: 1.2.0
   contact:
     name: CloudPrep Team
 
@@ -32,6 +37,10 @@ tags:
     description: Mobile app endpoints (no auth required)
   - name: Admin
     description: Admin portal endpoints (auth required)
+  - name: Auth
+    description: Authentication endpoints (Google OAuth, JWT) - Phase 2
+  - name: ExamAttempts
+    description: Exam submission and analytics endpoints - Phase 2
 
 paths:
   /exam-types/{examTypeId}:
@@ -439,6 +448,254 @@ paths:
         '401':
           description: Invalid credentials
 
+  # Phase 2: Authentication & Cloud Sync Endpoints (NEW)
+
+  /auth/google/callback:
+    post:
+      tags: [Auth]
+      operationId: googleCallback
+      summary: Google OAuth callback handler (Phase 2)
+      description: |
+        Exchange Google ID token for JWT. Called after user completes Google Sign-In.
+        Creates or updates User record in database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  description: ID token from Google Sign-In SDK
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT access token (1 hour expiry)
+                  refreshToken:
+                    type: string
+                    description: Refresh token (long-lived)
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid or expired ID token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Refresh JWT access token
+      description: Use refresh token to obtain a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Logout current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /exam-attempts:
+    post:
+      tags: [ExamAttempts]
+      operationId: submitExamAttempt
+      summary: Submit completed exam to cloud (Phase 2)
+      description: |
+        Called after user completes and submits an exam.
+        Records exam attempt in database for signed-in users.
+        Called by offline sync queue after connectivity restores.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [examAttemptId, examTypeId, score, passed, answers, duration]
+              properties:
+                examAttemptId:
+                  type: string
+                  format: uuid
+                  description: Mobile exam attempt ID
+                examTypeId:
+                  type: string
+                  description: Exam type (e.g., aws-ccp)
+                score:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: Exam score percentage
+                passed:
+                  type: boolean
+                  description: Whether user passed exam
+                answers:
+                  type: array
+                  description: User's answers to each question
+                  items:
+                    type: object
+                    properties:
+                      questionId:
+                        type: string
+                        format: uuid
+                      selectedOptions:
+                        type: array
+                        items:
+                          type: string
+                duration:
+                  type: integer
+                  description: Exam duration in seconds
+      responses:
+        '201':
+          description: Exam attempt recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamAttempt'
+        '400':
+          description: Invalid exam data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags: [ExamAttempts]
+      operationId: getExamAttempts
+      summary: Get user's exam history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: examTypeId
+          in: query
+          description: Filter by exam type
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number (default 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated exam history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExamAttempt'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                        description: Total exam attempts
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /exam-attempts/analytics:
+    get:
+      tags: [ExamAttempts]
+      operationId: getAnalytics
+      summary: Get analytics summary (Phase 2)
+      description: |
+        Server-side analytics aggregation. Returns summary statistics across
+        all exam attempts for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: examTypeId
+          in: query
+          description: Filter analytics by exam type (optional)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   schemas:
     ExamTypeResponse:
@@ -778,6 +1035,120 @@ components:
           type: object
           additionalProperties:
             type: integer
+
+    # Phase 2 Schemas (NEW)
+
+    User:
+      type: object
+      description: Authenticated user from Google OAuth
+      required: [id, googleId, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User primary key
+        googleId:
+          type: string
+          description: Google account ID
+        email:
+          type: string
+          format: email
+          description: User email
+        name:
+          type: string
+          nullable: true
+          description: User name from Google profile
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful login
+
+    ExamAttempt:
+      type: object
+      description: Exam submission record
+      required: [id, examTypeId, score, passed, submittedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        examTypeId:
+          type: string
+          description: Exam type identifier
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Exam score percentage
+        passed:
+          type: boolean
+          description: Whether exam was passed
+        duration:
+          type: integer
+          description: Exam duration in seconds
+        submittedAt:
+          type: string
+          format: date-time
+          description: When exam was submitted
+        syncStatus:
+          type: string
+          enum: [pending, synced, failed]
+          description: |
+            Cloud sync status:
+            - pending = exam_to submitted locally but not yet sent to backend
+            - synced = exam successfully persisted on backend
+            - failed = backend received exam but processing encountered error
+
+    AnalyticsSummary:
+      type: object
+      description: User's exam analytics summary
+      properties:
+        totalAttempts:
+          type: integer
+          description: Total exams completed
+        totalPassed:
+          type: integer
+          description: Number of passed exams
+        passRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Pass rate as decimal (0-1)
+        averageScore:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          description: Average exam score
+        averageDuration:
+          type: integer
+          description: Average exam duration in seconds
+        byExamType:
+          type: array
+          description: Analytics broken down by exam type
+          items:
+            type: object
+            properties:
+              examTypeId:
+                type: string
+              attempts:
+                type: integer
+              passed:
+                type: integer
+              passRate:
+                type: number
+              averageScore:
+                type: number
+        lastAttemptAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When last exam was taken
 
   responses:
     Unauthorized:

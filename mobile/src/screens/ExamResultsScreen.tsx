@@ -16,7 +16,8 @@ import { CircularProgress } from '../components/CircularProgress';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { getExamResult, formatTimeSpent } from '../services';
 import { ExamResult, DomainScore } from '../storage/schema';
-import { useExamStore } from '../stores';
+import { useExamStore, useExamAttemptStore } from '../stores';
+import { EXAM_TYPE_ID } from '../config/app.config';
 
 // AWS Modern Color Palette
 const colors = {
@@ -63,6 +64,7 @@ export const ExamResultsScreen: React.FC = () => {
   // Get result from store if available, otherwise fetch
   const storedResult = useExamStore((state) => state.result);
   const resetExamState = useExamStore((state) => state.resetExamState);
+  const submitExam = useExamAttemptStore((state) => state.submitExam);
 
   useEffect(() => {
     loadResult();
@@ -74,6 +76,8 @@ export const ExamResultsScreen: React.FC = () => {
     if (storedResult && storedResult.examAttemptId === attemptId) {
       setResult(storedResult);
       setLoading(false);
+      // Submit exam attempt to store
+      submitExamAttempt(storedResult);
       return;
     }
 
@@ -82,11 +86,34 @@ export const ExamResultsScreen: React.FC = () => {
       setLoading(true);
       const examResult = await getExamResult(attemptId);
       setResult(examResult);
+      // Submit exam attempt to store
+      submitExamAttempt(examResult);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load results';
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitExamAttempt = async (examResult: ExamResult) => {
+    try {
+      // Use timeSpentMs from the result (already calculated during submission)
+      const duration = Math.round(examResult.timeSpentMs / 1000) || 0;
+
+      // Submit to exam attempt store
+      await submitExam({
+        examTypeId: EXAM_TYPE_ID,
+        score: examResult.score,
+        passed: examResult.passed,
+        duration,
+        submittedAt: new Date(examResult.completedAt || new Date()),
+      });
+
+      console.log('[ExamResultsScreen] Exam attempt submitted successfully');
+    } catch (error) {
+      console.error('[ExamResultsScreen] Failed to submit exam attempt:', error);
+      // Don't fail the results screen, just log the error
     }
   };
 

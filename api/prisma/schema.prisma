@@ -28,6 +28,12 @@ enum QuestionStatus {
   ARCHIVED
 }
 
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+}
+
 // Multi-tenant exam type (e.g., AWS CCP, Solutions Architect)
 model ExamType {
   id            String   @id // e.g., "CLF-C02", "SAA-C03"
@@ -44,6 +50,7 @@ model ExamType {
 
   questions    Question[]
   syncVersions SyncVersion[]
+  examAttempts ExamAttempt[]
 }
 
 model Admin {
@@ -96,4 +103,43 @@ model SyncVersion {
   updatedAt  DateTime @updatedAt
 
   examType ExamType @relation(fields: [examTypeId], references: [id])
+}
+
+// Phase 2: User account from Google OAuth
+model User {
+  id          String    @id @default(uuid())
+  googleId    String    @unique // Google account ID from OAuth
+  email       String    @unique
+  name        String?
+  oauthToken  String? // Encrypted refresh token storage
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  examAttempts ExamAttempt[]
+}
+
+// Phase 2: Exam submission record (extended in T120 with userId, syncStatus fields)
+model ExamAttempt {
+  id          String   @id @default(uuid())
+  userId      String? // FK to User (nullable for unsigned/Phase 1 exams)
+  examTypeId  String
+  score       Int // 0-100%
+  passed      Boolean
+  duration    Int // seconds
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Phase 2: Cloud sync tracking
+  syncStatus  SyncStatus @default(PENDING) // pending, synced, failed
+  syncedAt    DateTime?
+  syncRetries Int        @default(0) // Number of failed sync attempts
+
+  user     User?    @relation(fields: [userId], references: [id])
+  examType ExamType @relation(fields: [examTypeId], references: [id])
+
+  @@index([userId])
+  @@index([examTypeId])
+  @@index([syncStatus])
 }
