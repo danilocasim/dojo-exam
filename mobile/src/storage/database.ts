@@ -179,6 +179,18 @@ export const initializeDatabase = async (): Promise<void> => {
     );
     INSERT OR IGNORE INTO UserStats (id) VALUES (1);
   `);
+
+  // Create IntegrityStatus table (T151: Phase 3 - Play Integrity Guard)
+  // Stores cached result of Play Integrity verification with 30-day TTL
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS IntegrityStatus (
+      id TEXT PRIMARY KEY DEFAULT 'singleton',
+      integrity_verified INTEGER NOT NULL DEFAULT 0,
+      verified_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 };
 
 /**

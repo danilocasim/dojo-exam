@@ -53,9 +53,9 @@
 
 ### Setup Tasks
 
-- [ ] T151 Create IntegrityStatus SQLite table migration in mobile/src/storage/migrations/ (add columns: `id TEXT PRIMARY KEY DEFAULT 'singleton'`, `integrity_verified BOOLEAN NOT NULL DEFAULT FALSE`, `verified_at TEXT NOT NULL`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`)
-- [ ] T152 [P] Create mobile/src/services/play-integrity.service.ts with stub functions for `checkIntegrity()`, `requestToken()`, `validateVerdict()`, `isCacheValid()`, `getCacheTTL()`
-- [ ] T153 [P] Create mobile/src/stores/play-integrity.store.ts with Zustand store for `integrityState`, `setIntegrityStatus()`, `clearIntegrityCache()` selectors
+- [x] T151 Create IntegrityStatus SQLite table migration in mobile/src/storage/migrations/ (add columns: `id TEXT PRIMARY KEY DEFAULT 'singleton'`, `integrity_verified BOOLEAN NOT NULL DEFAULT FALSE`, `verified_at TEXT NOT NULL`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`)
+- [x] T152 [P] Create mobile/src/services/play-integrity.service.ts with stub functions for `checkIntegrity()`, `requestToken()`, `validateVerdict()`, `isCacheValid()`, `getCacheTTL()`
+- [x] T153 [P] Create mobile/src/stores/play-integrity.store.ts with Zustand store for `integrityState`, `setIntegrityStatus()`, `clearIntegrityCache()` selectors
 
 **Checkpoint**: Project structure in place for Phase 2 implementation
 
