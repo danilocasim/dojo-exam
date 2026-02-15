@@ -1,8 +1,16 @@
 # Tasks: Play Integrity Guard
 
-**Input**: Design documents from `/specs/003-play-integrity/`
-**Prerequisites**: plan.md ✓, spec.md ✓, research.md ✓, data-model.md ✓, contracts/integrity-api.yaml ✓
-**Status**: 📋 **READY FOR IMPLEMENTATION (30 tasks, T151–T180)**
+**Input**: Design documents from `/specs/003-play-integrity/`  
+**Prerequisites**:  
+- ✅ Phase 2 (002-cloudprep-mobile) Complete - Authentication, cloud sync, JWT infrastructure
+- ✅ Design: plan.md, spec.md, research.md, data-model.md, contracts/integrity-api.yaml  
+**Status**: 📋 **READY FOR IMPLEMENTATION (40 tasks, T151–T190)**
+
+**Phase 2 Integration Notes**:  
+- Uses existing mobile services architecture (Phase 2: ExamAttemptService, AuthService patterns)  
+- Extends API module structure (Phase 2: auth/, exam-attempts/ → Phase 3: integrity/)  
+- Leverages JWT token patterns for API communication  
+- Preserves offline-first design from Phase 1-2
 
 ## Completion Summary
 

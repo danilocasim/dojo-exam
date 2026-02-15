@@ -2,12 +2,38 @@
 
 **Feature Branch**: `003-play-integrity`  
 **Created**: February 15, 2026  
-**Status**: Draft  
+**Status**: Ready for Implementation  
+**Prerequisites**: Phase 2 (002-cloudprep-mobile) ✅ Complete  
 **Input**: Protect the paid app from sideloaded APK installs and tampered builds using Play Integrity API only, while preserving pure offline functionality and fast deployment.
 
 ## Overview
 
 Play Integrity Guard adds a one-time app integrity verification on first launch using Google's Play Integrity API. The check confirms the app was installed from Google Play Store, that the app signature matches the release key, and that basic device integrity is intact. Once verified, the result is cached locally and the app only re-verifies on cold start if the cache is older than 30 days—preserving the fully offline experience. Sideloaded, re-signed, or tampered builds are blocked entirely. A development bypass ensures local builds work without Play Store installation during development.
+
+**Phase 2 Foundation**: This feature builds on Phase 2's authentication and cloud sync infrastructure. The API endpoint architecture, mobile services patterns, and JWT token management established in Phase 2 provide the foundation for the backend integrity verification proxy. The offline-first architecture from Phase 1-2 is preserved—after initial verification, apps work identically to Phase 2 behavior.
+
+## Dependencies
+
+### Phase 2 (002-cloudprep-mobile) - ✅ COMPLETE
+
+Play Integrity Guard extends the existing authentication architecture from Phase 2:
+
+- **Mobile Services Architecture**: Follows patterns from `ExamAttemptService` and `AuthService` (TypeScript classes with async/await, error handling, logging)
+- **API Module Structure**: New `/api/src/integrity/` module mirrors existing `/api/src/auth/` and `/api/src/exam-attempts/` structure
+- **JWT Token Management**: Uses existing token storage patterns for secure API communication
+- **Offline-First Design**: 30-day cache TTL aligns with Phase 2's offline queue and sync architecture—verification is a one-time check, not a continuous requirement
+- **AsyncStorage Patterns**: Reuses Phase 2's token storage infrastructure for caching verification status
+
+### External Services
+
+- **Google Play Integrity API**: Nonce generation, token issuance, verdict decryption
+- **Google Play Console**: API credentials and package name configuration
+- **React Native Libraries**: `react-native-google-play-integrity` for native Android integration
+
+### No Changes Required
+
+- **Prisma Schema**: No database changes (verification is fully client-side with stateless backend proxy)
+- **Existing Features**: All Phase 1-2 features unchanged (question bank, exam flow, analytics, cloud sync)
 
 ## User Scenarios & Testing *(mandatory)*
 

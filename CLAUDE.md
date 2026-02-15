@@ -95,17 +95,19 @@ POST /admin/questions                     # Create question (requires examTypeId
 ## Recent Changes
 
 - **Phase 1** (002-cloudprep-mobile): AWS Cloud Practitioner exam app - ✅ Complete (115 tasks, 99 tests)
-- **Phase 2** (002-cloudprep-mobile --append): Google OAuth + Cloud Sync - 📋 Ready (39 tasks T112-T150)
+- **Phase 2** (002-cloudprep-mobile): Google OAuth + Cloud Sync - ✅ Complete (39 tasks T112-T150)
   - User Stories: US6 (Google Sign-In), US7 (Exam History Persistence), US8 (Analytics Sync)
   - Functional Requirements: FR-034 to FR-041 (authentication, persistence, analytics)
-  - Task breakdown: Backend Auth (8) + Persistence (8) + Mobile Integration (15) + Testing (8)
-  - Timeline: 4 weeks with 2 developers in parallel, ~58 dev-hours
-  - All design documents updated: research.md, data-model.md, contracts/api.yaml, plan.md, tasks.md
-- **Phase 3** (003-play-integrity): Play Integrity Guard - 📋 Draft Spec (TBD tasks)
+  - Implementation: Backend Auth (8) + Persistence (8) + Mobile Integration (15) + Testing (8)
+  - Deliverables: 5 test files, phase2-testing-guide.md, README.md with architecture diagrams
+  - Testing: 3 integration tests (T144-T146), 2 unit tests (T147-T148), performance benchmarks, manual test guide
+  - All tasks completed and merged into 003-play-integrity branch
+- **Phase 3** (003-play-integrity): Play Integrity Guard - 📋 Ready for Implementation (40 tasks T151-T190)
   - User Stories: US1-4 (Play Store verification, sideload blocking, dev bypass, reinstall reset)
   - Functional Requirements: FR-001 to FR-016 (verification, caching, error handling)
   - Success Criteria: SC-001 to SC-008 (100% blocking, <5s first launch, offline post-verify, dev bypass)
   - Scope: One-time app integrity check on first launch, 30-day cache TTL, full offline after verification
+  - Dependencies: Phase 2 complete (authentication, cloud sync infrastructure in place)
   - Blocks sideloaded/re-signed APKs while preserving offline functionality and dev iteration
 
 <!-- MANUAL ADDITIONS START -->
