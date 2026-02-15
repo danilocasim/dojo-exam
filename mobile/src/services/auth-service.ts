@@ -164,6 +164,7 @@ export async function fetchGoogleUserInfo(
       return null;
     }
     const userInfo = await res.json();
+    console.log('[Auth] Google userinfo response:', JSON.stringify(userInfo));
     return {
       email: userInfo.email,
       name: userInfo.name,
@@ -215,16 +216,22 @@ export async function handleGoogleAuthSuccess(
     }
 
     // Determine the user identity
+    const picture = googleUser?.photo || (backendUser as any)?.picture || undefined;
     const user = backendUser
-      ? { ...backendUser, name: backendUser.name || googleUser?.name, picture: googleUser?.photo ?? undefined }
+      ? { ...backendUser, name: backendUser.name || googleUser?.name, picture }
       : googleUser
-        ? { id: 'local', email: googleUser.email, name: googleUser.name, picture: googleUser.photo ?? undefined }
+        ? { id: 'local', email: googleUser.email, name: googleUser.name, picture }
         : null;
 
     if (!user) {
       useAuthStore.setState({ isLoading: false, error: 'Sign-in failed' });
       throw new Error('Could not determine user identity');
     }
+
+    console.log(
+      '[Auth] User object with picture:',
+      JSON.stringify({ name: user.name, email: user.email, picture: (user as any).picture }),
+    );
 
     // ── Per-user database switch ──
     // 1. Export anonymous progress (exams, practice, stats) before switching

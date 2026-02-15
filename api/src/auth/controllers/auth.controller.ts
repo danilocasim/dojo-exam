@@ -76,6 +76,7 @@ export class AuthController {
         googleId: user.googleId,
         email: user.email,
         name: user.name,
+        picture: googlePayload.picture ?? null,
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt,
       },

@@ -160,7 +160,8 @@ export const SettingsScreen: React.FC = () => {
                     ) : (
                       <View style={styles.accountAvatar}>
                         <Text style={styles.accountAvatarText}>
-                          {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                          {user.name?.charAt(0).toUpperCase() ||
+                            user.email?.charAt(0).toUpperCase()}
                         </Text>
                       </View>
                     )}
