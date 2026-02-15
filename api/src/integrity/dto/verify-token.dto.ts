@@ -1,6 +1,6 @@
 /**
  * T158: Verify Token Request DTO
- * 
+ *
  * Request body for POST /api/integrity/verify endpoint.
  * Contains the encrypted Play Integrity token from the mobile client.
  */

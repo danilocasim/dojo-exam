@@ -35,8 +35,9 @@ export class IntegrityService {
 
   constructor(private readonly configService: ConfigService) {
     this.projectNumber =
-      this.configService.get<string>('playIntegrity.googleCloudProjectNumber') ||
-      '';
+      this.configService.get<string>(
+        'playIntegrity.googleCloudProjectNumber',
+      ) || '';
     this.serviceAccountKeyPath =
       this.configService.get<string>(
         'playIntegrity.googleServiceAccountKeyPath',
@@ -164,10 +165,15 @@ export class IntegrityService {
       const deviceRecognitionVerdict = Array.isArray(
         deviceIntegrity?.deviceRecognitionVerdict,
       )
-        ? (deviceIntegrity.deviceRecognitionVerdict[0] as
-            | 'MEETS_DEVICE_INTEGRITY'
-            | 'MEETS_STRONG_INTEGRITY'
-            | 'UNKNOWN')
+        ? deviceIntegrity.deviceRecognitionVerdict.includes(
+            'MEETS_STRONG_INTEGRITY',
+          )
+          ? 'MEETS_STRONG_INTEGRITY'
+          : deviceIntegrity.deviceRecognitionVerdict.includes(
+                'MEETS_DEVICE_INTEGRITY',
+              )
+            ? 'MEETS_DEVICE_INTEGRITY'
+            : 'UNKNOWN'
         : ('UNKNOWN' as const);
 
       const verdict: PlayIntegrityVerdict = {
@@ -179,6 +185,16 @@ export class IntegrityService {
       this.logger.log(
         `Verification complete: app=${verdict.appRecognitionVerdict}, license=${verdict.appLicensingVerdict}, device=${verdict.deviceRecognitionVerdict}`,
       );
+
+      if (
+        verdict.appRecognitionVerdict === 'UNRECOGNIZED_VERSION' ||
+        verdict.appLicensingVerdict === 'UNLICENSED' ||
+        verdict.deviceRecognitionVerdict === 'UNKNOWN'
+      ) {
+        this.logger.warn(
+          `Integrity check failed: app=${verdict.appRecognitionVerdict}, license=${verdict.appLicensingVerdict}, device=${verdict.deviceRecognitionVerdict}`,
+        );
+      }
 
       return verdict;
     } catch (error) {
@@ -197,11 +213,7 @@ export class IntegrityService {
       );
 
       // Check if it's a Google API error
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'response' in error
-      ) {
+      if (typeof error === 'object' && error !== null && 'response' in error) {
         const apiError = error as any;
         const status = apiError.response?.status;
         const message = apiError.response?.data?.error?.message;

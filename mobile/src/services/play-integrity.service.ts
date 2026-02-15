@@ -6,6 +6,11 @@
  * Supports development mode bypass for testing.
  */
 
+import * as Crypto from 'expo-crypto';
+import { post } from './api';
+import { checkConnectivity } from './network.service';
+import { getStatus, saveStatus } from '../storage/repositories/integrity.repository';
+
 // ─── Type Definitions ────────────────────────────────────────────────────────
 
 export interface IntegrityStatusRecord {
@@ -21,8 +26,13 @@ export interface PlayIntegrityVerdict {
   appRecognitionVerdict: 'PLAY_RECOGNIZED' | 'UNRECOGNIZED_VERSION' | 'UNKNOWN';
   appLicensingVerdict: 'LICENSED' | 'UNLICENSED' | 'UNKNOWN';
   deviceRecognitionVerdict: 'MEETS_DEVICE_INTEGRITY' | 'MEETS_STRONG_INTEGRITY' | 'UNKNOWN';
-  [key: string]: any; // Other fields from Google (not used for verification)
+  [key: string]: unknown; // Other fields from Google (not used for verification)
 }
+
+type PlayIntegrityModule = {
+  requestIntegrityToken?: (nonce: string) => Promise<{ integrityToken?: string } | string>;
+  getIntegrityToken?: (nonce: string) => Promise<{ integrityToken?: string } | string>;
+};
 
 export interface IntegrityCheckResult {
   verified: boolean; // true if all verdicts PASS
@@ -64,26 +74,94 @@ export interface IntegrityVerifyResponse {
 export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
   // T157: Development mode bypass (FR-011, FR-012)
   if (__DEV__) {
-    console.log('[PlayIntegrity] Bypassed in development mode');
+    console.warn('[PlayIntegrity] Bypassed in development mode');
     return {
       verified: true,
       cachedResult: true,
     };
   }
 
-  // TODO (T166): Implement full integrity check flow
-  // - Check cache validity (T167)
-  // - Request token (requestToken)
-  // - Verify with backend
-  // - Validate verdict (validateVerdict)
-  // - Store result in SQLite
-  console.log('[PlayIntegrity] checkIntegrity stub called');
+  // Check local cache (T167)
+  let cachedStatus: IntegrityStatusRecord | null = null;
+  try {
+    cachedStatus = await getStatus();
+  } catch (error) {
+    console.warn('[PlayIntegrity] Failed to read cache status:', error);
+  }
+
+  if (cachedStatus?.integrity_verified && isCacheValid(cachedStatus.verified_at)) {
+    return {
+      verified: true,
+      cachedResult: true,
+    };
+  }
+
+  const isOnline = await checkConnectivity();
+  if (!isOnline) {
+    return {
+      verified: false,
+      error: {
+        type: 'NETWORK',
+        message: 'Please connect to the internet for first-time verification.',
+      },
+    };
+  }
+
+  let token: string;
+  try {
+    token = await requestToken();
+  } catch {
+    return {
+      verified: false,
+      error: {
+        type: 'TRANSIENT',
+        message: 'Unable to request integrity token. Please try again.',
+      },
+    };
+  }
+
+  let response: IntegrityVerifyResponse;
+  try {
+    response = await post<IntegrityVerifyResponse, PlayIntegrityTokenRequest>(
+      INTEGRITY_VERIFY_ENDPOINT,
+      { token },
+    );
+  } catch {
+    return {
+      verified: false,
+      error: {
+        type: 'TRANSIENT',
+        message: 'Unable to verify integrity. Please try again.',
+      },
+    };
+  }
+
+  if (!response.success || !response.verdict) {
+    return {
+      verified: false,
+      error: {
+        type: 'TRANSIENT',
+        message: response.error || 'Token verification failed.',
+      },
+    };
+  }
+
+  const verified = validateVerdict(response.verdict);
+  if (verified) {
+    await saveStatus(true, new Date().toISOString());
+    return {
+      verified: true,
+      verdict: response.verdict,
+      cachedResult: false,
+    };
+  }
 
   return {
     verified: false,
+    verdict: response.verdict,
     error: {
-      type: 'NETWORK',
-      message: 'Integrity check not yet implemented',
+      type: 'TRANSIENT',
+      message: 'Integrity check could not be completed. Please try again.',
     },
   };
 };
@@ -98,14 +176,26 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
  * @throws Error if token request fails
  */
 export const requestToken = async (): Promise<string> => {
-  // TODO (T166): Implement Google Play Integrity API token request
-  // - Use @react-native-google-signin/google-signin or expo-play-integrity
-  // - Generate nonce
-  // - Request token
-  // - Handle errors (network, API unavailable)
-  console.log('[PlayIntegrity] requestToken stub called');
+  const nonce = Crypto.randomUUID();
 
-  throw new Error('Token request not yet implemented');
+  const playIntegrityModule =
+    (await import('react-native-google-play-integrity')) as PlayIntegrityModule;
+
+  const requestFn =
+    playIntegrityModule?.requestIntegrityToken || playIntegrityModule?.getIntegrityToken;
+
+  if (!requestFn) {
+    throw new Error('Play Integrity module not available');
+  }
+
+  const response = await requestFn(nonce);
+  const token = typeof response === 'string' ? response : response?.integrityToken;
+
+  if (!token) {
+    throw new Error('Failed to obtain integrity token');
+  }
+
+  return token;
 };
 
 /**
@@ -120,11 +210,13 @@ export const requestToken = async (): Promise<string> => {
  * @returns true if all checks pass
  */
 export const validateVerdict = (verdict: PlayIntegrityVerdict): boolean => {
-  // TODO (T166): Implement verdict validation logic
-  // Check all three verdict fields per FR-002
-  console.log('[PlayIntegrity] validateVerdict stub called', verdict);
+  const appRecognized = verdict.appRecognitionVerdict === 'PLAY_RECOGNIZED';
+  const appLicensed = verdict.appLicensingVerdict === 'LICENSED';
+  const deviceTrusted =
+    verdict.deviceRecognitionVerdict === 'MEETS_DEVICE_INTEGRITY' ||
+    verdict.deviceRecognitionVerdict === 'MEETS_STRONG_INTEGRITY';
 
-  return false;
+  return appRecognized && appLicensed && deviceTrusted;
 };
 
 /**
@@ -136,11 +228,13 @@ export const validateVerdict = (verdict: PlayIntegrityVerdict): boolean => {
  * @returns true if cache is valid (< 30 days old)
  */
 export const isCacheValid = (verifiedAt: string): boolean => {
-  // TODO (T167): Implement 30-day TTL check
-  // Calculate: (now - verifiedAt) < 30 days (2592000 seconds)
-  console.log('[PlayIntegrity] isCacheValid stub called', verifiedAt);
+  const verifiedDate = new Date(verifiedAt);
+  if (Number.isNaN(verifiedDate.getTime())) {
+    return false;
+  }
 
-  return false;
+  const ageInSeconds = (Date.now() - verifiedDate.getTime()) / 1000;
+  return ageInSeconds < CACHE_TTL_SECONDS;
 };
 
 /**
@@ -153,11 +247,14 @@ export const isCacheValid = (verifiedAt: string): boolean => {
  * @returns Seconds until expiry (0 if already expired)
  */
 export const getCacheTTL = (verifiedAt: string): number => {
-  // TODO (T167): Calculate remaining TTL
-  // TTL = 30 days (2592000 seconds) - (now - verifiedAt)
-  console.log('[PlayIntegrity] getCacheTTL stub called', verifiedAt);
+  const verifiedDate = new Date(verifiedAt);
+  if (Number.isNaN(verifiedDate.getTime())) {
+    return 0;
+  }
 
-  return 0;
+  const ageInSeconds = (Date.now() - verifiedDate.getTime()) / 1000;
+  const remaining = CACHE_TTL_SECONDS - ageInSeconds;
+  return Math.max(0, Math.floor(remaining));
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────

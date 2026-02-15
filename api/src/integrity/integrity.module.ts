@@ -1,15 +1,15 @@
 /**
  * T162: Integrity Module
- * 
+ *
  * NestJS module for Google Play Integrity verification.
  * Provides stateless token verification service and REST API endpoint.
- * 
+ *
  * Exports:
  * - IntegrityService: For internal use by other modules (if needed)
- * 
+ *
  * Providers:
  * - IntegrityService: Stateless service for token decryption via Google API
- * 
+ *
  * Controllers:
  * - IntegrityController: POST /api/integrity/verify endpoint
  */

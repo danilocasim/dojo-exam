@@ -12,6 +12,7 @@ import { initializeGoogleSignIn } from './src/services/auth-service';
 import { TokenRefreshService } from './src/services/token-refresh-service';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { useAuthStore } from './src/stores/auth-store';
+import { checkIntegrity } from './src/services/play-integrity.service';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -47,9 +48,12 @@ export default function App() {
         const stopTokenRefresh = TokenRefreshService.setupPeriodicRefresh(60000);
         console.log('[App] Token refresh service started');
 
-        // Initialize SQLite database
-        setSyncStatus('Setting up database...');
-        await initializeDatabase();
+        // Initialize SQLite database and Play Integrity check in parallel
+        setSyncStatus('Setting up database and verifying integrity...');
+        const [, integrityResult] = await Promise.all([initializeDatabase(), checkIntegrity()]);
+        if (!integrityResult.verified) {
+          console.warn('[App] Integrity verification did not pass:', integrityResult.error);
+        }
         console.warn('[App] Database initialized');
 
         // If user was signed in (persisted in AsyncStorage), switch to their database

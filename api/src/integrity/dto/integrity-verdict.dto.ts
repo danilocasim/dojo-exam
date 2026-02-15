@@ -1,16 +1,16 @@
 /**
  * T159: Integrity Verdict DTOs
- * 
+ *
  * Response DTOs for Play Integrity verification.
  * Implements interfaces from data-model.md.
  */
 
 /**
  * Play Integrity verdict from Google's API
- * 
+ *
  * This represents the decrypted token payload returned by Google Play Integrity API.
  * The mobile client uses these verdicts to determine if the app should be allowed to run.
- * 
+ *
  * Verification passes when:
  * - appRecognitionVerdict === 'PLAY_RECOGNIZED'
  * - appLicensingVerdict === 'LICENSED'
@@ -38,10 +38,13 @@ export interface PlayIntegrityVerdict {
    * - MEETS_DEVICE_INTEGRITY: Device passes basic integrity checks
    * - MEETS_STRONG_INTEGRITY: Device passes strong integrity checks (SafetyNet equivalent)
    * - UNKNOWN: Unable to determine device integrity
-   * 
+   *
    * Note: We accept MEETS_DEVICE_INTEGRITY (don't require STRONG); allows non-rooted but modified devices
    */
-  deviceRecognitionVerdict: 'MEETS_DEVICE_INTEGRITY' | 'MEETS_STRONG_INTEGRITY' | 'UNKNOWN';
+  deviceRecognitionVerdict:
+    | 'MEETS_DEVICE_INTEGRITY'
+    | 'MEETS_STRONG_INTEGRITY'
+    | 'UNKNOWN';
 
   /**
    * Additional fields from Google Play Integrity API
@@ -52,7 +55,7 @@ export interface PlayIntegrityVerdict {
 
 /**
  * Response DTO for POST /api/integrity/verify endpoint
- * 
+ *
  * Backend returns this structure to mobile client after decrypting the token.
  * Mobile client interprets the verdict and decides whether to block/allow access.
  */

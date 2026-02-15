@@ -100,9 +100,9 @@
 
 ### Mobile Tasks (US1)
 
-- [ ] T166 [US1] Implement `checkIntegrity()` in mobile/src/services/play-integrity.service.ts: on first launch, request token from Google Play Integrity API, call POST /api/integrity/verify, validate verdict (all pass → store cache with verified_at timestamp)
-- [ ] T167 [P] [US1] Implement cache validation in mobile/src/services/play-integrity.service.ts: check IntegrityStatus, if verified=true and verified_at < 30 days → skip verification, grant access. If verified_at >= 30 days (expired cache per FR-009) → re-verify using full checkIntegrity() flow from T166 (request new token, call API, validate verdict, update cache)
-- [ ] T168 [US1] Integrate integrity check into mobile/src/App.tsx: parallel Promise.all() with DB init and integrity check; if verification passes → render RootNavigator, else → hold init screen, app loads normally
+- [x] T166 [US1] Implement `checkIntegrity()` in mobile/src/services/play-integrity.service.ts: on first launch, request token from Google Play Integrity API, call POST /api/integrity/verify, validate verdict (all pass → store cache with verified_at timestamp)
+- [x] T167 [P] [US1] Implement cache validation in mobile/src/services/play-integrity.service.ts: check IntegrityStatus, if verified=true and verified_at < 30 days → skip verification, grant access. If verified_at >= 30 days (expired cache per FR-009) → re-verify using full checkIntegrity() flow from T166 (request new token, call API, validate verdict, update cache)
+- [x] T168 [US1] Integrate integrity check into mobile/src/App.tsx: parallel Promise.all() with DB init and integrity check; if verification passes → render RootNavigator, else → hold init screen, app loads normally
 
 **Checkpoint**: Play Store users can launch and verify; cached access works offline
 
@@ -116,7 +116,7 @@
 
 ### Backend Tasks (US2)
 
-- [ ] T169 [US2] Add error handling to api/src/integrity/integrity.service.ts: if Google API returns UNLICENSED, UNRECOGNIZED_VERSION, or device integrity fail → return verdict as-is (client interprets as block)
+- [x] T169 [US2] Add error handling to api/src/integrity/integrity.service.ts: if Google API returns UNLICENSED, UNRECOGNIZED_VERSION, or device integrity fail → return verdict as-is (client interprets as block)
 
 ### Mobile Tasks (US2)
 

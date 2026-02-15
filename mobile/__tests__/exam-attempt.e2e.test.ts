@@ -29,7 +29,7 @@ describe('ExamAttempt API E2E Tests', () => {
     password: 'TestPassword123!',
   };
 
-  let authToken: string;
+  const authToken = '';
   let attemptId: string;
 
   beforeAll(async () => {

@@ -10,11 +10,19 @@ build/
 .env.local
 .env.*.local
 
+# Secrets
+api/keys/*.json
+
 # IDE
 .idea/
+.vscode/
 .vscode/settings.json
 *.swp
 *.swo
+
+# Expo
+.expo/
+.expo-shared/
 
 # OS files
 .DS_Store

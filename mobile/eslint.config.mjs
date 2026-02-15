@@ -8,7 +8,21 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/', 'dist/', '.expo/', 'babel.config.js'],
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'build/',
+      'coverage/',
+      '.expo/',
+      '.expo-shared/',
+      '*.config.js',
+      '*.min.js',
+      'babel.config.js',
+      'jest.config.js',
+      'jest.setup.js',
+      'metro.config.js',
+      'tailwind.config.js',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
