@@ -95,8 +95,8 @@
 
 ### Backend Tasks (US1)
 
-- [ ] T164 [P] [US1] Implement `verifyToken()` in api/src/integrity/integrity.service.ts: call Google Play Console API to decrypt token, extract verdict fields (`appRecognitionVerdict`, `appLicensingVerdict`, `deviceRecognitionVerdict`)
-- [ ] T165 [US1] Implement `POST /api/integrity/verify` endpoint in api/src/integrity/integrity.controller.ts: accept VerifyTokenRequest, return IntegrityVerdict (success: true) or error (success: false) with error message
+- [x] T164 [P] [US1] Implement `verifyToken()` in api/src/integrity/integrity.service.ts: call Google Play Console API to decrypt token, extract verdict fields (`appRecognitionVerdict`, `appLicensingVerdict`, `deviceRecognitionVerdict`)
+- [x] T165 [US1] Implement `POST /api/integrity/verify` endpoint in api/src/integrity/integrity.controller.ts: accept VerifyTokenRequest, return IntegrityVerdict (success: true) or error (success: false) with error message
 
 ### Mobile Tasks (US1)
 
