@@ -10,6 +10,7 @@ import { AdminModule } from './admin';
 import { AuthModule } from './auth/auth.module';
 import { ExamAttemptModule } from './exam-attempts/exam-attempt.module';
 import { SyncModule } from './sync/sync.module';
+import { IntegrityModule } from './integrity/integrity.module';
 import {
   RequestLoggerMiddleware,
   RateLimitMiddleware,
@@ -50,6 +51,7 @@ import {
     AuthModule,
     ExamAttemptModule,
     SyncModule,
+    IntegrityModule,
   ],
   controllers: [AppController],
   providers: [AppService],
