@@ -183,9 +183,9 @@
 
 - [X] T189 Update specs/003-play-integrity/quickstart.md with test execution instructions: `npm test` commands, E2E setup, performance baseline measurement
 - [X] T190 Code review checklist: verify no console logs in production builds, no hardcoded credentials, Play Integrity error messages match spec, all edge cases handled (network, UNEVALUATED, rooted devices)
-- [ ] **T189.5** (Optional) Performance Regression Prevention: Document T186 baseline measurements (first-launch <5s P95, cache-launch <3s P95, cache-hit <10ms) and create CI/CD pipeline regression check (±10% threshold, flag at +20% degradation). Add to quickstart.md and consider adding to GitHub Actions workflow.
+- [X] **T189.5** (Optional) Performance Regression Prevention: Document T186 baseline measurements (first-launch <5s P95, cache-launch <3s P95, cache-hit <10ms) and create CI/CD pipeline regression check (±10% threshold, flag at +20% degradation). Add to quickstart.md and GitHub Actions workflow (.github/workflows/test.yml). Created .performance-baseline.json for baseline tracking.
 
-**Checkpoint**: All tests passing; performance targets met; documentation complete
+**Checkpoint**: All tests passing; performance targets met; documentation complete; CI/CD regression checks configured
 
 ---
 

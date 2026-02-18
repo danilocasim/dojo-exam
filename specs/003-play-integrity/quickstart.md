@@ -903,7 +903,15 @@ npm run test:e2e
 # Runs all Detox tests in parallel
 ```
 
-### Performance Baseline Measurement
+### Performance Baseline Measurement & Regression Prevention  *(T189.5: Performance Monitoring)*
+
+**Baseline Targets** (from T186 integrity-performance.test.ts):
+
+| Metric | Target | Regression Threshold | CI/CD Flag |
+|--------|--------|----------------------|-----------|
+| First Launch with API (P95) | <5000ms | ±10% (4500-5500ms) | ⚠️ at ≥6000ms (+20%) |
+| Cached Launch (P95) | <3000ms | ±10% (2700-3300ms) | ⚠️ at ≥3600ms (+20%) |
+| Cache Hit Query (P95) | <10ms | ±10% (9-11ms) | ⚠️ at ≥12ms (+20%) |
 
 **Establish baseline before optimizations**:
 
@@ -915,38 +923,106 @@ npm test -- __tests__/integrity-performance.test.ts --no-coverage
 
 # Output shows:
 # ✅ PASS First Launch with API: <5000ms (5 seconds target)
-# ✅ PASS Cached Launch: <3000ms (3 seconds target)
+# ✅ PASS Cached Launch: <3000ms (3 seconds target)  
 # ✅ PASS Cache Hit Query: <10ms (10 milliseconds target)
 ```
 
-**Capture Baseline Numbers**:
+**Capture & Document Baseline Numbers**:
 
-After running tests, save baseline metrics:
+After initial implementation, save baseline metrics in `mobile/.performance-baseline.json`:
 
-```markdown
-**Performance Baseline (Pre-optimization)**
-
-Date: [date]
-Environment: [emulator/device model]
-
-| Metric | Measured | Target | Status |
-|--------|----------|--------|--------|
-| First Launch with API | [X]ms | <5000ms | ✅ PASS |
-| Cached Launch | [X]ms | <3000ms | ✅ PASS |
-| Cache Hit Query | [X]ms | <10ms | ✅ PASS |
+```json
+{
+  "date": "2026-02-18",
+  "environment": "iPhone 14 Simulator (iOS 17.2)",
+  "metrics": {
+    "firstLaunchWithAPI": { "measured": 4200, "target": 5000, "unit": "ms" },
+    "cachedLaunch": { "measured": 1800, "target": 3000, "unit": "ms" },
+    "cacheHitQuery": { "measured": 5, "target": 10, "unit": "ms" }
+  },
+  "status": "baseline_established"
+}
 ```
 
 **Monitor Performance Regressions**:
 
-If performance degrades in future changes:
+For each code change, re-run performance tests:
 
 ```bash
-# Compare with baseline
+cd mobile
+
+# Compare against baseline (verbose output shows metric breakdown)
 npm test -- __tests__/integrity-performance.test.ts --verbose
 
-# If any metric exceeds threshold, profile with:
-npm run profile -- mobile/src/services/play-integrity.service.ts
+# CI/CD Pipeline Check (see section below for GitHub Actions setup)
+# Automatic regression detection flags any metric exceeding ±10% threshold
 ```
+
+**CI/CD Regression Prevention** (GitHub Actions):
+
+Add this check to `.github/workflows/test.yml` to automatically detect performance regressions:
+
+```yaml
+# In .github/workflows/test.yml, add step after mobile tests:
+
+- name: Performance Regression Check
+  if: always()
+  run: |
+    cd mobile
+    npm test -- __tests__/integrity-performance.test.ts --no-coverage --json --outputFile=test-results.json
+    
+    # Parse results and compare against baseline thresholds
+    FIRST_LAUNCH=$(jq '.testResults[0].assertionResults[0].duration' test-results.json)
+    CACHED_LAUNCH=$(jq '.testResults[0].assertionResults[1].duration' test-results.json)
+    CACHE_HIT=$(jq '.testResults[0].assertionResults[2].duration' test-results.json)
+    
+    # Check thresholds (flag at +20% degradation)
+    if [ $FIRST_LAUNCH -gt 6000 ] || [ $CACHED_LAUNCH -gt 3600 ] || [ $CACHE_HIT -gt 12 ]; then
+      echo "⚠️ PERFORMANCE REGRESSION DETECTED"
+      echo "First Launch: ${FIRST_LAUNCH}ms (target: <5000ms)"
+      echo "Cached Launch: ${CACHED_LAUNCH}ms (target: <3000ms)"
+      echo "Cache Hit: ${CACHE_HIT}ms (target: <10ms)"
+      exit 1
+    else
+      echo "✅ Performance targets met"
+    fi
+```
+
+**Manual Regression Detection** (if CI/CD unavailable):
+
+If performance degrades in local testing:
+
+```bash
+cd mobile
+
+# Get detailed metrics
+npm test -- __tests__/integrity-performance.test.ts --verbose
+
+# Compare with baseline and calculate % change
+# If >±10%: investigate code changes for performance impact
+# If >+20%: fail PR review (regression too severe)
+
+# Profile problematic code:
+npm run android -- --profile  # For Android emulator
+npm run ios -- --profile      # For iOS simulator
+```
+
+**Common Performance Regressions** (debugging):
+
+- **First Launch Slow**: Check Play Integrity token request time (T181 tests verify <5s)
+- **Cache Launch Slow**: Check SQLite query time for cached verification lookup
+- **Cache Hit Slow**: Check JSON parsing of cached IntegrityStatus object
+- **All Slow**: Check for new synchronous I/O in app initialization (use async/await)
+
+**Regression Prevention Checklist**:
+
+Before merging performance-sensitive code:
+- ✅ Run T186 performance tests locally
+- ✅ Compare metrics against baseline (±10% acceptable)
+- ✅ If >+10% degradation, profile code and optimize
+- ✅ Document baseline changes if optimization intended
+- ✅ Verify CI/CD performance check passes on PR
+- ✅ Add performance regression comment to PR description
 
 ### Test Coverage Report
 

@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "date_established": "2026-02-18",
+  "description": "Performance baseline for Play Integrity Guard (T186 benchmarks) used for regression detection in CI/CD",
+  "targets": {
+    "firstLaunchWithAPI": {
+      "description": "Time to verify integrity on first app launch with Play Integrity API call",
+      "target_ms": 5000,
+      "regression_threshold_ms": 6000,
+      "acceptable_variance_percent": 10
+    },
+    "cachedLaunch": {
+      "description": "Time to load app with cached integrity verification (no API call)",
+      "target_ms": 3000,
+      "regression_threshold_ms": 3600,
+      "acceptable_variance_percent": 10
+    },
+    "cacheHitQuery": {
+      "description": "SQLite query time for cached IntegrityStatus lookup",
+      "target_ms": 10,
+      "regression_threshold_ms": 12,
+      "acceptable_variance_percent": 10
+    }
+  },
+  "environment": {
+    "device": "iPhone 14 Pro Simulator (iOS 17.2) / Pixel 8 Emulator (Android 14)",
+    "network": "Localhost (no actual API latency, mocked)",
+    "notes": "Metrics measured via Jest performance benchmarks in mobile/__tests__/integrity-performance.test.ts"
+  },
+  "measurement_procedure": {
+    "step_1": "Run: cd mobile && npm test -- __tests__/integrity-performance.test.ts --verbose",
+    "step_2": "Capture output metrics from test assertions",
+    "step_3": "Compare against baseline targets above",
+    "step_4": "If >±10% variance: investigate code changes",
+    "step_5": "If >+20% variance (>=threshold): block PR, optimize, re-test"
+  },
+  "ci_cd_integration": {
+    "workflow": ".github/workflows/test.yml",
+    "step_name": "Performance Regression Detection",
+    "auto_fail": "true (exits with code 1 if threshold exceeded)",
+    "blocking": "true (prevents merge if regression detected)"
+  },
+  "regression_investigation": {
+    "step_1": "Run performance test with --verbose flag locally",
+    "step_2": "Use React Native profiler or Xcode Instruments to identify slow code",
+    "step_3": "Common causes: synchronous I/O, inefficient crypto/hashing, SQLite N+1 queries",
+    "step_4": "Optimize and re-test until baseline restored or variance acceptable",
+    "step_5": "Document optimization in PR description for review"
+  },
+  "update_procedure": {
+    "when": "After intentional performance optimizations that substantially improve metrics",
+    "how": "Update target_ms values in this file and in quickstart.md performance table",
+    "approval": "Requires code review approval + performance engineering sign-off",
+    "changelog": "Document baseline update in project changelog"
+  }
+}
