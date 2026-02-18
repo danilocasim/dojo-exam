@@ -56,8 +56,8 @@ export default function App() {
         setSyncStatus('Setting up database and verifying integrity...');
         const [, integrityResult] = await Promise.all([initializeDatabase(), checkIntegrity()]);
 
-        // Block on ALL integrity failures when not verified
-        if (!integrityResult.verified) {
+        // T177: Dev bypass or cache hit should not block initialization
+        if (!integrityResult.verified && !integrityResult.cachedResult) {
           if (integrityResult.error?.type === 'DEFINITIVE') {
             // Permanent block — sideloaded/re-signed APK
             setIntegrityBlockedMessage(
@@ -76,7 +76,7 @@ export default function App() {
           setIsReady(true);
           return;
         }
-        console.warn('[App] Integrity verified, proceeding with app initialization');
+        console.warn('[App] Integrity verified or dev bypass, proceeding with app initialization');
 
         // If user was signed in (persisted in AsyncStorage), switch to their database
         const authState = useAuthStore.getState();

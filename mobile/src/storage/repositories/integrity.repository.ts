@@ -84,7 +84,9 @@ export const saveStatus = async (
 
 /**
  * Clear the integrity status (reset verification)
- * Used on app reinstall or manual reset
+ * Used on app reinstall or manual reset.
+ * Android automatically clears SQLite data on uninstall/reinstall.
+ * This function is also used for manual cache clearing (e.g., version mismatch).
  */
 export const clearStatus = async (): Promise<void> => {
   const db = await getDatabase();

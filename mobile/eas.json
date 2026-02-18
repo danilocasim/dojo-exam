@@ -4,13 +4,6 @@
     "appVersionSource": "local"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
-    },
     "preview": {
       "distribution": "internal",
       "android": {
@@ -18,10 +11,12 @@
       }
     },
     "production": {
-      "android": {
-        "buildType": "app-bundle"
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "404307950460-pjn95o851nqdhkkvof74oo3otb3oe0kg.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "404307950460-pjn95o851nqdhkkvof74oo3otb3oe0kg.apps.googleusercontent.com"
       }
-    }
+    },
+    "development": {}
   },
   "submit": {
     "production": {

@@ -137,10 +137,10 @@
 
 ### Mobile Tasks (US3)
 
-- [ ] T174 [US3] Enhance `checkIntegrity()` in mobile/src/services/play-integrity.service.ts to check `__DEV__` at start: if true, log message and return `{ verified: true, cachedResult: true }` immediately (skip all API calls)
-- [ ] T175 [P] [US3] Add console logging in mobile/src/services/play-integrity.service.ts: `[PlayIntegrity] Bypassed in development mode` when `__DEV__ == true`
-- [ ] T176 [P] [US3] Add fallback log in mobile/src/services/play-integrity.service.ts: `[PlayIntegrity] Checking cached integrity status...` and `[PlayIntegrity] Cache hit/miss` for debugging
-- [ ] T177 [US3] Update mobile/src/App.tsx initialization to continue even if integrity check returns dev bypass (no blocking, same as cache hit)
+- [x] T174 [US3] Enhance `checkIntegrity()` in mobile/src/services/play-integrity.service.ts to check `__DEV__` at start: if true, log message and return `{ verified: true, cachedResult: true }` immediately (skip all API calls)
+- [x] T175 [P] [US3] Add console logging in mobile/src/services/play-integrity.service.ts: `[PlayIntegrity] Bypassed in development mode` when `__DEV__ == true`
+- [x] T176 [P] [US3] Add fallback log in mobile/src/services/play-integrity.service.ts: `[PlayIntegrity] Checking cached integrity status...` and `[PlayIntegrity] Cache hit/miss` for debugging
+- [x] T177 [US3] Update mobile/src/App.tsx initialization to continue even if integrity check returns dev bypass (no blocking, same as cache hit)
 
 **Checkpoint**: Developers can run app locally via Expo without restrictions; iteration unblocked
 
@@ -154,9 +154,9 @@
 
 ### Mobile Tasks (US4)
 
-- [ ] T178 [US4] Implement `clearStatus()` in mobile/src/storage/repositories/integrity.repository.ts: DELETE from IntegrityStatus table on app reinstall (verified through Android's app-data clear behavior—no explicit code needed, auto-handled by OS)
-- [ ] T179 [P] [US4] Add lifecycle hook in mobile/src/services/persistence.service.ts to check for version mismatch (if app major version changed, treat as fresh install, clear integrity cache)
-- [ ] T180 [US4] Document cache clearing behavior in mobile app: integrity status is per-device-installation, not per-user; uninstall → all app data cleared by OS → fresh verification on reinstall
+- [x] T178 [US4] Implement `clearStatus()` in mobile/src/storage/repositories/integrity.repository.ts: DELETE from IntegrityStatus table on app reinstall (verified through Android's app-data clear behavior—no explicit code needed, auto-handled by OS)
+- [x] T179 [P] [US4] Add lifecycle hook in mobile/src/services/persistence.service.ts to check for version mismatch (if app major version changed, treat as fresh install, clear integrity cache)
+- [x] T180 [US4] Document cache clearing behavior in mobile app: integrity status is per-device-installation, not per-user; uninstall → all app data cleared by OS → fresh verification on reinstall
 
 **Checkpoint**: Reinstall resets verification; security maintained across installs
 

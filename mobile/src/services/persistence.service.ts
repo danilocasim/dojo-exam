@@ -1,3 +1,25 @@
+import { clearStatus } from '../storage/repositories/integrity.repository';
+import { version as appVersion } from '../../package.json';
+
+let lastAppVersion: string | null = null;
+
+/**
+ * Check for app version mismatch and clear integrity cache if major version changes
+ * Used to simulate reinstall/reset for integrity cache
+ */
+export const checkVersionAndClearIntegrityCache = async (): Promise<void> => {
+  // Only clear if major version changes
+  const major = (v: string) => v.split('.')[0];
+  if (!lastAppVersion) {
+    lastAppVersion = appVersion;
+    return;
+  }
+  if (major(appVersion) !== major(lastAppVersion)) {
+    await clearStatus();
+    console.log('[PersistenceService] App major version changed, integrity cache cleared');
+    lastAppVersion = appVersion;
+  }
+};
 import NetInfo from '@react-native-community/netinfo';
 import { useExamAttemptStore } from '../stores';
 

@@ -72,7 +72,7 @@ export interface IntegrityVerifyResponse {
  * @returns IntegrityCheckResult with verified status and optional error
  */
 export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
-  // T157: Development mode bypass (FR-011, FR-012)
+  // T174/T175: Development mode bypass (FR-011, FR-012)
   if (__DEV__) {
     console.warn('[PlayIntegrity] Bypassed in development mode');
     return {
@@ -81,7 +81,8 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
     };
   }
 
-  // Check local cache (T167)
+  // T176: Cache check logging
+  console.log('[PlayIntegrity] Checking cached integrity status...');
   let cachedStatus: IntegrityStatusRecord | null = null;
   try {
     cachedStatus = await getStatus();
@@ -90,10 +91,17 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
   }
 
   if (cachedStatus?.integrity_verified && isCacheValid(cachedStatus.verified_at)) {
+    console.log(
+      '[PlayIntegrity] Cache hit: integrity verified, TTL:',
+      getCacheTTL(cachedStatus.verified_at),
+      'seconds',
+    );
     return {
       verified: true,
       cachedResult: true,
     };
+  } else {
+    console.log('[PlayIntegrity] Cache miss or expired');
   }
 
   const isOnline = await checkConnectivity();
