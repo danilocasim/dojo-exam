@@ -266,6 +266,302 @@ If blocking happens unexpectedly:
 
 ---
 
+## Uploading to Google Play Store
+
+### Prerequisites for Upload
+
+- [ ] Google Play Console project created (app package: `com.awsccp.exampre`)
+- [ ] App signed with release signing key
+- [ ] Version code incremented (each upload must have higher version code)
+- [ ] Build tested thoroughly (all scenarios 1-4 above)
+- [ ] Google Play Console service account (for automated uploads)
+
+### Step 1: Build Release APK/AAB
+
+**Option A: Using Automated Build Script** (Recommended)
+
+```bash
+cd mobile
+./build-release.sh
+```
+
+This script:
+1. Validates prerequisites (Node, Gradle, Android SDK)
+2. Cleans previous builds
+3. Runs `expo prebuild` to generate native Android files
+4. Builds the release APK via `./gradlew assembleRelease`
+5. Validates the output and shows location
+
+**Option B: Build Android App Bundle (AAB)** (Preferred by Google)
+
+```bash
+cd mobile
+npx expo prebuild -p android --clean
+cd android
+./gradlew bundleRelease
+cd ../..
+```
+
+Outputs: `mobile/android/app/build/outputs/bundle/release/app-release.aab`
+
+**Option C: Manual APK Build**
+
+```bash
+cd mobile
+npx expo prebuild -p android --clean
+cd android
+./gradlew assembleRelease
+cd ../..
+```
+
+Outputs: `mobile/android/app/build/outputs/apk/release/app-release.apk`
+
+### Step 2: Verify Build Integrity
+
+```bash
+# Check file exists and size
+ls -lh mobile/android/app/build/outputs/apk/release/app-release.apk
+
+# Verify signing certificate (if APK)
+cd mobile/android
+./gradlew signingReport
+
+# Output should show:
+# Variant: release
+# Config: release
+# Store: /path/to/keystore
+# Alias: android-release-key
+# MD5: (hash)
+# SHA1: (hash)
+# SHA-256: (hash)
+```
+
+### Step 3: Upload via Google Play Console (Manual)
+
+**For First Release:**
+
+1. Go to [Google Play Console](https://play.google.com/console)
+2. Select your app: **AWS CloudPractitioner Exam Prep**
+3. Navigate to **Testing** > **Internal Testing**
+4. Click **Create new release**
+5. Click **Upload APK** or **Upload AAB**
+6. Select your build file (`app-release.apk` or `app-release.aab`)
+7. Review details:
+   - Version name: `1.0.0` (or increment: `1.0.1`)
+   - Version code: Must be higher than previous release
+   - Release notes: Document Play Integrity Guard changes
+8. Click **Review** then **Start rollout to internal testing**
+
+**For Subsequent Releases:**
+
+1. Navigate to **Testing** > **Internal Testing**
+2. Click **Create new release**
+3. Upload new AAB/APK with **incremented version code**
+4. Review and start rollout
+
+### Step 4: Testing Phases
+
+**Phase 1: Internal Testing** (T206-T208)
+
+```
+Track: Internal Testing
+Testers: 5-10 (your team)
+Duration: 3-5 days
+Criteria:
+  ✅ App installs from Play Store
+  ✅ Integrity check passes (verified=true)
+  ✅ No blocking screen on first launch
+  ✅ Can complete exam offline
+  ✅ Cloud sync works (if enabled)
+```
+
+**Phase 2: Closed Testing** (T209-T210)
+
+```
+Track: Closed Testing
+Testers: 30-50 (beta testers, friends, colleagues)
+Duration: 1 week
+Criteria:
+  ✅ Same as Phase 1
+  ✅ Gather feedback on UI/UX
+  ✅ Monitor crash reports
+  ✅ Test on real devices (multiple Android versions)
+```
+
+**Phase 3: Beta Testing** (T211-T212)
+
+```
+Track: Beta / Open Testing
+Testers: Unlimited (public)
+Duration: 1-2 weeks
+Criteria:
+  ✅ Same as Phase 2
+  ✅ Monitor 1-star reviews for critical issues
+```
+
+**Phase 4: Production Release** (T213+)
+
+```
+Track: Production
+Rollout: Staged (10% → 25% → 50% → 100%)
+Timeline:
+  Day 1: 10% rollout (monitor crashes)
+  Day 3: 25% rollout
+  Day 5: 50% rollout
+  Day 7: 100% rollout (full release)
+
+Post-launch Checklist:
+  ✅ Monitor crash rate (target: <1%)
+  ✅ Monitor reviews
+  ✅ Ready to rollback if critical issues found
+```
+
+### Step 5: Automated Upload via GitHub Actions (Optional)
+
+**Setup Service Account:**
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new service account or use existing
+3. Grant role: **Service Account User** + **Editor**
+4. Download JSON credentials file
+5. Add to GitHub Secrets:
+   ```
+   PLAY_STORE_SERVICE_ACCOUNT = <contents of JSON file, base64 encoded>
+   PLAY_STORE_APP_PACKAGE = com.awsccp.exampre
+   PLAY_STORE_TRACK = internal  # or closed, beta, production
+   ```
+
+**Create GitHub Actions Workflow:**
+
+Create `.github/workflows/build-and-upload.yml`:
+
+```yaml
+name: Build and Upload to Play Store
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (v1.0.0, v1.0.1, etc.)
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        working-directory: ./mobile
+        run: npm ci
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      
+      - name: Prebuild Android
+        working-directory: ./mobile
+        run: npx expo prebuild -p android --clean
+      
+      - name: Build release APK
+        working-directory: ./mobile/android
+        run: ./gradlew bundleRelease
+      
+      - name: Upload to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          packageName: com.awsccp.exampre
+          releaseFiles: mobile/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ secrets.PLAY_STORE_TRACK }}
+          inAppUpdatePriority: 3
+```
+
+**Trigger Workflow:**
+
+```bash
+# Tag a release
+git tag -a v1.0.0 -m "Play Integrity Guard release"
+git push origin v1.0.0
+
+# GitHub Actions will automatically build and upload to Play Store
+```
+
+**Monitor Upload:**
+
+- Go to **Actions** tab in GitHub
+- Watch workflow progress
+- Play Console will show new release in selected track
+
+### Step 6: Troubleshooting Upload Issues
+
+**Error: "Could not validate APK signature"**
+
+- Solution: Verify signing key is correct
+- Check: `./gradlew signingReport`
+- Ensure: Same keystore used for all releases
+
+**Error: "Version code X already exists"**
+
+- Solution: Increment version code in `app.json`
+- Current: `versionCode: 1` → Change to `versionCode: 2`
+- Run build again
+
+**Error: "Invalid package name"**
+
+- Ensure: Package name matches Play Console entry
+- Current: `com.awsccp.exampre`
+- Check: `android/app/src/AndroidManifest.xml` or `app.json`
+
+**Error: "Target API level too low"**
+
+- Current target: API 36
+- Google Play minimum: API 35 (as of Feb 2025)
+- Update if needed: `android/build.gradle`
+
+**Upload Hangs or Times Out**
+
+- File size > 100MB: Consider splitting with Play Console's modular features
+- Solution: Switch to AAB format (smaller than APK)
+- Command: `./gradlew bundleRelease` (not `assembleRelease`)
+
+**General Troubleshooting Checklist:**
+
+- [ ] APK/AAB file exists: `ls -lh mobile/android/app/build/outputs/**/app-release.*`
+- [ ] Version code incremented in `app.json` or `build.gradle`
+- [ ] Signing certificate matches previous releases
+- [ ] Network connectivity stable during upload
+- [ ] Play Console project permissions granted for your account
+- [ ] Service account has "Release Manager" role (for automated uploads)
+
+### Rollback Procedure
+
+If critical issues found post-release:
+
+**Immediate Rollback (within 2 hours):**
+
+```
+Play Console > Select Release > Click "..." > Halt Rollout
+```
+
+**Hotfix Release:**
+
+1. Fix issue in code
+2. Increment version code
+3. Rebuild: `cd mobile && ./build-release.sh`
+4. Upload to **internal testing** first (validation)
+5. If successful, release to production with staged rollout
+
+**Emergency: Disable App**
+
+```
+Play Console > Store settings > Remove from Play Store
+Users retain access; new installs blocked
+```
+
+---
+
 ## Debugging
 
 ### Console Logs
