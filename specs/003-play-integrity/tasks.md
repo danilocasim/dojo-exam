@@ -196,10 +196,10 @@
 ### Neon PostgreSQL Database Setup
 
 - [X] T191 Create Neon PostgreSQL project at https://neon.tech (free tier: 3 projects, 10 GB storage): project name `exam-app-prod`, database name `exam_app_prod`, auto-suspend inactive branches enabled (cost optimization). See [t191-neon-setup.md](t191-neon-setup.md) for step-by-step guide. Connection test: `DATABASE_URL="..." ./scripts/verify-neon-connection.sh`.
-- [ ] T192 [P] Configure Neon connection pooling: enable PgBouncer on branch (default: 10 connections), set max connections to 20; note the pooled connection string (ending in `-pooler.neon.tech`)
+- [X] T192 [P] Configure Neon connection pooling: PgBouncer enabled (pool size: 10, max connections: 20, transaction mode). Pooled connection string configured in `.env.local`. See [t192-connection-pooling.md](t192-connection-pooling.md) for detailed configuration and verification steps.
 - [ ] T193 Create Neon read replica branch (optional, for backup/analytics): allows branching data without additional cost, enables quick rollback if needed
-- [ ] T194 [P] Copy Neon connection string to secure location: format `postgresql://[user]:[password]@pgXXXX.neon.tech:5432/exam_app_prod?sslmode=require` (will be used as `DATABASE_URL` in Railway)
-- [ ] T195 Test local Neon connection: `psql [connection-string]` to verify connection works (can be done from local machine or CI/CD)
+- [X] T194 [P] Copy Neon connection string to secure location: pooled connection string in `.env.local` and `.env.production.example`. Format: `postgresql://[user]:[password]@[host]-pooler.c-X.region.aws.neon.tech/[db]?sslmode=require&channel_binding=require`
+- [X] T195 Test local Neon connection: Prisma connection test successful via pooled connection string in `.env.local`. Run: `source .env.local && cd api && npx prisma db execute --stdin < /dev/null`
 
 ### Database Migration & Setup Tasks
 
