@@ -10,12 +10,5 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('health')
-  getHealth(): { status: string; timestamp: string; uptime: number } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    };
-  }
+  // ...existing code...
 }
