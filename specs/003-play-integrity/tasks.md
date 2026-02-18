@@ -210,15 +210,15 @@
 
 ### Railway Application Deployment
 
-- [ ] T200 Create Railway project at https://railway.app: project name `exam-app-prod`, link GitHub repository `003-play-integrity` branch (Railway auto-deploys on push)
-- [ ] T201 [P] Add Docker service to Railway: connect GitHub repo, set root directory to `api/`, enable automatic deployments (Railway auto-detects Node.js project)
-- [ ] T202 Configure Railway environment variables: `NODE_ENV=production`, `DATABASE_URL` (Neon pooled connection string from T194), `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PLAY_INTEGRITY_CREDENTIALS`
-- [ ] T203 [P] Configure Railway health check: set `PORT=3000`, create api/src/health/health.controller.ts with GET `/health` endpoint returning `{ status: 'ok' }` (Railway auto-detects port, enable Health Check in Railway dashboard)
+- [X] T200 Create Railway project at https://railway.app: project name `exam-app-prod`, link GitHub repository `003-play-integrity` branch (Railway auto-deploys on push)
+- [X] T201 [P] Add Docker service to Railway: connect GitHub repo, set root directory to `api/`, enable automatic deployments (Railway auto-detects Node.js project)
+- [X] T202 Configure Railway environment variables: `NODE_ENV=production`, `DATABASE_URL` (Neon pooled connection string from T194), `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PLAY_INTEGRITY_CREDENTIALS`
+- [X] T203 [P] Configure Railway health check: set `PORT=3000`, create api/src/health/health.controller.ts with GET `/health` endpoint returning `{ status: 'ok' }` (Railway auto-detects port, enable Health Check in Railway dashboard)
 
 ### Mobile Configuration & Deployment Documentation
 
-- [ ] T204 Update mobile/src/services/api.config.ts: add production API URL (Railway service URL from T200, e.g., `https://api.example.railway.app`), environment-based URL selection (`__DEV__` → localhost, production → Railway URL detected from environment or hardcoded for release builds)
-- [ ] T205 Create specs/003-play-integrity/deployment-guide.md: document Neon setup (how to create project, get connection string), Railway deployment (connect GitHub, environment variables, auto-deploy on push), database migration steps, rollback procedure, monitoring (Railway dashboard, Neon dashboard, Docker logs)
+- [X] T204 Update mobile/src/services/api.config.ts: add production API URL (Railway service URL from T200, e.g., `https://api.example.railway.app`), environment-based URL selection (`__DEV__` → localhost, production → Railway URL detected from environment or hardcoded for release builds)
+- [X] T205 Create specs/003-play-integrity/deployment-guide.md: document Neon setup (how to create project, get connection string), Railway deployment (connect GitHub, environment variables, auto-deploy on push), database migration steps, rollback procedure, monitoring (Railway dashboard, Neon dashboard, Docker logs)
 
 **Checkpoint**: Backend API deployed to Railway, Neon PostgreSQL operational, mobile app configured with production API URL (~$10-20/month for Neon + Railway free tier, vs $200+/month for AWS)
 

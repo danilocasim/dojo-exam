@@ -3,6 +3,12 @@
  * All admin API calls go through this service
  */
 
+const API_BASE_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'https://exam-app-production-9181.up.railway.app'
+    : 'http://localhost:3000';
+
+// Endpoint usage: no /api prefix
 function getToken(): string | null {
   return localStorage.getItem('admin_token');
 }
@@ -23,7 +29,9 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, { ...options, headers });
+  // Use API_BASE_URL for all requests
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  const res = await fetch(fullUrl, { ...options, headers });
 
   if (res.status === 401) {
     clearAuth();

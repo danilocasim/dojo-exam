@@ -15,9 +15,16 @@ export class ExamTypesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findOne(id: string): Promise<ExamTypeResponseDto> {
-    const examType = await this.prisma.examType.findUnique({
-      where: { id },
-    });
+    let examType;
+    try {
+      examType = await this.prisma.examType.findUnique({
+        where: { id },
+      });
+    } catch (err) {
+      // Log Prisma error details for debugging
+      console.error('[ExamTypesService.findOne] Prisma error:', err);
+      throw new Error('Database query failed: ' + (err?.message || err));
+    }
 
     if (!examType) {
       throw new NotFoundException(`Exam type '${id}' not found`);
@@ -27,12 +34,22 @@ export class ExamTypesService {
       throw new NotFoundException(`Exam type '${id}' is not active`);
     }
 
+    let domainsParsed: ExamDomainDto[] = [];
+    try {
+      // Defensive: domains may be string or object
+      domainsParsed = typeof examType.domains === 'string'
+        ? JSON.parse(examType.domains)
+        : examType.domains;
+    } catch (err) {
+      console.error('[ExamTypesService.findOne] Domains parse error:', err, 'domains:', examType.domains);
+      throw new Error('ExamType domains field is invalid JSON');
+    }
     return {
       id: examType.id,
       name: examType.name,
       displayName: examType.displayName,
       description: examType.description,
-      domains: examType.domains as unknown as ExamDomainDto[],
+      domains: domainsParsed,
       passingScore: examType.passingScore,
       timeLimit: examType.timeLimit,
       questionCount: examType.questionCount,
