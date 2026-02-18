@@ -10,6 +10,7 @@ import * as Crypto from 'expo-crypto';
 import { post } from './api';
 import { checkConnectivity } from './network.service';
 import { getStatus, saveStatus } from '../storage/repositories/integrity.repository';
+import * as PlayIntegrityModule from 'react-native-google-play-integrity';
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
 
@@ -28,11 +29,6 @@ export interface PlayIntegrityVerdict {
   deviceRecognitionVerdict: 'MEETS_DEVICE_INTEGRITY' | 'MEETS_STRONG_INTEGRITY' | 'UNKNOWN';
   [key: string]: unknown; // Other fields from Google (not used for verification)
 }
-
-type PlayIntegrityModule = {
-  requestIntegrityToken?: (nonce: string) => Promise<{ integrityToken?: string } | string>;
-  getIntegrityToken?: (nonce: string) => Promise<{ integrityToken?: string } | string>;
-};
 
 export interface IntegrityCheckResult {
   verified: boolean; // true if all verdicts PASS
@@ -207,11 +203,8 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
 export const requestToken = async (): Promise<string> => {
   const nonce = Crypto.randomUUID();
 
-  const playIntegrityModule =
-    (await import('react-native-google-play-integrity')) as PlayIntegrityModule;
-
   const requestFn =
-    playIntegrityModule?.requestIntegrityToken || playIntegrityModule?.getIntegrityToken;
+    PlayIntegrityModule.requestIntegrityToken || PlayIntegrityModule.getIntegrityToken;
 
   if (!requestFn) {
     throw new Error('Play Integrity module not available');

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Play Integrity Guard adds one-time device verification on first app launch using Google's Play Integrity API. Verification runs concurrently with app initialization, caches result locally for 30 days, and blocks sideloaded/tampered builds on Android. Development builds bypass verification automatically. Backend provides stateless token decryption proxy only; enforcement is entirely client-side. Production deployment uses AWS App Runner for backend hosting and AWS Aurora PostgreSQL Serverless v2 for the database.
+Play Integrity Guard adds one-time device verification on first app launch using Google's Play Integrity API. Verification runs concurrently with app initialization, caches result locally for 30 days, and blocks sideloaded/tampered builds on Android. Development builds bypass verification automatically. Backend provides stateless token decryption proxy only; enforcement is entirely client-side. Production deployment uses Railway for backend hosting and Neon PostgreSQL serverless database (cost-optimized: ~$10-20/month vs $200+/month for AWS).
 
 **Building on Phase 2**: This feature leverages the authentication infrastructure from Phase 2 (JWT tokens, API endpoints, mobile services architecture) and extends it with Play Integrity verification. The offline-first design from Phase 1-2 is preserved—after initial verification, the app runs fully offline.
 
@@ -16,8 +16,8 @@ Play Integrity Guard adds one-time device verification on first app launch using
 
 **Language/Version**: TypeScript 5.x (all components)  
 **Primary Dependencies**: @react-native-google-signin/google-signin ^10.0.0 (existing from Phase 2, supports Play Integrity token requests), expo-sqlite (existing), Google Play Console API credentials  
-**Storage**: SQLite via expo-sqlite (mobile local verification cache), AWS Aurora PostgreSQL Serverless v2 (production backend database)  
-**Production Infrastructure**: AWS App Runner (backend hosting), AWS Secrets Manager (credentials), AWS Systems Manager Parameter Store (configuration), VPC with private subnets (database security)  
+**Storage**: SQLite via expo-sqlite (mobile local verification cache), Neon PostgreSQL serverless (production backend database)  
+**Production Infrastructure**: Railway (backend hosting, auto-deploy from GitHub), Neon PostgreSQL (serverless database with auto-scaling, connection pooling), Railway environment variables (credentials and configuration)  
 **Testing**: Jest (mobile), Supertest (API), Detox (mobile E2E)  
 **Target Platform**: Android 10+ Play Store distributed apps  
 **Project Type**: mobile + api (Extends existing: Mobile app + Backend API)  
@@ -215,10 +215,10 @@ api/
 - T179: Quickstart guide & local setup documentation
 - T180: Code review checklist & PR templates
 
-**Sprint 4: AWS Production Deployment** (T191–T205, ~8 dev-hours)
-- T191-T195: AWS infrastructure setup (Aurora PostgreSQL Serverless v2, Secrets Manager, VPC Connector)
+**Sprint 4: Railway + Neon Production Deployment** (T191–T205, ~6 dev-hours, cost-optimized)
+- T191-T195: Neon PostgreSQL serverless setup, connection pooling, local testing
 - T196-T199: Database migration and seed scripts for production
-- T200-T203: AWS App Runner service configuration and deployment
+- T200-T203: Railway service configuration and deployment
 - T204-T205: Mobile API configuration for production and deployment documentation
 
 **Total Dev-Hours**: ~38 hours (can be split 1–2 developers over 4 weeks)
@@ -341,38 +341,43 @@ api/
 5. Internal testing: sideload APK to device, verify blocking works
 6. Performance testing: measure launch time impact
 
-### Phase 3b: AWS Production Deployment (Sprint 4)
-1. **Infrastructure Setup** (T191-T195):
-   - Create AWS Aurora PostgreSQL Serverless v2 cluster in VPC
-   - Configure security groups for Aurora (inbound from App Runner VPC Connector)
-   - Store database credentials in AWS Secrets Manager
-   - Store non-sensitive config in AWS Systems Manager Parameter Store
-   - Create VPC Connector for App Runner to access private Aurora
+### Phase 3b: Railway + Neon Production Deployment (Sprint 4, Cost-Optimized)
+
+**Cost Comparison**: Neon (free tier) + Railway (free tier) = ~$0-20/month vs AWS Aurora + App Runner = $200+/month
+
+1. **Neon PostgreSQL Setup** (T191-T195):
+   - Create Neon project (free tier: 3 projects, 10 GB storage, auto-suspend enabled)
+   - Create database and copy connection string (pooled connection via PgBouncer)
+   - Enable connection pooling (10-20 max connections for cost optimization)
+   - Test local connection with psql to verify network accessibility
+   - Optional: Create read replica branch for backup/analytics (zero cost per branch)
 
 2. **Database Migration** (T196-T199):
-   - Update Prisma schema to use DATABASE_URL from Secrets Manager
-   - Create production migration script (scripts/migrate-production.sh)
-   - Create production seed script (scripts/seed-production.sh)
-   - Test database connection from local using temporary public access
+   - Update Prisma schema to use DATABASE_URL from environment (already supports env vars)
+   - Create production migration script (scripts/migrate-production.sh) that reads DATABASE_URL
+   - Create production seed script (scripts/seed-production.sh) for exam types and questions
+   - Test database connection from local machine using Neon connection string
 
-3. **App Runner Deployment** (T200-T203):
-   - Create apprunner.yaml configuration (Node.js 20, build + start commands)
-   - Deploy App Runner service from GitHub 003-play-integrity branch
-   - Configure environment variables (DATABASE_URL, JWT_SECRET, Google OAuth, Play Integrity credentials)
-   - Set up health checks (GET /health endpoint)
+3. **Railway Deployment** (T200-T203):
+   - Create Railway project and connect GitHub repository (003-play-integrity branch)
+   - Railway auto-detects Node.js project and builds Docker container automatically
+   - Configure environment variables in Railway dashboard (DATABASE_URL, JWT_SECRET, Google OAuth, Play Integrity credentials)
+   - Enable auto-deploy on GitHub push (continuous deployment with zero downtime)
+   - Set up health check (GET /health endpoint, Railway auto-detects health status)
 
 4. **Mobile Configuration** (T204):
-   - Update mobile API config with App Runner service URL
-   - Environment-based URL selection (__DEV__ → localhost, production → App Runner)
+   - Update mobile API config with Railway service URL (auto-generated: https://api.example.railway.app)
+   - Environment-based URL selection (__DEV__ → localhost, production → Railway)
 
 5. **Documentation & Monitoring** (T205):
-   - Create deployment-guide.md with infrastructure setup, migration steps, rollback procedures
-   - Monitor CloudWatch logs and Aurora metrics
+   - Create deployment-guide.md with Neon setup, Railway deployment, migration steps, rollback procedures
+   - Monitor Railway dashboard (logs, deployments, analytics)
+   - Monitor Neon dashboard (storage usage, connection pool stats, auto-suspend activity)
    - Monitor Play Store metrics: crash rates, user feedback
 
 ### Rollback Plan
-- **Backend**: App Runner supports instant rollback to previous revision (zero downtime)
-- **Database**: Aurora automated backups (1-day retention); manual snapshots before migrations
+- **Backend**: Railway supports instant rollback to previous deployment (zero downtime via automatic version rollback)
+- **Database**: Neon provides branch management for zero-cost backup/rollback (create branch, test, promote, or discard)
 - **Mobile**: If blocking persists after fix, user must uninstall + reinstall from Play Store (re-verification clears block)
 
 ---
