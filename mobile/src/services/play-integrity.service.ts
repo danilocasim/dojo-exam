@@ -172,12 +172,18 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
       appLicensingVerdict: response.verdict.appLicensingVerdict,
       deviceRecognitionVerdict: response.verdict.deviceRecognitionVerdict,
     });
+    // Extra: Show verdict values in error message for debugging
     return {
       verified: false,
       verdict: response.verdict,
       error: {
         type: 'DEFINITIVE',
-        message: 'For security reasons, this app must be downloaded from Google Play.',
+        message:
+          'For security reasons, this app must be downloaded from Google Play.\n' +
+          'Debug: ' +
+          'appRecognitionVerdict=' + response.verdict.appRecognitionVerdict + ', ' +
+          'appLicensingVerdict=' + response.verdict.appLicensingVerdict + ', ' +
+          'deviceRecognitionVerdict=' + response.verdict.deviceRecognitionVerdict,
       },
     };
   }
