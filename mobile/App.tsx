@@ -52,9 +52,14 @@ export default function App() {
         const stopTokenRefresh = TokenRefreshService.setupPeriodicRefresh(60000);
         console.log('[App] Token refresh service started');
 
-        // Initialize SQLite database and Play Integrity check in parallel
-        setSyncStatus('Setting up database and verifying integrity...');
-        const [, integrityResult] = await Promise.all([initializeDatabase(), checkIntegrity()]);
+        // Initialize SQLite database FIRST (integrity check needs IntegrityStatus table)
+        setSyncStatus('Setting up database...');
+        await initializeDatabase();
+        console.log('[App] Database initialized');
+
+        // Then run integrity check (needs database to be ready)
+        setSyncStatus('Verifying integrity...');
+        const integrityResult = await checkIntegrity();
 
         // T177: Dev bypass or cache hit should not block initialization
         // Only block DEFINITIVE failures (sideloaded APKs), not TRANSIENT errors
