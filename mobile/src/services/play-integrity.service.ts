@@ -68,7 +68,6 @@ export interface IntegrityVerifyResponse {
  * @returns IntegrityCheckResult with verified status and optional error
  */
 export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
-
   // T174/T175: Development mode bypass (FR-011, FR-012)
   if (__DEV__) {
     console.warn('[PlayIntegrity] Bypassed in development mode');
@@ -181,9 +180,14 @@ export const checkIntegrity = async (): Promise<IntegrityCheckResult> => {
         message:
           'For security reasons, this app must be downloaded from Google Play.\n' +
           'Debug: ' +
-          'appRecognitionVerdict=' + response.verdict.appRecognitionVerdict + ', ' +
-          'appLicensingVerdict=' + response.verdict.appLicensingVerdict + ', ' +
-          'deviceRecognitionVerdict=' + response.verdict.deviceRecognitionVerdict,
+          'appRecognitionVerdict=' +
+          response.verdict.appRecognitionVerdict +
+          ', ' +
+          'appLicensingVerdict=' +
+          response.verdict.appLicensingVerdict +
+          ', ' +
+          'deviceRecognitionVerdict=' +
+          response.verdict.deviceRecognitionVerdict,
       },
     };
   }
