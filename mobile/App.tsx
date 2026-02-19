@@ -57,24 +57,25 @@ export default function App() {
         const [, integrityResult] = await Promise.all([initializeDatabase(), checkIntegrity()]);
 
         // T177: Dev bypass or cache hit should not block initialization
-        if (!integrityResult.verified && !integrityResult.cachedResult) {
-          if (integrityResult.error?.type === 'DEFINITIVE') {
-            // Permanent block — sideloaded/re-signed APK
-            setIntegrityBlockedMessage(
-              integrityResult.error.message ||
-                'For security reasons, this app must be downloaded from Google Play.',
-            );
-            setIntegrityShowRetry(false);
-          } else {
-            // Transient / network error — show retry option
-            setIntegrityBlockedMessage(
-              integrityResult.error?.message ||
-                'Unable to verify your installation. Please check your internet connection and try again.',
-            );
-            setIntegrityShowRetry(true);
-          }
+        // Only block DEFINITIVE failures (sideloaded APKs), not TRANSIENT errors
+        if (!integrityResult.verified && integrityResult.error?.type === 'DEFINITIVE') {
+          // Permanent block — sideloaded/re-signed APK detected
+          console.error('[App] DEFINITIVE integrity failure - blocking app');
+          setIntegrityBlockedMessage(
+            integrityResult.error.message ||
+              'For security reasons, this app must be downloaded from Google Play.',
+          );
+          setIntegrityShowRetry(false);
           setIsReady(true);
           return;
+        }
+
+        // TRANSIENT/NETWORK errors: log warning but allow app to proceed
+        if (!integrityResult.verified && !integrityResult.cachedResult) {
+          console.warn(
+            '[App] Integrity check failed (TRANSIENT/NETWORK), but allowing app to proceed:',
+            integrityResult.error?.message,
+          );
         }
         console.warn('[App] Integrity verified or dev bypass, proceeding with app initialization');
 
