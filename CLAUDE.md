@@ -75,6 +75,7 @@ cd api && npx prisma studio    # Database GUI
 - **App-specific config**: Each mobile app has hardcoded EXAM_TYPE_ID in config
 - **Domain-per-ExamType**: Domains defined in ExamType.domains JSON; dynamic per exam type
 - **One-time purchase**: Play Store paid app model; no subscriptions
+- **Monorepo (Phase 4)**: npm workspaces with shared mobile code in packages/shared/ and thin app wrappers in apps/{exam-id}/
 
 ## API Endpoints
 
@@ -89,6 +90,9 @@ POST /api/integrity/verify                # Decrypt Play Integrity token (client
 
 # Admin (portal)
 GET /admin/exam-types                     # List all exam types
+POST /admin/exam-types                    # Create new exam type
+PUT /admin/exam-types/{id}                # Update exam type
+PATCH /admin/exam-types/{id}              # Toggle exam type active/inactive
 GET /admin/questions?examTypeId=...       # List questions filtered by exam type
 POST /admin/questions                     # Create question (requires examTypeId)
 ```
@@ -115,6 +119,15 @@ POST /admin/questions                     # Create question (requires examTypeId
     - Secrets: AWS Secrets Manager (database credentials), Parameter Store (configuration)
     - Database: Migration scripts, seed scripts, production connection testing
     - Deployment: Health checks, environment-based API URLs, deployment documentation
+- **Phase 4** (003-play-integrity): Multi-App Monorepo Architecture - 📋 Ready for Implementation (40 tasks T207-T246)
+  - User Stories: US5-US9 (Admin ExamType CRUD, shared code monorepo, app scaffold, per-app branding)
+  - Functional Requirements: FR-026 to FR-045 (npm workspaces, shared packages, admin CRUD, app template, EAS builds)
+  - Success Criteria: SC-009 to SC-014 (zero regression, <30min new app, 95%+ code reuse, admin self-service)
+  - Scope: Extract shared mobile code to packages/shared/, thin app wrappers in apps/, ExamType CRUD in admin portal
+  - Dependencies: Phase 3 (T151-T205) complete
+  - Enables multiple Play Store exam apps from one codebase with 1x maintenance burden
+  - **Phase 13: Admin ExamType CRUD** (T225-T238): POST/PUT/PATCH endpoints + admin portal UI for exam type management
+  - **Phase 10-12: Monorepo Migration** (T207-T224): npm workspaces, shared code extraction, app wrappers, create-app script
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
