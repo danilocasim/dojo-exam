@@ -401,25 +401,25 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### Monorepo Setup Tasks
 
-- [ ] T207 Create root package.json with npm workspaces configuration: `{ "private": true, "workspaces": ["packages/*", "apps/*", "api"] }`. Add root-level scripts: `"test": "npm run test --workspaces"`, `"build": "npm run build --workspaces"`. Ensure existing `api/package.json` and future packages are detected by workspace resolution.
+- [x] T207 Create root package.json with npm workspaces configuration: `{ "private": true, "workspaces": ["packages/*", "apps/*", "api"] }`. Add root-level scripts: `"test": "npm run test --workspaces"`, `"build": "npm run build --workspaces"`. Ensure existing `api/package.json` and future packages are detected by workspace resolution.
 
-- [ ] T208 [P] Create packages/shared/ package structure: `packages/shared/package.json` (name: `@exam-app/shared`, version: `1.0.0`, main: `src/index.ts`), `packages/shared/tsconfig.json` (extends root tsconfig, paths alias `@exam-app/shared`), `packages/shared/src/index.ts` (barrel export file). Directory structure: `src/components/`, `src/services/`, `src/stores/`, `src/storage/`, `src/screens/`, `src/navigation/`, `src/config/`.
+- [x] T208 [P] Create packages/shared/ package structure: `packages/shared/package.json` (name: `@exam-app/shared`, version: `1.0.0`, main: `src/index.ts`), `packages/shared/tsconfig.json` (extends root tsconfig, paths alias `@exam-app/shared`), `packages/shared/src/index.ts` (barrel export file). Directory structure: `src/components/`, `src/services/`, `src/stores/`, `src/storage/`, `src/screens/`, `src/navigation/`, `src/config/`.
 
 ### Shared Code Extraction Tasks
 
 **Critical**: Use `git mv` for all file moves to preserve git history. Do NOT copy-delete.
 
-- [ ] T209 [P] Extract shared components: `git mv mobile/src/components/* packages/shared/src/components/`. Files to move: ALL components from mobile/src/components/ including IntegrityBlockedScreen.tsx, QuestionCard.tsx, and all others. Update barrel export in packages/shared/src/index.ts.
+- [x] T209 [P] Extract shared components: `git mv mobile/src/components/* packages/shared/src/components/`. Files to move: ALL components from mobile/src/components/ including IntegrityBlockedScreen.tsx, QuestionCard.tsx, and all others. Update barrel export in packages/shared/src/index.ts.
 
-- [ ] T210 [P] Extract shared services: `git mv mobile/src/services/* packages/shared/src/services/`. Files to move: ALL services including play-integrity.service.ts, exam scoring logic, sync services, API services. Update barrel export. Note: play-integrity.service.ts uses `__DEV__` which works identically in shared package context.
+- [x] T210 [P] Extract shared services: `git mv mobile/src/services/* packages/shared/src/services/`. Files to move: ALL services including play-integrity.service.ts, exam scoring logic, sync services, API services. Update barrel export. Note: play-integrity.service.ts uses `__DEV__` which works identically in shared package context.
 
-- [ ] T211 [P] Extract shared stores: `git mv mobile/src/stores/* packages/shared/src/stores/`. Files to move: ALL Zustand stores including play-integrity.store.ts and any existing stores. Update barrel export.
+- [x] T211 [P] Extract shared stores: `git mv mobile/src/stores/* packages/shared/src/stores/`. Files to move: ALL Zustand stores including play-integrity.store.ts and any existing stores. Update barrel export.
 
-- [ ] T212 [P] Extract shared storage: `git mv mobile/src/storage/* packages/shared/src/storage/`. Files to move: ALL SQLite database code, migrations, repositories (including integrity.repository.ts). Update barrel export.
+- [x] T212 [P] Extract shared storage: `git mv mobile/src/storage/* packages/shared/src/storage/`. Files to move: ALL SQLite database code, migrations, repositories (including integrity.repository.ts). Update barrel export.
 
-- [ ] T213 [P] Extract shared screens: `git mv mobile/src/screens/* packages/shared/src/screens/`. Files to move: ALL screens including HomeScreen.tsx and all exam/practice/settings screens. Update barrel export.
+- [x] T213 [P] Extract shared screens: `git mv mobile/src/screens/* packages/shared/src/screens/`. Files to move: ALL screens including HomeScreen.tsx and all exam/practice/settings screens. Update barrel export.
 
-- [ ] T214 [P] Extract shared navigation: `git mv mobile/src/navigation/* packages/shared/src/navigation/`. Files to move: ALL navigation configuration. Update barrel export. Create packages/shared/src/config/types.ts with `AppConfig` interface: `{ examTypeId: string; appName: string; branding?: { primaryColor?: string } }`. Create packages/shared/src/config/defaults.ts exporting default EXAM_CONFIG, SYNC_CONFIG, STORAGE_CONFIG from the current mobile/src/config/app.config.ts.
+- [x] T214 [P] Extract shared navigation: `git mv mobile/src/navigation/* packages/shared/src/navigation/`. Files to move: ALL navigation configuration. Update barrel export. Create packages/shared/src/config/types.ts with `AppConfig` interface: `{ examTypeId: string; appName: string; branding?: { primaryColor?: string } }`. Create packages/shared/src/config/defaults.ts exporting default EXAM_CONFIG, SYNC_CONFIG, STORAGE_CONFIG from the current mobile/src/config/app.config.ts.
 
 **Checkpoint**: packages/shared/ contains all reusable code with barrel exports. Not yet imported by any app. `npm install` from root resolves workspace.
 
@@ -431,9 +431,9 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### Migration Tasks
 
-- [ ] T215 Create apps/aws-clp/ directory structure. Move app-specific files from mobile/: `git mv mobile/app.json apps/aws-clp/app.json`, `git mv mobile/assets/ apps/aws-clp/assets/`, `git mv mobile/eas.json apps/aws-clp/eas.json`. Create apps/aws-clp/package.json with dependencies: `{ "@exam-app/shared": "*", "expo": "~50.0.0", "react": "18.x", "react-native": "0.73.x" }` and all necessary Expo/RN dependencies from current mobile/package.json.
+- [x] T215 Create apps/aws-clp/ directory structure. Move app-specific files from mobile/: `git mv mobile/app.json apps/aws-clp/app.json`, `git mv mobile/assets/ apps/aws-clp/assets/`, `git mv mobile/eas.json apps/aws-clp/eas.json`. Create apps/aws-clp/package.json with dependencies: `{ "@exam-app/shared": "*", "expo": "~50.0.0", "react": "18.x", "react-native": "0.73.x" }` and all necessary Expo/RN dependencies from current mobile/package.json.
 
-- [ ] T216 Create apps/aws-clp/metro.config.js configured for monorepo workspace resolution:
+- [x] T216 Create apps/aws-clp/metro.config.js configured for monorepo workspace resolution:
   ```js
   const { getDefaultConfig } = require('expo/metro-config');
   const path = require('path');
@@ -448,9 +448,9 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
   module.exports = config;
   ```
 
-- [ ] T217 [P] Create apps/aws-clp/babel.config.js configured for workspace package resolution. Ensure NativeWind, Reanimated, and other Babel plugins from current mobile/babel.config.js are preserved. Add module-resolver alias for `@exam-app/shared`.
+- [x] T217 [P] Create apps/aws-clp/babel.config.js configured for workspace package resolution. Ensure NativeWind, Reanimated, and other Babel plugins from current mobile/babel.config.js are preserved. Add module-resolver alias for `@exam-app/shared`.
 
-- [ ] T218 Create apps/aws-clp/src/config/app.config.ts with AWS Cloud Practitioner specific config:
+- [x] T218 Create apps/aws-clp/src/config/app.config.ts with AWS Cloud Practitioner specific config:
   ```ts
   export const APP_CONFIG = {
     examTypeId: 'CLF-C02',
@@ -460,7 +460,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
   ```
   This replaces the previous mobile/src/config/app.config.ts EXAM_TYPE_ID export.
 
-- [ ] T219 Create packages/shared/src/AppRoot.tsx — the root component that accepts `examTypeId` and branding as props. This component renders the full app tree (navigation, providers, initialization logic including Play Integrity check). Extracted from current mobile/App.tsx. Interface:
+- [x] T219 Create packages/shared/src/AppRoot.tsx — the root component that accepts `examTypeId` and branding as props. This component renders the full app tree (navigation, providers, initialization logic including Play Integrity check). Extracted from current mobile/App.tsx. Interface:
   ```ts
   interface AppRootProps {
     examTypeId: string;

@@ -23,6 +23,7 @@ export {
   loadBundledQuestions,
   getQuestionCount,
 } from './bundle.service';
+export type { QuestionBundle } from './bundle.service';
 
 // Exam generator service exports (T037)
 export { generateExam, canGenerateExam, getQuestionDistribution } from './exam-generator.service';

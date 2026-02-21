@@ -1,9 +1,6 @@
 // Bundle loader - loads initial question bank from bundled assets
 import { getDatabase, QuestionRow, SYNC_META_KEYS } from '../storage';
 
-// Import bundled questions
-import clfC02Bundle from '../../assets/questions/clf-c02-bundle.json';
-
 /**
  * Bundled question structure (matches the JSON format)
  */
@@ -24,7 +21,7 @@ interface BundledQuestion {
 /**
  * Bundled question bank structure
  */
-interface QuestionBundle {
+export interface QuestionBundle {
   version: number;
   examTypeId: string;
   generatedAt: string;
@@ -59,13 +56,16 @@ export const getBundledVersion = async (): Promise<number | null> => {
  * Load bundled questions into the database
  * This is called on first app launch to provide offline-first functionality
  * Will also reload if the bundle examTypeId has changed (e.g., data migration)
+ *
+ * @param bundle - The question bundle data (imported by the app, not the shared package)
  */
-export const loadBundledQuestions = async (): Promise<{
+export const loadBundledQuestions = async (
+  bundle: QuestionBundle,
+): Promise<{
   loaded: boolean;
   count: number;
 }> => {
   const db = await getDatabase();
-  const bundle = clfC02Bundle as QuestionBundle;
 
   // Check if bundle was already loaded with the SAME exam type
   const loadedExamType = await db.getFirstAsync<{ value: string }>(

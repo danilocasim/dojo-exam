@@ -19,6 +19,9 @@ export { ScoreTrendChart } from './analytics/ScoreTrendChart';
 export { DomainPerformanceCard } from './analytics/DomainPerformanceCard';
 export { StudyStatsCard } from './analytics/StudyStatsCard';
 
+// Sync status (T089)
+export { SyncStatusIndicator } from './SyncStatusIndicator';
+
 // Error handling (T103)
 export { ErrorBoundary } from './ErrorBoundary';
 
@@ -30,3 +33,6 @@ export {
   StatsCardSkeleton,
   ListPageSkeleton,
 } from './Skeleton';
+
+// Integrity (T151)
+export { IntegrityBlockedScreen } from './IntegrityBlockedScreen';

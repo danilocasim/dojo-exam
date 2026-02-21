@@ -1,4 +1,5 @@
-import axios from 'axios';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const getAxios = () => require('axios').default ?? require('axios');
 import * as ExamSubmissionRepo from '../storage/repositories/exam-submission.repository';
 import { getAPIURL } from '../config';
 
@@ -112,7 +113,7 @@ export class ExamAttemptService {
     for (const attempt of pending) {
       try {
         // Send to cloud API
-        const response = await axios.post(
+        const response = await getAxios().post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
             examTypeId: attempt.examTypeId,
@@ -179,7 +180,7 @@ export class ExamAttemptService {
         await this.sleep(delayMs);
 
         // Retry sync
-        const response = await axios.post(
+        const response = await getAxios().post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
             examTypeId: attempt.examTypeId,

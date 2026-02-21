@@ -4,7 +4,7 @@
  * Injects JWT access token in Authorization header for all API requests
  * Handles token refresh on 401 responses
  */
-import { AxiosInstance, AxiosError } from 'axios';
+import type { AxiosInstance, AxiosError } from 'axios';
 import { TokenStorage } from '../storage/token-storage';
 import { useAuthStore } from '../stores/auth-store';
 
