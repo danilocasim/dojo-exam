@@ -1,5 +1,5 @@
 // T041: HomeScreen — redesigned with clear visual hierarchy
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Image,
   Modal,
   Pressable,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -119,6 +120,39 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
     </Svg>
+  );
+};
+
+// ── Thin progress bar for WebView loading ──
+const WebViewProgressBar: React.FC = () => {
+  const progress = useRef(new Animated.Value(0)).current;
+  const screenWidth = Dimensions.get('window').width;
+
+  useEffect(() => {
+    // Animate from 0 → 90% quickly, then slow down (feels like real loading)
+    Animated.sequence([
+      Animated.timing(progress, {
+        toValue: 0.6,
+        duration: 800,
+        useNativeDriver: false,
+      }),
+      Animated.timing(progress, {
+        toValue: 0.9,
+        duration: 4000,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [progress]);
+
+  const width = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, screenWidth],
+  });
+
+  return (
+    <View style={styles.webViewProgressTrack}>
+      <Animated.View style={[styles.webViewProgressBar, { width }]} />
+    </View>
   );
 };
 
@@ -732,15 +766,8 @@ export const HomeScreen: React.FC = () => {
             <View style={{ width: 38, height: 38 }} />
           </View>
 
-          {/* Centered loading overlay for WebView */}
-          {webViewLoading && (
-            <View style={styles.webViewLoadingOverlay}>
-              <View style={styles.webViewLoadingSpinnerWrap}>
-                <ActivityIndicator size="large" color={colors.primaryOrange} />
-                <Text style={styles.webViewLoadingText}>Loading resource...</Text>
-              </View>
-            </View>
-          )}
+          {/* Progress bar below nav */}
+          {webViewLoading && <WebViewProgressBar />}
 
           {/* WebView */}
           {webViewUrl && (
@@ -1130,34 +1157,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: 8,
   },
-  webViewLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(31, 41, 55, 0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
+  webViewProgressTrack: {
+    height: 3,
+    backgroundColor: colors.borderDefault,
+    overflow: 'hidden' as const,
   },
-  webViewLoadingSpinnerWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  webViewLoadingText: {
-    marginTop: 16,
-    color: colors.textMuted,
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
+  webViewProgressBar: {
+    height: 3,
+    backgroundColor: colors.primaryOrange,
   },
   webView: {
     flex: 1,

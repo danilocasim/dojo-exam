@@ -1,6 +1,6 @@
 // T055: FeedbackCard - Immediate answer feedback with correct/incorrect and explanation
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { CheckCircle2, XCircle, Lightbulb, ChevronRight, Trophy } from 'lucide-react-native';
 
 // AWS Modern Color Palette
@@ -107,15 +107,18 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
   );
 };
 
+const { height: screenHeight } = Dimensions.get('window');
+const isSmallDevice = screenHeight < 700;
+
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-    gap: 10,
+    paddingHorizontal: 24,
+    paddingBottom: isSmallDevice ? 4 : 8,
+    gap: isSmallDevice ? 6 : 10,
   },
   feedbackCard: {
     borderRadius: 14,
-    padding: 16,
+    padding: isSmallDevice ? 12 : 16,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   explanationScroll: {
-    maxHeight: 120,
+    maxHeight: isSmallDevice ? 80 : 120,
   },
   explanationText: {
     fontSize: 14,
@@ -183,12 +186,13 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     backgroundColor: colors.primaryOrange,
-    paddingVertical: 14,
+    paddingVertical: isSmallDevice ? 12 : 16,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginTop: isSmallDevice ? 2 : 4,
   },
   continueText: {
     color: colors.textHeading,
