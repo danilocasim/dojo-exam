@@ -8,28 +8,30 @@
  * - Successful syncs remove items from queue
  * - Exponential backoff applied to retries
  */
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExamAttemptService } from '../src/services/exam-attempt.service';
 import * as ExamSubmissionRepo from '../src/storage/repositories/exam-submission.repository';
 
-// Mock the axios module
-jest.mock('axios');
-import axios from 'axios';
-
-const mockAxios = axios as jest.Mocked<typeof axios>;
+// Get the same axios reference that production code uses via require('axios').default ?? require('axios')
+// vitest's vi.mock doesn't intercept CJS require() in production code, so we spy on the real module
+const realAxios = require('axios').default ?? require('axios');
 
 describe('Offline Queue Integration Tests', () => {
   let service: ExamAttemptService;
+  let sleepSpy: ReturnType<typeof vi.spyOn>;
+  let postSpy: any;
   const mockApiUrl = 'http://localhost:3000';
   const mockUserId = 'user-123';
 
   beforeEach(() => {
     service = new ExamAttemptService(mockApiUrl);
-    jest.clearAllMocks();
+    sleepSpy = vi.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
+    postSpy = vi.spyOn(realAxios, 'post');
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Queue Persistence Across App Restart', () => {
@@ -62,7 +64,7 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
       // Simulate app restart by creating new service instance
       const restartedService = new ExamAttemptService(mockApiUrl);
@@ -114,7 +116,7 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
       const pending = await service.getPendingAttempts();
 
@@ -154,13 +156,13 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({
+      postSpy.mockResolvedValue({
         data: { id: 'server-id', syncStatus: 'SYNCED' },
       });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],
@@ -192,11 +194,11 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Network error'));
+      postSpy.mockRejectedValue(new Error('Network error'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -253,22 +255,22 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
       // Mock: First succeeds, second fails, third succeeds
-      mockAxios.post
+      postSpy
         .mockResolvedValueOnce({ data: { id: 'server-1' } })
         .mockRejectedValueOnce(new Error('Server error'))
         .mockResolvedValueOnce({ data: { id: 'server-3' } });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],
           syncStatus: 'SYNCED',
         });
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[1],
@@ -303,17 +305,14 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^2 = 20000ms
-      // Allow 95% tolerance (19000ms minimum)
-      expect(elapsed).toBeGreaterThanOrEqual(19000);
+      expect(sleepSpy).toHaveBeenCalledWith(20000);
     });
 
     test('should increment retry count on each failure', async () => {
@@ -332,11 +331,11 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Server unavailable'));
+      postSpy.mockRejectedValue(new Error('Server unavailable'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -364,11 +363,11 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Permanent failure'));
+      postSpy.mockRejectedValue(new Error('Permanent failure'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -384,7 +383,7 @@ describe('Offline Queue Integration Tests', () => {
 
   describe('Queue State Management', () => {
     test('should clear queue when all items synced', async () => {
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([]);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([]);
 
       const pending = await service.getPendingAttempts();
 
@@ -392,7 +391,7 @@ describe('Offline Queue Integration Tests', () => {
     });
 
     test('should handle empty queue gracefully', async () => {
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([]);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([]);
 
       const result = await service.syncPendingAttempts(mockUserId);
 
@@ -432,13 +431,11 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest
-        .spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions')
-        .mockResolvedValue(pendingSubmissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(
+        pendingSubmissions,
+      );
 
-      jest
-        .spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions')
-        .mockResolvedValue(failedSubmissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(failedSubmissions);
 
       const pending = await service.getPendingAttempts();
       const failed = await service.getFailedAttempts();
@@ -467,11 +464,11 @@ describe('Offline Queue Integration Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],

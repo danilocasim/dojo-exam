@@ -10,7 +10,7 @@
  * Test Scenario: User Story 2 - Sideload Blocking
  * Acceptance: Sideloaded/tampered apps blocked 100% with clear feedback
  */
-import { describe, test, expect, beforeAll, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 import { device, element, by, waitFor } from 'detox';
 
 describe('Integrity Blocking - Sideload Detection (E2E)', () => {

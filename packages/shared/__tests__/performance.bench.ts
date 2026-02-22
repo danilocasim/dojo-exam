@@ -6,16 +6,16 @@
  * - Analytics query: <2s for complex aggregations
  * - Token refresh: <500ms for JWT token renewal
  */
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ExamAttemptService } from '../src/services/exam-attempt.service';
 import { AuthService } from '../src/services/auth.service';
 import * as ExamSubmissionRepo from '../src/storage/repositories/exam-submission.repository';
 import { SyncStatus } from '../src/storage/models/exam-submission.model';
 
 // Mock axios
-jest.mock('axios');
+vi.mock('axios');
 import axios from 'axios';
-const mockAxios = axios as jest.Mocked<typeof axios>;
+const mockAxios = axios as vi.Mocked<typeof axios>;
 
 // Performance thresholds (in milliseconds)
 const PERFORMANCE_THRESHOLDS = {
@@ -52,7 +52,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
   beforeEach(() => {
     examAttemptService = new ExamAttemptService(mockApiUrl);
     authService = new AuthService(mockApiUrl);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Cloud Sync Performance (<5s for 50 exams)', () => {
@@ -86,7 +86,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
       });
 
       // Mock successful sync status updates
-      jest.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockImplementation(async (id) => ({
+      vi.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockImplementation(async (id) => ({
         id,
         userId: mockUserId,
         examTypeId: 'aws-ccp',
@@ -157,7 +157,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
         return { data: { id: `server-${examId}` } };
       });
 
-      jest.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
+      vi.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
         id: 'local-1',
         userId: mockUserId,
         examTypeId: 'aws-ccp',
@@ -171,7 +171,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
         syncedAt: new Date(),
       });
 
-      jest.spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed').mockResolvedValue({
+      vi.spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed').mockResolvedValue({
         id: 'local-1',
         userId: mockUserId,
         examTypeId: 'aws-ccp',
@@ -417,7 +417,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
         return { data: { id: 'server-id' } };
       });
 
-      jest.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
+      vi.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
         id: 'local-1',
         userId: mockUserId,
         examTypeId: 'aws-ccp',
@@ -458,7 +458,7 @@ describe('Performance Benchmarks - Phase 2 Cloud Sync', () => {
         syncedAt: new Date(),
       }));
 
-      jest.spyOn(ExamSubmissionRepo, 'getSyncedExamSubmissions').mockImplementation(async () => {
+      vi.spyOn(ExamSubmissionRepo, 'getSyncedExamSubmissions').mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate larger query
         return largeDataset;
       });

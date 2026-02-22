@@ -8,7 +8,7 @@
  * - Development mode bypass
  * - Mock Google API responses and SQLite queries
  */
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import * as PlayIntegrityService from '../src/services/play-integrity.service';
 import * as IntegrityRepository from '../src/storage/repositories/integrity.repository';
 import * as NetworkService from '../src/services/network.service';
@@ -16,21 +16,21 @@ import * as ApiService from '../src/services/api';
 import * as PlayIntegrityModule from 'react-native-google-play-integrity';
 
 // Mock dependencies
-jest.mock('../src/storage/repositories/integrity.repository');
-jest.mock('../src/services/network.service');
-jest.mock('../src/services/api');
-jest.mock('react-native-google-play-integrity', () => ({
-  requestIntegrityToken: jest.fn(),
+vi.mock('../src/storage/repositories/integrity.repository');
+vi.mock('../src/services/network.service');
+vi.mock('../src/services/api');
+vi.mock('react-native-google-play-integrity', () => ({
+  requestIntegrityToken: vi.fn(),
 }));
 
-const mockIntegrityRepo = IntegrityRepository as jest.Mocked<typeof IntegrityRepository>;
-const mockNetworkService = NetworkService as jest.Mocked<typeof NetworkService>;
-const mockApiService = ApiService as jest.Mocked<typeof ApiService>;
-const mockPlayIntegrityModule = PlayIntegrityModule as jest.Mocked<typeof PlayIntegrityModule>;
+const mockIntegrityRepo = IntegrityRepository as any;
+const mockNetworkService = NetworkService as any;
+const mockApiService = ApiService as any;
+const mockPlayIntegrityModule = PlayIntegrityModule as any;
 
 describe('Play Integrity Service - Unit Tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset __DEV__ to false for most tests
     (global as any).__DEV__ = false;

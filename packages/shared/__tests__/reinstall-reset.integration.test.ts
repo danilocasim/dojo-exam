@@ -10,32 +10,33 @@
  * Test Scenario: User Story 4 - Reinstall Reset
  * Acceptance: Reinstall clears cache and triggers re-verification
  */
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as IntegrityRepository from '../src/storage/repositories/integrity.repository';
 import * as PlayIntegrityService from '../src/services/play-integrity.service';
 import * as NetworkService from '../src/services/network.service';
 import * as ApiService from '../src/services/api';
+import * as PlayIntegrityModule from 'react-native-google-play-integrity';
 
 // Mock dependencies
-jest.mock('../src/storage/repositories/integrity.repository');
-jest.mock('../src/services/network.service');
-jest.mock('../src/services/api');
-jest.mock('react-native-google-play-integrity', () => ({
-  requestIntegrityToken: jest.fn(),
+vi.mock('../src/storage/repositories/integrity.repository');
+vi.mock('../src/services/network.service');
+vi.mock('../src/services/api');
+vi.mock('react-native-google-play-integrity', () => ({
+  requestIntegrityToken: vi.fn(),
 }));
 
-const mockIntegrityRepo = IntegrityRepository as jest.Mocked<typeof IntegrityRepository>;
-const mockNetworkService = NetworkService as jest.Mocked<typeof NetworkService>;
-const mockApiService = ApiService as jest.Mocked<typeof ApiService>;
+const mockIntegrityRepo = IntegrityRepository as any;
+const mockNetworkService = NetworkService as any;
+const mockApiService = ApiService as any;
+const mockPlayIntegrity = PlayIntegrityModule as any;
 
 describe('Reinstall Reset - Cache Clearing Lifecycle', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     (global as any).__DEV__ = false; // Production mode
 
     // Mock Google Play Integrity API to return valid token
-    const PlayIntegrityMock = require('react-native-google-play-integrity') as jest.Mocked<any>;
-    PlayIntegrityMock.requestIntegrityToken.mockResolvedValue('mock-token-value');
+    mockPlayIntegrity.requestIntegrityToken.mockResolvedValue('mock-token-value');
   });
 
   describe('Initial Install - First Verification', () => {

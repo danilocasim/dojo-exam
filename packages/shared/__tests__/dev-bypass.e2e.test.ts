@@ -11,7 +11,7 @@
  * Test Scenario: User Story 3 - Developer Bypass
  * Acceptance: Dev builds launch without blocks 100% of the time
  */
-import { describe, test, expect, beforeAll, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 import { device, element, by, waitFor } from 'detox';
 
 describe('Development Mode Bypass (E2E)', () => {

@@ -6,23 +6,24 @@
  * - Cached-launch: <3s (existing app launch target, no regression)
  * - Cache-hit query: <10ms (SQLite query performance)
  */
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import * as PlayIntegrityService from '../src/services/play-integrity.service';
 import * as IntegrityRepository from '../src/storage/repositories/integrity.repository';
 import * as NetworkService from '../src/services/network.service';
 import * as ApiService from '../src/services/api';
+import * as PlayIntegrityModule from 'react-native-google-play-integrity';
 
-// Mock dependencies
-jest.mock('../src/storage/repositories/integrity.repository');
-jest.mock('../src/services/network.service');
-jest.mock('../src/services/api');
-jest.mock('react-native-google-play-integrity', () => ({
-  requestIntegrityToken: jest.fn(),
+vi.mock('../src/storage/repositories/integrity.repository');
+vi.mock('../src/services/network.service');
+vi.mock('../src/services/api');
+vi.mock('react-native-google-play-integrity', () => ({
+  requestIntegrityToken: vi.fn(),
 }));
 
-const mockIntegrityRepo = IntegrityRepository as jest.Mocked<typeof IntegrityRepository>;
-const mockNetworkService = NetworkService as jest.Mocked<typeof NetworkService>;
-const mockApiService = ApiService as jest.Mocked<typeof ApiService>;
+const mockIntegrityRepo = IntegrityRepository as any;
+const mockNetworkService = NetworkService as any;
+const mockApiService = ApiService as any;
+const mockPlayIntegrityModule = PlayIntegrityModule as any;
 
 // Performance thresholds (in milliseconds)
 const PERFORMANCE_THRESHOLDS = {
@@ -50,12 +51,11 @@ function formatResult(label: string, elapsed: number, threshold: number): void {
 
 describe('Performance Benchmarks - Play Integrity Guard', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     (global as any).__DEV__ = false; // Ensure production mode
 
     // Mock Google Play Integrity API to return valid token
-    const PlayIntegrityMock = require('react-native-google-play-integrity') as jest.Mocked<any>;
-    PlayIntegrityMock.requestIntegrityToken.mockResolvedValue('mock-token-value');
+    mockPlayIntegrityModule.requestIntegrityToken.mockResolvedValue('mock-token-value');
   });
 
   describe('First Launch with API (<5s)', () => {
@@ -107,9 +107,7 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
     }, 10000);
 
     test('should stay under 5s budget even with slow network (2s API delay)', async () => {
-      console.log(
-        `\n${YELLOW}⏱️  Starting benchmark: First Launch with Slow Network${RESET}`,
-      );
+      console.log(`\n${YELLOW}⏱️  Starting benchmark: First Launch with Slow Network${RESET}`);
 
       mockIntegrityRepo.getStatus.mockResolvedValue(null);
       mockNetworkService.checkConnectivity.mockResolvedValue(true);
@@ -245,9 +243,7 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
     });
 
     test('should handle 100 consecutive cached launches within budget', async () => {
-      console.log(
-        `\n${YELLOW}⏱️  Starting benchmark: 100 Consecutive Cached Launches${RESET}`,
-      );
+      console.log(`\n${YELLOW}⏱️  Starting benchmark: 100 Consecutive Cached Launches${RESET}`);
 
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       const cachedStatus: PlayIntegrityService.IntegrityStatusRecord = {
@@ -303,11 +299,7 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
       const result = await PlayIntegrityService.checkIntegrity();
       const elapsed = performance.now() - startTime;
 
-      formatResult(
-        'No Launch Time Regression',
-        elapsed,
-        PERFORMANCE_THRESHOLDS.CACHED_LAUNCH,
-      );
+      formatResult('No Launch Time Regression', elapsed, PERFORMANCE_THRESHOLDS.CACHED_LAUNCH);
 
       expect(result.verified).toBe(true);
       expect(result.cachedResult).toBe(true);
@@ -442,7 +434,7 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
       const firstLaunchTime = performance.now() - firstLaunchStart;
 
       // Scenario 2: Cached launch
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const cachedStatus: PlayIntegrityService.IntegrityStatusRecord = {
         id: 'singleton',
         integrity_verified: true,
@@ -461,7 +453,7 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
       const cachedLaunchTime = performance.now() - cachedLaunchStart;
 
       // Scenario 3: Cache query only
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       mockIntegrityRepo.getStatus.mockResolvedValue(cachedStatus);
 
       const cacheQueryStart = performance.now();
@@ -470,13 +462,19 @@ describe('Performance Benchmarks - Play Integrity Guard', () => {
 
       // Print report
       console.log(`\n${GREEN}✅ First Launch (with API)${RESET}`);
-      console.log(`   ${firstLaunchTime.toFixed(2)}ms / ${PERFORMANCE_THRESHOLDS.FIRST_LAUNCH_WITH_API}ms target`);
+      console.log(
+        `   ${firstLaunchTime.toFixed(2)}ms / ${PERFORMANCE_THRESHOLDS.FIRST_LAUNCH_WITH_API}ms target`,
+      );
 
       console.log(`\n${GREEN}✅ Cached Launch${RESET}`);
-      console.log(`   ${cachedLaunchTime.toFixed(2)}ms / ${PERFORMANCE_THRESHOLDS.CACHED_LAUNCH}ms target`);
+      console.log(
+        `   ${cachedLaunchTime.toFixed(2)}ms / ${PERFORMANCE_THRESHOLDS.CACHED_LAUNCH}ms target`,
+      );
 
       console.log(`\n${GREEN}✅ Cache Query${RESET}`);
-      console.log(`   ${cacheQueryTime.toFixed(3)}ms / ${PERFORMANCE_THRESHOLDS.CACHE_HIT_QUERY}ms target`);
+      console.log(
+        `   ${cacheQueryTime.toFixed(3)}ms / ${PERFORMANCE_THRESHOLDS.CACHE_HIT_QUERY}ms target`,
+      );
 
       console.log(`\n${YELLOW}═══════════════════════════════════════════════════════${RESET}\n`);
 

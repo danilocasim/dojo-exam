@@ -1,12 +1,11 @@
 import {
   startExam,
   saveAnswer,
-  submitAnswer,
-  toggleFlag,
-  navigateQuestion,
-  getExamSession,
+  toggleQuestionFlag,
+  navigateToQuestion,
   resumeExam,
-  canResumeExam,
+  hasInProgressExam,
+  submitExam,
 } from '../../src/services/exam-session.service';
 import {
   createExamAttempt,
@@ -16,19 +15,29 @@ import {
   abandonExamAttempt,
 } from '../../src/storage/repositories/exam-attempt.repository';
 import {
+  createExamAnswersBatch,
+  getAnswersByExamAttemptId,
+  getAnswerByExamAndQuestion,
   submitAnswer as submitAnswerRepo,
   toggleFlag as toggleFlagRepo,
+  getAnsweredCount,
+  getFlaggedCount,
 } from '../../src/storage/repositories/exam-answer.repository';
-import { getQuestionsByIds } from '../../src/storage/repositories/question.repository';
-import { generateExam } from '../../src/services/exam-generator.service';
+import {
+  getQuestionsByIds,
+  getQuestionById,
+} from '../../src/storage/repositories/question.repository';
+import { incrementExamCount } from '../../src/storage/repositories/user-stats.repository';
+import { generateExam, GeneratedExam } from '../../src/services/exam-generator.service';
 import { getCachedExamTypeConfig } from '../../src/services/sync.service';
-import { ExamTypeConfig, Question } from '../../src/storage/schema';
+import { ExamTypeConfig, Question, ExamAnswer } from '../../src/storage/schema';
 
-jest.mock('../../src/storage/repositories/exam-attempt.repository');
-jest.mock('../../src/storage/repositories/exam-answer.repository');
-jest.mock('../../src/storage/repositories/question.repository');
-jest.mock('../../src/services/exam-generator.service');
-jest.mock('../../src/services/sync.service');
+vi.mock('../../src/storage/repositories/exam-attempt.repository');
+vi.mock('../../src/storage/repositories/exam-answer.repository');
+vi.mock('../../src/storage/repositories/question.repository');
+vi.mock('../../src/storage/repositories/user-stats.repository');
+vi.mock('../../src/services/exam-generator.service');
+vi.mock('../../src/services/sync.service');
 
 describe('ExamSessionService', () => {
   const mockExamTypeConfig: ExamTypeConfig = {
@@ -37,50 +46,78 @@ describe('ExamSessionService', () => {
     displayName: 'AWS CCP',
     description: 'AWS Certified Cloud Practitioner',
     domains: [
-      { id: 'cloud-concepts', name: 'Cloud Concepts', weight: 0.24 },
-      { id: 'security', name: 'Security and Compliance', weight: 0.3 },
-      { id: 'technology', name: 'Technology', weight: 0.34 },
-      { id: 'billing', name: 'Billing and Pricing', weight: 0.12 },
+      { id: 'cloud-concepts', name: 'Cloud Concepts', weight: 0.24, questionCount: 40 },
+      { id: 'security', name: 'Security and Compliance', weight: 0.3, questionCount: 50 },
+      { id: 'technology', name: 'Technology', weight: 0.34, questionCount: 60 },
+      { id: 'billing', name: 'Billing and Pricing', weight: 0.12, questionCount: 30 },
     ],
     passingScore: 70,
     timeLimit: 90,
     questionCount: 65,
   };
 
+  const mockQuestions: Question[] = Array.from({ length: 65 }, (_, i) => ({
+    id: `q-${i}`,
+    text: `Question ${i}`,
+    type: 'SINGLE_CHOICE' as const,
+    domain: i < 16 ? 'cloud-concepts' : i < 36 ? 'security' : i < 59 ? 'technology' : 'billing',
+    difficulty: 'MEDIUM' as const,
+    options: [
+      { id: 'A', text: 'Option A' },
+      { id: 'B', text: 'Option B' },
+    ],
+    correctAnswers: ['A'],
+    explanation: 'Explanation',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  const mockAnswers: ExamAnswer[] = mockQuestions.map((q, i) => ({
+    id: `answer-${i}`,
+    examAttemptId: 'exam-001',
+    questionId: q.id,
+    selectedAnswers: [],
+    isCorrect: null,
+    isFlagged: false,
+    orderIndex: i,
+    answeredAt: null,
+  }));
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('startExam', () => {
     it('should create new exam attempt and return exam session (FR-001, FR-006)', async () => {
-      const mockQuestions: Question[] = Array.from({ length: 65 }, (_, i) => ({
-        id: `q-${i}`,
-        text: `Question ${i}`,
-        type: 'SINGLE_CHOICE',
-        domain: i < 16 ? 'cloud-concepts' : i < 36 ? 'security' : i < 59 ? 'technology' : 'billing',
-        difficulty: 'MEDIUM',
-        options: [
-          { label: 'A', text: 'Option A' },
-          { label: 'B', text: 'Option B' },
-        ],
-        correctAnswers: ['A'],
-        explanation: 'Explanation',
-        examTypeId: 'aws-ccp',
-        status: 'APPROVED',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
-      (getCachedExamTypeConfig as jest.Mock).mockResolvedValue(mockExamTypeConfig);
-      (generateExam as jest.Mock).mockResolvedValue(mockQuestions);
+      const mockGenerated: GeneratedExam = {
+        questions: mockQuestions,
+        totalQuestions: 65,
+        config: mockExamTypeConfig,
+        domainDistribution: {
+          'cloud-concepts': 16,
+          security: 20,
+          technology: 23,
+          billing: 6,
+        },
+      };
 
       const mockExamAttempt = {
         id: 'exam-001',
-        startedAt: new Date(),
-        domain: 'pending',
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        status: 'in-progress' as const,
+        score: null,
+        passed: null,
+        totalQuestions: 65,
+        remainingTimeMs: 90 * 60 * 1000,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
-      (createExamAttempt as jest.Mock).mockResolvedValue(mockExamAttempt);
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(null);
+      (generateExam as vi.Mock).mockResolvedValue(mockGenerated);
+      (createExamAttempt as vi.Mock).mockResolvedValue(mockExamAttempt);
+      (createExamAnswersBatch as vi.Mock).mockResolvedValue(mockAnswers);
 
       const result = await startExam();
 
@@ -88,142 +125,215 @@ describe('ExamSessionService', () => {
       expect(result.attempt).toEqual(mockExamAttempt);
       expect(result.questions).toHaveLength(65);
       expect(result.currentIndex).toBe(0);
+      expect(result.config).toEqual(mockExamTypeConfig);
       expect(createExamAttempt).toHaveBeenCalled();
-      expect(generateExam).toHaveBeenCalledWith(mockExamTypeConfig);
+      expect(generateExam).toHaveBeenCalled();
     });
 
     it('should not allow starting new exam while one is in progress', async () => {
       const inProgressExam = {
         id: 'exam-in-progress',
-        startedAt: new Date(),
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        status: 'in-progress',
+        score: null,
+        passed: null,
+        totalQuestions: 65,
+        remainingTimeMs: 80 * 60 * 1000,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
-      (getInProgressExamAttempt as jest.Mock).mockResolvedValue(inProgressExam);
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(inProgressExam);
 
       await expect(startExam()).rejects.toThrow('An exam is already in progress');
     });
   });
 
-  describe('canResumeExam', () => {
-    it('should allow resumption within 24 hours from start (FR-006)', () => {
-      const startedAt = new Date(Date.now() - 12 * 60 * 60 * 1000); // 12 hours ago
-      const expiresAt = new Date(startedAt.getTime() + 24 * 60 * 60 * 1000);
+  describe('hasInProgressExam', () => {
+    it('should return true when exam is in progress and not expired (FR-006)', async () => {
+      const inProgressExam = {
+        id: 'exam-001',
+        startedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      };
 
-      expect(canResumeExam(startedAt)).toBe(true);
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(inProgressExam);
+
+      expect(await hasInProgressExam()).toBe(true);
     });
 
-    it('should NOT allow resumption after 24 hours from start (FR-006)', () => {
-      const startedAt = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25 hours ago
+    it('should return false when no exam in progress (FR-006)', async () => {
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(null);
 
-      expect(canResumeExam(startedAt)).toBe(false);
+      expect(await hasInProgressExam()).toBe(false);
     });
 
-    it('should NOT allow resumption exactly at 24 hour mark', () => {
-      const startedAt = new Date(Date.now() - 24 * 60 * 60 * 1000); // exactly 24 hours ago
+    it('should return false when exam has expired', async () => {
+      const expiredExam = {
+        id: 'exam-expired',
+        startedAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      };
 
-      // At exact boundary, should be just past resumable (the +1 check)
-      const canResume = canResumeExam(startedAt);
-      // Depending on implementation, this might be false or require additional logic
-      expect(typeof canResume).toBe('boolean');
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(expiredExam);
+
+      expect(await hasInProgressExam()).toBe(false);
     });
   });
 
   describe('resumeExam', () => {
-    it('should resume exam within 24 hour window and preserve remaining time', async () => {
-      const startTime = new Date(Date.now() - 30 * 60 * 1000); // 30 min ago
+    it('should resume exam within expiration window and preserve remaining time', async () => {
+      const startTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       const examAttempt = {
         id: 'exam-resume-001',
         startedAt: startTime,
         completedAt: null,
-        remainingTimeMs: mockExamTypeConfig.timeLimit * 60 * 1000 - 30 * 60 * 1000, // 60 min remaining
+        status: 'in-progress',
+        score: null,
+        passed: null,
+        totalQuestions: 65,
+        remainingTimeMs: 60 * 60 * 1000,
+        expiresAt: new Date(Date.now() + 23.5 * 60 * 60 * 1000).toISOString(),
       };
 
-      (getInProgressExamAttempt as jest.Mock).mockResolvedValue(examAttempt);
-      (getCachedExamTypeConfig as jest.Mock).mockResolvedValue(mockExamTypeConfig);
-
-      const mockQuestions: Question[] = Array.from({ length: 65 }, (_, i) => ({
-        id: `q-${i}`,
-        text: `Question ${i}`,
-        type: 'SINGLE_CHOICE',
-        domain: 'cloud-concepts',
-        difficulty: 'MEDIUM',
-        options: [{ label: 'A', text: 'Option A' }],
-        correctAnswers: ['A'],
-        explanation: 'Exp',
-        examTypeId: 'aws-ccp',
-        status: 'APPROVED',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
-      (getExamAttemptById as jest.Mock).mockResolvedValue(examAttempt);
-      (getQuestionsByIds as jest.Mock).mockResolvedValue(mockQuestions);
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(examAttempt);
+      (getCachedExamTypeConfig as vi.Mock).mockResolvedValue(mockExamTypeConfig);
+      (getAnswersByExamAttemptId as vi.Mock).mockResolvedValue(mockAnswers);
+      (getQuestionsByIds as vi.Mock).mockResolvedValue(mockQuestions);
 
       const result = await resumeExam();
 
-      expect(result).toBeDefined();
-      expect(result.attempt.id).toBe('exam-resume-001');
-      expect(result.questions.length).toBe(65);
+      expect(result).not.toBeNull();
+      expect(result!.attempt.id).toBe('exam-resume-001');
+      expect(result!.questions.length).toBe(65);
     });
 
-    it('should abandon exam when resumption window expired', async () => {
-      const startTime = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25 hours ago
+    it('should abandon exam and return null when expiration window passed', async () => {
+      const startTime = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
       const examAttempt = {
         id: 'exam-expired',
         startedAt: startTime,
         completedAt: null,
+        status: 'in-progress',
+        score: null,
+        passed: null,
+        totalQuestions: 65,
+        remainingTimeMs: 0,
+        expiresAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
       };
 
-      (getInProgressExamAttempt as jest.Mock).mockResolvedValue(examAttempt);
+      (getInProgressExamAttempt as vi.Mock).mockResolvedValue(examAttempt);
 
-      await expect(resumeExam()).rejects.toThrow('Exam resumption window has expired');
+      const result = await resumeExam();
+
+      expect(result).toBeNull();
       expect(abandonExamAttempt).toHaveBeenCalledWith('exam-expired');
     });
   });
 
   describe('saveAnswer', () => {
     it('should save answer to exam and auto-save (FR-003)', async () => {
-      const result = await saveAnswer('exam-001', 'q-1', ['A']);
+      const mockQuestion: Question = {
+        id: 'q-1',
+        text: 'Question 1',
+        type: 'SINGLE_CHOICE',
+        domain: 'cloud-concepts',
+        difficulty: 'MEDIUM',
+        options: [
+          { id: 'A', text: 'Option A' },
+          { id: 'B', text: 'Option B' },
+        ],
+        correctAnswers: ['A'],
+        explanation: 'Explanation',
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-      expect(result).toEqual({ currentIndex: 0 });
-      expect(submitAnswerRepo).toHaveBeenCalledWith('exam-001', 'q-1', ['A']);
+      const mockAnswer: ExamAnswer = {
+        id: 'answer-1',
+        examAttemptId: 'exam-001',
+        questionId: 'q-1',
+        selectedAnswers: [],
+        isCorrect: null,
+        isFlagged: false,
+        orderIndex: 0,
+        answeredAt: null,
+      };
+
+      (getQuestionById as vi.Mock).mockResolvedValue(mockQuestion);
+      (getAnswerByExamAndQuestion as vi.Mock).mockResolvedValue(mockAnswer);
+
+      await saveAnswer('exam-001', 'q-1', ['A']);
+
+      expect(submitAnswerRepo).toHaveBeenCalledWith('answer-1', ['A'], true);
     });
   });
 
-  describe('navigateQuestion', () => {
-    it('should navigate forward between questions (FR-005)', async () => {
-      const result = await navigateQuestion('exam-001', 0, 'next');
+  describe('navigateToQuestion', () => {
+    it('should navigate to a specific question index (FR-005)', async () => {
+      (getAnsweredCount as vi.Mock).mockResolvedValue(10);
+      (getFlaggedCount as vi.Mock).mockResolvedValue(2);
 
-      expect(result.currentIndex).toBe(1);
+      const result = await navigateToQuestion('exam-001', mockAnswers, mockQuestions, 5);
+
+      expect(result.currentIndex).toBe(5);
+      expect(result.hasNext).toBe(true);
+      expect(result.hasPrevious).toBe(true);
     });
 
-    it('should navigate backward between questions (FR-005)', async () => {
-      const result = await navigateQuestion('exam-001', 5, 'prev');
+    it('should indicate no previous at first question (FR-005)', async () => {
+      (getAnsweredCount as vi.Mock).mockResolvedValue(0);
+      (getFlaggedCount as vi.Mock).mockResolvedValue(0);
 
-      expect(result.currentIndex).toBe(4);
+      const result = await navigateToQuestion('exam-001', mockAnswers, mockQuestions, 0);
+
+      expect(result.currentIndex).toBe(0);
+      expect(result.hasPrevious).toBe(false);
+      expect(result.hasNext).toBe(true);
     });
 
-    it('should jump to specific question (FR-005)', async () => {
-      const result = await navigateQuestion('exam-001', 0, 'jump', 42);
+    it('should indicate no next at last question (FR-005)', async () => {
+      (getAnsweredCount as vi.Mock).mockResolvedValue(0);
+      (getFlaggedCount as vi.Mock).mockResolvedValue(0);
 
-      expect(result.currentIndex).toBe(42);
+      const result = await navigateToQuestion('exam-001', mockAnswers, mockQuestions, 64);
+
+      expect(result.currentIndex).toBe(64);
+      expect(result.hasNext).toBe(false);
+      expect(result.hasPrevious).toBe(true);
     });
 
-    it('should clamp navigation within bounds', async () => {
-      const resultFirst = await navigateQuestion('exam-001', 0, 'prev');
-      expect(resultFirst.currentIndex).toBe(0); // Cannot go before first
+    it('should throw for invalid question index', async () => {
+      await expect(navigateToQuestion('exam-001', mockAnswers, mockQuestions, -1)).rejects.toThrow(
+        'Invalid question index',
+      );
 
-      const resultLast = await navigateQuestion('exam-001', 64, 'next');
-      expect(resultLast.currentIndex).toBe(64); // Cannot go after last
+      await expect(navigateToQuestion('exam-001', mockAnswers, mockQuestions, 100)).rejects.toThrow(
+        'Invalid question index',
+      );
     });
   });
 
-  describe('toggleFlag', () => {
+  describe('toggleQuestionFlag', () => {
     it('should toggle flag on question for review (FR-004)', async () => {
-      const flagged = await toggleFlag('exam-001', 'q-5');
+      const mockAnswer: ExamAnswer = {
+        id: 'answer-5',
+        examAttemptId: 'exam-001',
+        questionId: 'q-5',
+        selectedAnswers: [],
+        isCorrect: null,
+        isFlagged: false,
+        orderIndex: 5,
+        answeredAt: null,
+      };
 
-      expect(toggleFlagRepo).toHaveBeenCalledWith('exam-001', 'q-5');
-      expect(typeof flagged).toBe('boolean');
+      (getAnswerByExamAndQuestion as vi.Mock).mockResolvedValue(mockAnswer);
+
+      const flagged = await toggleQuestionFlag('exam-001', 'q-5');
+
+      expect(toggleFlagRepo).toHaveBeenCalledWith('answer-5');
+      expect(flagged).toBe(true);
     });
   });
 
@@ -231,16 +341,42 @@ describe('ExamSessionService', () => {
     it('should complete exam and return final results (FR-007)', async () => {
       const examAttempt = {
         id: 'exam-final',
-        startedAt: new Date(),
-        completedAt: new Date(),
+        startedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        completedAt: null,
+        status: 'in-progress' as const,
+        score: null,
+        passed: null,
+        totalQuestions: 65,
+        remainingTimeMs: 30 * 60 * 1000,
+        expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString(),
       };
 
-      (completeExamAttempt as jest.Mock).mockResolvedValue(examAttempt);
+      const answersWithResults: ExamAnswer[] = mockQuestions.map((q, i) => ({
+        id: `answer-${i}`,
+        examAttemptId: 'exam-final',
+        questionId: q.id,
+        selectedAnswers: ['A'],
+        isCorrect: i < 50, // 50/65 correct
+        isFlagged: false,
+        orderIndex: i,
+        answeredAt: new Date().toISOString(),
+      }));
+
+      (getExamAttemptById as vi.Mock).mockResolvedValue(examAttempt);
+      (getCachedExamTypeConfig as vi.Mock).mockResolvedValue(mockExamTypeConfig);
+      (getAnswersByExamAttemptId as vi.Mock).mockResolvedValue(answersWithResults);
+      (getQuestionsByIds as vi.Mock).mockResolvedValue(mockQuestions);
+      (completeExamAttempt as vi.Mock).mockResolvedValue(undefined);
+      (incrementExamCount as vi.Mock).mockResolvedValue(undefined);
 
       const result = await submitExam('exam-final');
 
       expect(result).toBeDefined();
-      expect(completeExamAttempt).toHaveBeenCalledWith('exam-final');
+      expect(result.score).toBe(77); // Math.round(50/65 * 100) = 77
+      expect(result.passed).toBe(true);
+      expect(result.totalQuestions).toBe(65);
+      expect(result.correctAnswers).toBe(50);
+      expect(completeExamAttempt).toHaveBeenCalledWith('exam-final', 77, true);
     });
   });
 });

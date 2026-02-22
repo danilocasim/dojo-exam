@@ -1,24 +1,25 @@
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExamAttemptService } from '../src/services/exam-attempt.service';
 import * as ExamSubmissionRepo from '../src/storage/repositories/exam-submission.repository';
 
-// Mock the axios module
-jest.mock('axios');
-import axios from 'axios';
-
-const mockAxios = axios as jest.Mocked<typeof axios>;
+// Get the same axios reference that production code uses via require('axios').default ?? require('axios')
+// vitest's vi.mock doesn't intercept CJS require() in production code, so we spy on the real module
+const realAxios = require('axios').default ?? require('axios');
 
 describe('ExamAttemptService Integration Tests', () => {
   let service: ExamAttemptService;
+  let postSpy: any;
   const mockApiUrl = 'http://localhost:3000';
 
   beforeEach(() => {
     service = new ExamAttemptService(mockApiUrl);
-    jest.clearAllMocks();
+    vi.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
+    postSpy = vi.spyOn(realAxios, 'post');
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('submitExam', () => {
@@ -50,7 +51,7 @@ describe('ExamAttemptService Integration Tests', () => {
         duration: 2400,
       };
 
-      const saveSpy = jest.spyOn(ExamSubmissionRepo, 'saveExamSubmission');
+      const saveSpy = vi.spyOn(ExamSubmissionRepo, 'saveExamSubmission');
 
       await service.submitExam(attempt);
 
@@ -63,7 +64,7 @@ describe('ExamAttemptService Integration Tests', () => {
 
   describe('getPendingAttempts', () => {
     test('should return only PENDING submissions', async () => {
-      const getAllSpy = jest
+      const getAllSpy = vi
         .spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions')
         .mockResolvedValue([
           {
@@ -90,9 +91,9 @@ describe('ExamAttemptService Integration Tests', () => {
   describe('syncPendingAttempts', () => {
     test('should sync pending exams to cloud API', async () => {
       const userId = 'user-123';
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([
         {
           id: 'local-1',
           userId,
@@ -107,7 +108,7 @@ describe('ExamAttemptService Integration Tests', () => {
         },
       ]);
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           id: 'local-1',
@@ -128,7 +129,7 @@ describe('ExamAttemptService Integration Tests', () => {
       expect(result.success).toBe(true);
       expect(result.synced).toBe(1);
       expect(result.failed).toBe(0);
-      expect(mockAxios.post).toHaveBeenCalledWith(
+      expect(postSpy).toHaveBeenCalledWith(
         `${mockApiUrl}/exam-attempts/submit-authenticated`,
         expect.objectContaining({
           examTypeId: 'aws-ccp',
@@ -144,15 +145,15 @@ describe('ExamAttemptService Integration Tests', () => {
 
       expect(result.success).toBe(true);
       expect(result.synced).toBe(0);
-      expect(mockAxios.post).not.toHaveBeenCalled();
+      expect(postSpy).not.toHaveBeenCalled();
     });
 
     test('should handle sync errors gracefully', async () => {
       const userId = 'user-123';
       const error = new Error('Network error');
-      mockAxios.post.mockRejectedValue(error);
+      postSpy.mockRejectedValue(error);
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue([
         {
           id: 'local-1',
           userId,
@@ -167,7 +168,7 @@ describe('ExamAttemptService Integration Tests', () => {
         },
       ]);
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           id: 'local-1',
@@ -196,9 +197,9 @@ describe('ExamAttemptService Integration Tests', () => {
   describe('retryFailedAttempts', () => {
     test('should retry failed exams with exponential backoff', async () => {
       const userId = 'user-123';
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue([
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue([
         {
           id: 'local-1',
           userId,
@@ -213,7 +214,7 @@ describe('ExamAttemptService Integration Tests', () => {
         },
       ]);
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           id: 'local-1',
@@ -240,43 +241,45 @@ describe('ExamAttemptService Integration Tests', () => {
 
   describe('getAnalytics', () => {
     test('should calculate analytics from synced submissions only', async () => {
-      jest.spyOn(ExamSubmissionRepo, 'getAllExamSubmissions').mockResolvedValue([
-        {
-          id: '1',
-          examTypeId: 'aws-ccp',
-          score: 75,
-          passed: true,
-          duration: 2400,
-          submittedAt: new Date('2024-01-01'),
-          createdAt: new Date('2024-01-01'),
-          syncStatus: 'SYNCED',
-          syncRetries: 0,
-          syncedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '2',
-          examTypeId: 'aws-ccp',
-          score: 85,
-          passed: true,
-          duration: 2200,
-          submittedAt: new Date('2024-01-02'),
-          createdAt: new Date('2024-01-02'),
-          syncStatus: 'SYNCED',
-          syncRetries: 0,
-          syncedAt: new Date('2024-01-02'),
-        },
-        {
-          id: '3',
-          examTypeId: 'aws-ccp',
-          score: 60,
-          passed: false,
-          duration: 2500,
-          submittedAt: new Date('2024-01-03'),
-          createdAt: new Date('2024-01-03'),
-          syncStatus: 'PENDING', // Should not be included
-          syncRetries: 0,
-        },
-      ]);
+      (service as any).db = {
+        getAllExamAttempts: vi.fn().mockResolvedValue([
+          {
+            id: '1',
+            examTypeId: 'aws-ccp',
+            score: 75,
+            passed: true,
+            duration: 2400,
+            submittedAt: new Date('2024-01-01'),
+            createdAt: new Date('2024-01-01'),
+            syncStatus: 'SYNCED',
+            syncRetries: 0,
+            syncedAt: new Date('2024-01-01'),
+          },
+          {
+            id: '2',
+            examTypeId: 'aws-ccp',
+            score: 85,
+            passed: true,
+            duration: 2200,
+            submittedAt: new Date('2024-01-02'),
+            createdAt: new Date('2024-01-02'),
+            syncStatus: 'SYNCED',
+            syncRetries: 0,
+            syncedAt: new Date('2024-01-02'),
+          },
+          {
+            id: '3',
+            examTypeId: 'aws-ccp',
+            score: 60,
+            passed: false,
+            duration: 2500,
+            submittedAt: new Date('2024-01-03'),
+            createdAt: new Date('2024-01-03'),
+            syncStatus: 'PENDING', // Should not be included
+            syncRetries: 0,
+          },
+        ]),
+      };
 
       const analytics = await service.getAnalytics();
 
@@ -288,32 +291,34 @@ describe('ExamAttemptService Integration Tests', () => {
     });
 
     test('should filter by exam type', async () => {
-      jest.spyOn(ExamSubmissionRepo, 'getAllExamSubmissions').mockResolvedValue([
-        {
-          id: '1',
-          examTypeId: 'aws-ccp',
-          score: 75,
-          passed: true,
-          duration: 2400,
-          submittedAt: new Date(),
-          createdAt: new Date(),
-          syncStatus: 'SYNCED',
-          syncRetries: 0,
-          syncedAt: new Date(),
-        },
-        {
-          id: '2',
-          examTypeId: 'aws-saa',
-          score: 85,
-          passed: true,
-          duration: 2200,
-          submittedAt: new Date(),
-          createdAt: new Date(),
-          syncStatus: 'SYNCED',
-          syncRetries: 0,
-          syncedAt: new Date(),
-        },
-      ]);
+      (service as any).db = {
+        getAllExamAttempts: vi.fn().mockResolvedValue([
+          {
+            id: '1',
+            examTypeId: 'aws-ccp',
+            score: 75,
+            passed: true,
+            duration: 2400,
+            submittedAt: new Date(),
+            createdAt: new Date(),
+            syncStatus: 'SYNCED',
+            syncRetries: 0,
+            syncedAt: new Date(),
+          },
+          {
+            id: '2',
+            examTypeId: 'aws-saa',
+            score: 85,
+            passed: true,
+            duration: 2200,
+            submittedAt: new Date(),
+            createdAt: new Date(),
+            syncStatus: 'SYNCED',
+            syncRetries: 0,
+            syncedAt: new Date(),
+          },
+        ]),
+      };
 
       const analytics = await service.getAnalytics('aws-ccp');
 
@@ -324,7 +329,7 @@ describe('ExamAttemptService Integration Tests', () => {
 
   describe('deleteAttempt', () => {
     test('should delete an exam attempt by ID', async () => {
-      const deleteSpy = jest
+      const deleteSpy = vi
         .spyOn(ExamSubmissionRepo, 'deleteExamSubmission')
         .mockResolvedValue(undefined);
 
@@ -336,7 +341,7 @@ describe('ExamAttemptService Integration Tests', () => {
 
   describe('clearAll', () => {
     test('should delete all exam submissions', async () => {
-      const clearSpy = jest
+      const clearSpy = vi
         .spyOn(ExamSubmissionRepo, 'deleteAllExamSubmissions')
         .mockResolvedValue(undefined);
 

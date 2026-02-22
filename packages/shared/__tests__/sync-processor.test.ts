@@ -8,28 +8,31 @@
  * - Backoff timing validation
  * - Failed sync transitions
  */
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExamAttemptService } from '../src/services/exam-attempt.service';
 import * as ExamSubmissionRepo from '../src/storage/repositories/exam-submission.repository';
 
-// Mock the axios module
-jest.mock('axios');
-import axios from 'axios';
-
-const mockAxios = axios as jest.Mocked<typeof axios>;
+// Get the same axios reference that production code uses via require('axios').default ?? require('axios')
+// vitest's vi.mock doesn't intercept CJS require() in production code, so we spy on the real module
+const realAxios = require('axios').default ?? require('axios');
 
 describe('Sync Processor - Exponential Backoff Tests', () => {
   let service: ExamAttemptService;
+  let sleepSpy: ReturnType<typeof vi.spyOn>;
+  let postSpy: any;
   const mockApiUrl = 'http://localhost:3000';
   const mockUserId = 'user-123';
 
   beforeEach(() => {
     service = new ExamAttemptService(mockApiUrl);
-    jest.clearAllMocks();
+    sleepSpy = vi.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
+    postSpy = vi.spyOn(realAxios, 'post');
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Exponential Backoff Delay Calculation', () => {
@@ -49,18 +52,14 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^0 = 5000ms (5 seconds)
-      // Allow 95% tolerance (4750ms minimum)
-      expect(elapsed).toBeGreaterThanOrEqual(4750);
-      expect(elapsed).toBeLessThan(6000); // Upper bound with execution time
+      expect(sleepSpy).toHaveBeenCalledWith(5000);
     });
 
     test('should apply correct delay for retry count 1 (second retry)', async () => {
@@ -79,18 +78,14 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^1 = 10000ms (10 seconds)
-      // Allow 95% tolerance (9500ms minimum)
-      expect(elapsed).toBeGreaterThanOrEqual(9500);
-      expect(elapsed).toBeLessThan(11000);
+      expect(sleepSpy).toHaveBeenCalledWith(10000);
     });
 
     test('should apply correct delay for retry count 2 (third retry)', async () => {
@@ -109,18 +104,14 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^2 = 20000ms (20 seconds)
-      // Allow 95% tolerance (19000ms minimum)
-      expect(elapsed).toBeGreaterThanOrEqual(19000);
-      expect(elapsed).toBeLessThan(21000);
+      expect(sleepSpy).toHaveBeenCalledWith(20000);
     });
 
     test('should apply correct delay for retry count 3 (fourth retry)', async () => {
@@ -139,19 +130,15 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^3 = 40000ms (40 seconds)
-      // Allow 95% tolerance (38000ms minimum)
-      expect(elapsed).toBeGreaterThanOrEqual(38000);
-      expect(elapsed).toBeLessThan(42000);
-    }, 45000); // Increase timeout for slow test
+      expect(sleepSpy).toHaveBeenCalledWith(40000);
+    });
   });
 
   describe('Retry Count Incrementation', () => {
@@ -171,11 +158,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Server error'));
+      postSpy.mockRejectedValue(new Error('Server error'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -204,11 +191,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],
@@ -242,11 +229,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
           },
         ];
 
-        jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+        vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-        mockAxios.post.mockRejectedValue(new Error('Server error'));
+        postSpy.mockRejectedValue(new Error('Server error'));
 
-        const markFailedSpy = jest
+        const markFailedSpy = vi
           .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
           .mockResolvedValue({
             ...submissions[0],
@@ -256,7 +243,7 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         await service.retryFailedAttempts(mockUserId);
 
         expect(markFailedSpy).toHaveBeenCalled();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       }
     });
   });
@@ -278,11 +265,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Permanent failure'));
+      postSpy.mockRejectedValue(new Error('Permanent failure'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -311,11 +298,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Server error'));
+      postSpy.mockRejectedValue(new Error('Server error'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -343,11 +330,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],
@@ -385,19 +372,16 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
           },
         ];
 
-        jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+        vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-        mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+        postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-        const startTime = Date.now();
         await service.retryFailedAttempts(mockUserId);
-        const elapsed = Date.now() - startTime;
 
-        // Allow 95% tolerance
-        const minDelay = expectedDelays[i] * 0.95;
-        expect(elapsed).toBeGreaterThanOrEqual(minDelay);
+        // Verify sleep was called with the correct exponential delay
+        expect(sleepSpy).toHaveBeenCalledWith(expectedDelays[i]);
 
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       }
     });
 
@@ -417,18 +401,15 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
       // Expected delay: 5000 * 2^5 = 160000ms
-      // Allow 95% tolerance
-      expect(elapsed).toBeGreaterThanOrEqual(152000);
-    }, 165000); // Allow 165 seconds for test execution
+      expect(sleepSpy).toHaveBeenCalledWith(160000);
+    });
   });
 
   describe('Failed Sync Transitions', () => {
@@ -448,11 +429,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getPendingExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Network error'));
+      postSpy.mockRejectedValue(new Error('Network error'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -483,11 +464,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      const markSyncedSpy = jest
+      const markSyncedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced')
         .mockResolvedValue({
           ...submissions[0],
@@ -519,11 +500,11 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockRejectedValue(new Error('Persistent server error'));
+      postSpy.mockRejectedValue(new Error('Persistent server error'));
 
-      const markFailedSpy = jest
+      const markFailedSpy = vi
         .spyOn(ExamSubmissionRepo, 'markExamSubmissionFailed')
         .mockResolvedValue({
           ...submissions[0],
@@ -568,22 +549,20 @@ describe('Sync Processor - Exponential Backoff Tests', () => {
         },
       ];
 
-      jest.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
+      vi.spyOn(ExamSubmissionRepo, 'getFailedExamSubmissions').mockResolvedValue(submissions);
 
-      mockAxios.post.mockResolvedValue({ data: { id: 'server-id' } });
+      postSpy.mockResolvedValue({ data: { id: 'server-id' } });
 
-      jest.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
+      vi.spyOn(ExamSubmissionRepo, 'markExamSubmissionSynced').mockResolvedValue({
         ...submissions[0],
         syncStatus: 'SYNCED',
       });
 
-      const startTime = Date.now();
       await service.retryFailedAttempts(mockUserId);
-      const elapsed = Date.now() - startTime;
 
-      // Expected: 2 * (5000 * 2^1) = 2 * 10000 = 20000ms minimum
-      // Allow 95% tolerance
-      expect(elapsed).toBeGreaterThanOrEqual(19000);
+      // Both items should have sleep called with 5000 * 2^1 = 10000ms
+      expect(sleepSpy).toHaveBeenCalledTimes(2);
+      expect(sleepSpy).toHaveBeenCalledWith(10000);
     });
   });
 });

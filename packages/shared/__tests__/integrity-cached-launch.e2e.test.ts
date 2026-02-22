@@ -10,7 +10,7 @@
  * Test Scenario: User Story 1 - Cached Launch Performance
  * Acceptance: Cached launches work offline and stay within 3-second app launch target
  */
-import { describe, test, expect, beforeAll, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 import { device, element, by, waitFor } from 'detox';
 
 describe('Integrity Cached Launch - Performance (E2E)', () => {
