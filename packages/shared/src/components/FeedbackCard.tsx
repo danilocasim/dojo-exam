@@ -1,7 +1,7 @@
 // T055: FeedbackCard - Immediate answer feedback with correct/incorrect and explanation
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { CheckCircle2, XCircle, Lightbulb, ChevronRight } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { CheckCircle2, XCircle, Lightbulb, ChevronRight, Trophy } from 'lucide-react-native';
 
 // AWS Modern Color Palette
 const colors = {
@@ -38,15 +38,28 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      {/* Result badge */}
+      {/* Combined result + explanation card */}
       <View
-        style={[styles.resultBanner, isCorrect ? styles.resultCorrect : styles.resultIncorrect]}
+        style={[styles.feedbackCard, isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect]}
       >
+        {/* Accent strip */}
+        <View
+          style={[
+            styles.accentStrip,
+            { backgroundColor: isCorrect ? colors.success : colors.error },
+          ]}
+        />
+
+        {/* Result header */}
         <View style={styles.resultRow}>
           {isCorrect ? (
-            <CheckCircle2 size={24} color={colors.success} strokeWidth={2} />
+            <View style={styles.iconWrap}>
+              <CheckCircle2 size={22} color={colors.success} strokeWidth={2.5} />
+            </View>
           ) : (
-            <XCircle size={24} color={colors.error} strokeWidth={2} />
+            <View style={styles.iconWrap}>
+              <XCircle size={22} color={colors.error} strokeWidth={2.5} />
+            </View>
           )}
           <Text
             style={[
@@ -57,23 +70,38 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
             {isCorrect ? 'Correct!' : 'Incorrect'}
           </Text>
         </View>
-      </View>
 
-      {/* Explanation */}
-      {explanation ? (
-        <View style={styles.explanationBox}>
-          <View style={styles.explanationHeader}>
-            <Lightbulb size={16} color={colors.primaryOrange} strokeWidth={2} />
-            <Text style={styles.explanationLabel}>Explanation</Text>
+        {/* Explanation - scrollable if long */}
+        {explanation ? (
+          <View style={styles.explanationSection}>
+            <View style={styles.explanationHeader}>
+              <Lightbulb size={14} color={colors.primaryOrange} strokeWidth={2} />
+              <Text style={styles.explanationLabel}>Explanation</Text>
+            </View>
+            <ScrollView
+              style={styles.explanationScroll}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.explanationText}>{explanation}</Text>
+            </ScrollView>
           </View>
-          <Text style={styles.explanationText}>{explanation}</Text>
-        </View>
-      ) : null}
+        ) : null}
+      </View>
 
       {/* Continue button */}
       <TouchableOpacity onPress={onContinue} activeOpacity={0.8} style={styles.continueButton}>
-        <Text style={styles.continueText}>{isLastQuestion ? 'View Summary' : 'Next Question'}</Text>
-        <ChevronRight size={18} color={colors.textHeading} strokeWidth={2} />
+        {isLastQuestion ? (
+          <>
+            <Trophy size={18} color={colors.textHeading} strokeWidth={2} />
+            <Text style={styles.continueText}>View Summary</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.continueText}>Next Question</Text>
+            <ChevronRight size={18} color={colors.textHeading} strokeWidth={2} />
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -82,56 +110,76 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 8,
+    gap: 10,
   },
-  resultBanner: {
-    borderRadius: 12,
+  feedbackCard: {
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
+    overflow: 'hidden',
   },
-  resultCorrect: {
+  feedbackCorrect: {
     backgroundColor: colors.successDark,
-    borderColor: colors.success,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
-  resultIncorrect: {
+  feedbackIncorrect: {
     backgroundColor: colors.errorDark,
-    borderColor: colors.error,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  accentStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 0,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
   },
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  explanationBox: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.borderDefault,
+  explanationSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   explanationLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.primaryOrange,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+  },
+  explanationScroll: {
+    maxHeight: 120,
   },
   explanationText: {
     fontSize: 14,
     color: colors.textBody,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   continueButton: {
     backgroundColor: colors.primaryOrange,
@@ -144,7 +192,7 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: colors.textHeading,
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontSize: 16,
   },
 });

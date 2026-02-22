@@ -228,6 +228,8 @@ export const PracticeScreen: React.FC = () => {
             showResult={showFeedback}
             isCorrect={lastResult?.isCorrect ?? null}
             disabled={isAnswered || showFeedback || isSubmitting}
+            showResultBanner={false}
+            showExplanation={false}
           />
         </View>
 

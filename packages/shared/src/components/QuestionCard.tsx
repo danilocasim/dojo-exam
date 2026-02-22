@@ -11,6 +11,10 @@ export interface QuestionCardProps {
   showResult?: boolean;
   isCorrect?: boolean | null;
   disabled?: boolean;
+  /** Hide the Correct/Incorrect banner at the bottom (default: true) */
+  showResultBanner?: boolean;
+  /** Hide the explanation section at the bottom (default: true) */
+  showExplanation?: boolean;
 }
 
 // AWS Modern Color Palette
@@ -51,6 +55,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   showResult = false,
   isCorrect = null,
   disabled = false,
+  showResultBanner = true,
+  showExplanation = true,
 }) => {
   const isMultipleChoice = question.type === 'MULTIPLE_CHOICE';
 
@@ -178,7 +184,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         </View>
 
         {/* Result indicator */}
-        {showResult && isCorrect !== null && (
+        {showResult && showResultBanner && isCorrect !== null && (
           <View
             style={[
               styles.resultContainer,
@@ -204,7 +210,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
 
         {/* Explanation */}
-        {showResult && question.explanation && (
+        {showResult && showExplanation && question.explanation && (
           <View style={styles.explanationBox}>
             <View style={styles.explanationHeader}>
               <View style={styles.explanationIcon}>
