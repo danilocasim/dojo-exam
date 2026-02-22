@@ -10,9 +10,12 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebView } from 'react-native-webview';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle } from 'react-native-svg';
@@ -26,6 +29,12 @@ import {
   Zap,
   ChevronRight,
   User,
+  GraduationCap,
+  FileText,
+  Globe,
+  ExternalLink,
+  X,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
@@ -127,6 +136,9 @@ export const HomeScreen: React.FC = () => {
   const [passRate, setPassRate] = useState(0);
   const [totalExams, setTotalExams] = useState(0);
   const [weakDomainName, setWeakDomainName] = useState<string | null>(null);
+  const [showResources, setShowResources] = useState(false);
+  const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
+  const [webViewLoading, setWebViewLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -253,6 +265,48 @@ export const HomeScreen: React.FC = () => {
 
   // ── Derived values ──
   const progressRatio = questionCount > 0 ? questionsAnswered / questionCount : 0;
+
+  // ── Resource definitions ──
+  const resources = [
+    {
+      key: 'courses',
+      label: 'Courses & Ebooks',
+      sub: 'Study materials',
+      icon: <GraduationCap size={20} color="#F59E0B" strokeWidth={1.5} />,
+      gradient: ['rgba(245, 158, 11, 0.14)', 'rgba(245, 158, 11, 0.04)'] as [string, string],
+      borderColor: 'rgba(245, 158, 11, 0.25)',
+      url: 'https://portal.tutorialsdojo.com/shop/',
+    },
+    {
+      key: 'blogs',
+      label: 'Blogs',
+      sub: 'Latest articles',
+      icon: <FileText size={20} color="#8B5CF6" strokeWidth={1.5} />,
+      gradient: ['rgba(139, 92, 246, 0.14)', 'rgba(139, 92, 246, 0.04)'] as [string, string],
+      borderColor: 'rgba(139, 92, 246, 0.25)',
+      url: 'https://tutorialsdojo.com/blog/',
+    },
+    {
+      key: 'cheatsheets',
+      label: 'Cheat Sheets',
+      sub: 'Quick reference',
+      icon: <Globe size={20} color="#06B6D4" strokeWidth={1.5} />,
+      gradient: ['rgba(6, 182, 212, 0.14)', 'rgba(6, 182, 212, 0.04)'] as [string, string],
+      borderColor: 'rgba(6, 182, 212, 0.25)',
+      url: 'https://tutorialsdojo.com/aws-cheat-sheets/',
+    },
+  ];
+
+  const handleOpenResource = (url: string) => {
+    setWebViewLoading(true);
+    setWebViewUrl(url);
+    setShowResources(false);
+  };
+
+  const handleCloseWebView = () => {
+    setWebViewUrl(null);
+    setWebViewLoading(true);
+  };
 
   // ── Quick action definitions ──
   const quickActions = [
@@ -563,7 +617,121 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* ── Resources Button ── */}
+        <View style={styles.content}>
+          <TouchableOpacity
+            onPress={() => setShowResources(true)}
+            activeOpacity={0.8}
+            style={styles.resourcesBtn}
+          >
+            <View style={styles.resourcesBtnLeft}>
+              <View style={styles.resourcesBtnIcon}>
+                <BookOpen size={18} color={colors.primaryOrange} strokeWidth={2} />
+              </View>
+              <Text style={styles.resourcesBtnText}>Resources</Text>
+            </View>
+            <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom spacer */}
+        <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* ── Resources Drawer ── */}
+      <Modal
+        visible={showResources}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowResources(false)}
+      >
+        <Pressable style={styles.drawerOverlay} onPress={() => setShowResources(false)}>
+          <Pressable style={styles.drawerSheet} onPress={(e) => e.stopPropagation()}>
+            {/* Drawer handle */}
+            <View style={styles.drawerHandle} />
+
+            {/* Drawer header */}
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>Resources</Text>
+              <TouchableOpacity
+                onPress={() => setShowResources(false)}
+                activeOpacity={0.7}
+                style={styles.drawerCloseBtn}
+              >
+                <X size={20} color={colors.textBody} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Resource items */}
+            <View style={styles.drawerBody}>
+              {resources.map((res, idx) => (
+                <TouchableOpacity
+                  key={res.key}
+                  onPress={() => handleOpenResource(res.url)}
+                  activeOpacity={0.7}
+                  style={[styles.drawerItem, idx < resources.length - 1 && styles.drawerItemBorder]}
+                >
+                  <View style={[styles.drawerItemIcon, { borderColor: res.borderColor }]}>
+                    {res.icon}
+                  </View>
+                  <View style={styles.drawerItemContent}>
+                    <Text style={styles.drawerItemLabel}>{res.label}</Text>
+                    <Text style={styles.drawerItemSub}>{res.sub}</Text>
+                  </View>
+                  <ExternalLink size={14} color={colors.textMuted} strokeWidth={2} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── WebView Resource Viewer ── */}
+      <Modal
+        visible={webViewUrl !== null}
+        animationType="slide"
+        onRequestClose={handleCloseWebView}
+      >
+        <SafeAreaView style={styles.webViewSafe} edges={['top']}>
+          {/* Nav bar */}
+          <View style={styles.webViewNav}>
+            <TouchableOpacity
+              onPress={handleCloseWebView}
+              activeOpacity={0.7}
+              style={styles.webViewBackBtn}
+            >
+              <ArrowLeft size={20} color={colors.textHeading} strokeWidth={2} />
+            </TouchableOpacity>
+            <Text style={styles.webViewTitle} numberOfLines={1}>
+              Resources
+            </Text>
+            {/* Remove right nav logo for Resources modal */}
+            <View style={{ width: 38, height: 38 }} />
+          </View>
+
+          {/* Centered loading overlay for WebView */}
+          {webViewLoading && (
+            <View style={styles.webViewLoadingOverlay}>
+              <View style={styles.webViewLoadingSpinnerWrap}>
+                <ActivityIndicator size="large" color={colors.primaryOrange} />
+                <Text style={styles.webViewLoadingText}>Loading resource...</Text>
+              </View>
+            </View>
+          )}
+
+          {/* WebView */}
+          {webViewUrl && (
+            <WebView
+              source={{ uri: webViewUrl }}
+              style={styles.webView}
+              onLoadStart={() => setWebViewLoading(true)}
+              onLoadEnd={() => setWebViewLoading(false)}
+              startInLoadingState={false}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -774,6 +942,183 @@ const styles = StyleSheet.create({
   actionIconWrap: { marginBottom: 10 },
   actionTitle: { fontSize: 13, fontWeight: '600', color: colors.textHeading },
   actionSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+
+  // Resources Button
+  resourcesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+  },
+  resourcesBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  resourcesBtnIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.orangeDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resourcesBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textHeading,
+  },
+
+  // Resources Drawer
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  drawerSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+  },
+  drawerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.trackGray,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderDefault,
+  },
+  drawerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textHeading,
+  },
+  drawerCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerBody: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 14,
+  },
+  drawerItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderDefault,
+  },
+  drawerItemIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  drawerItemContent: {
+    flex: 1,
+  },
+  drawerItemLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textHeading,
+  },
+  drawerItemSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  // WebView Resource Viewer
+  webViewSafe: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  webViewNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderDefault,
+  },
+  webViewBackBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webViewTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.textHeading,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  },
+  webViewLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(31, 41, 55, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  webViewLoadingSpinnerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  webViewLoadingText: {
+    marginTop: 16,
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
 
   // Header Profile
   headerTitleRow: {
