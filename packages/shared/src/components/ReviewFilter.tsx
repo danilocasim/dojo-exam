@@ -112,18 +112,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderDefault,
     borderRadius: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 10,
-    gap: 6,
+    gap: 5,
   },
   chipIcon: {
-    marginRight: 2,
+    marginRight: 1,
   },
   chipText: {
     fontSize: 13,
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
   },
   countText: {
     fontSize: 11,
