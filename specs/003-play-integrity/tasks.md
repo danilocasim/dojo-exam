@@ -624,7 +624,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
   - `src/config/app.config.ts.template`: `__EXAM_TYPE_ID__`, `__APP_NAME__`, `__PRIMARY_COLOR__`
   - `assets/`: Placeholder icon.png, splash-icon.png, adaptive-icon.png
 
-- [ ] T222 Create scripts/create-app.sh with parameters:
+- [x] T222 Create scripts/create-app.sh with parameters:
   ```bash
   Usage: ./scripts/create-app.sh --exam-type <ID> --name <NAME> --package <PACKAGE> [--color <HEX>]
   Example: ./scripts/create-app.sh --exam-type SAA-C03 --name "Dojo Exam SAA" --package com.danilocasim.dojoexam.saac03 --color "#FF9900"
