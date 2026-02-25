@@ -614,7 +614,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### Template Tasks
 
-- [ ] T221 Create apps/template/ directory with template files using placeholder tokens:
+- [x] T221 Create apps/template/ directory with template files using placeholder tokens:
   - `app.json.template`: `__APP_NAME__`, `__APP_SLUG__`, `__PACKAGE_NAME__`, `__BUNDLE_ID__`
   - `App.tsx.template`: `__EXAM_TYPE_ID__`, `__APP_NAME__`
   - `package.json.template`: `__APP_SLUG__`
