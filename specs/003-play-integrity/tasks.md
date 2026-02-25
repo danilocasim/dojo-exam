@@ -34,7 +34,7 @@
 | **Phase 4: Multi-App Monorepo** | | | | |
 | Phase 10: Monorepo Foundation | T207-T214 | 8 | 📋 Not Started | 6 hrs |
 | Phase 11: App Wrapper Migration | T215-T220 | 6 | ✅ Complete | 5 hrs |
-| Phase 12: Template & Script | T221-T224 | 4 | � In Progress | 3 hrs |
+| Phase 12: Template & Script | T221-T224 | 4 | ✅ Complete | 3 hrs |
 | Phase 13: Admin CRUD Backend | T225-T230 | 6 | 📋 Not Started | 5 hrs |
 | Phase 14: Admin CRUD Frontend | T231-T238 | 8 | 📋 Not Started | 6 hrs |
 | Phase 15: Testing & Docs | T239-T246 | 8 | 📋 Not Started | 6 hrs |
@@ -633,7 +633,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 - [x] T223 Create first new app using the script: `./scripts/create-app.sh --exam-type SAA-C03 --name "Dojo Exam SAA" --package com.danilocasim.dojoexam.saac03`. Verify apps/aws-saa/ is generated with correct files and placeholders replaced.
 
-- [ ] T224 Verify apps/aws-saa/ builds and runs:
+- [x] T224 Verify apps/aws-saa/ builds and runs:
   1. `cd apps/aws-saa && npx expo start` — app launches
   2. App shows correct exam name and connects to backend
   3. Backend returns SAA-C03 exam type config (exam type created via admin portal in Phase 12-13)

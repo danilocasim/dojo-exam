@@ -16,6 +16,8 @@ export type {
   StorageConfig,
 } from './app.config';
 
+export type { AppConfig } from './types';
+
 /**
  * Get the API base URL from configuration
  */
