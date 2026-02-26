@@ -91,12 +91,15 @@ export class ExamAttemptService {
   }
 
   /**
-   * Sync pending exam attempts with cloud
-   * Called when network connection is available
-   * Uses offline-first strategy: retry until success
-   * @returns Sync result with counts
+   * Sync pending exam attempts with cloud.
+   * Called when network connection is available.
+   * Uses offline-first strategy: retry until success.
+   *
+   * @param accessToken - JWT access token for the authenticated user.
+   *                      If omitted, sync is skipped and attempts remain local-only.
+   * @returns Sync result with counts.
    */
-  async syncPendingAttempts(userId?: string): Promise<SyncResult> {
+  async syncPendingAttempts(accessToken?: string): Promise<SyncResult> {
     const pending = await this.getPendingAttempts();
 
     const result: SyncResult = {
@@ -106,16 +109,19 @@ export class ExamAttemptService {
       errors: [],
     };
 
-    // If no user ID, can't sync to cloud (only store locally)
-    if (!userId) {
-      console.log('[ExamAttemptService] No user ID, keeping exams local only');
+    // If we don't have an access token, we can't talk to the authenticated API.
+    // In that case, keep all attempts local-only until the user signs in.
+    if (!accessToken) {
+      console.log('[ExamAttemptService] No access token, keeping exams local only');
       return result;
     }
+
+    const axios = getAxios();
 
     for (const attempt of pending) {
       try {
         // Send to cloud API — include localId for server-side idempotency
-        await getAxios().post(
+        await axios.post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
             examTypeId: attempt.examTypeId,
@@ -127,7 +133,7 @@ export class ExamAttemptService {
           },
           {
             headers: {
-              Authorization: `Bearer ${userId}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           },
         );
@@ -138,7 +144,17 @@ export class ExamAttemptService {
         result.synced++;
       } catch (error) {
         // Mark as failed on server error
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        let errorMsg = 'Unknown error';
+        if (axios.isAxiosError(error)) {
+          console.error('[ExamAttemptService] Failed to sync attempt', attempt.id, {
+            url: error.config?.url,
+            status: error.response?.status,
+            data: error.response?.data,
+          });
+          errorMsg = error.message;
+        } else if (error instanceof Error) {
+          errorMsg = error.message;
+        }
 
         await ExamSubmissionRepo.markExamSubmissionFailed(attempt.id!);
 
@@ -147,8 +163,6 @@ export class ExamAttemptService {
           id: attempt.id!,
           error: errorMsg,
         });
-
-        console.error(`[ExamAttemptService] Failed to sync attempt ${attempt.id}: ${errorMsg}`);
       }
     }
 
@@ -157,12 +171,16 @@ export class ExamAttemptService {
   }
 
   /**
-   * Retry failed exam attempts
-   * Uses exponential backoff for retry delay
-   * @returns Sync result
+   * Retry failed exam attempts.
+   * Uses exponential backoff for retry delay.
+   *
+   * @param accessToken - JWT access token for the authenticated user.
+   *                      If omitted, retries are skipped.
+   * @returns Sync result.
    */
-  async retryFailedAttempts(userId?: string): Promise<SyncResult> {
+  async retryFailedAttempts(accessToken?: string): Promise<SyncResult> {
     const failed = await this.getFailedAttempts();
+    const axios = getAxios();
 
     const result: SyncResult = {
       success: true,
@@ -171,8 +189,8 @@ export class ExamAttemptService {
       errors: [],
     };
 
-    if (!userId) {
-      console.log('[ExamAttemptService] No user ID, cannot retry');
+    if (!accessToken) {
+      console.log('[ExamAttemptService] No access token, cannot retry failed sync');
       return result;
     }
 
@@ -183,7 +201,7 @@ export class ExamAttemptService {
         await this.sleep(delayMs);
 
         // Retry sync — include localId so server won't create a duplicate
-        await getAxios().post(
+        await axios.post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
             examTypeId: attempt.examTypeId,
@@ -195,7 +213,7 @@ export class ExamAttemptService {
           },
           {
             headers: {
-              Authorization: `Bearer ${userId}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           },
         );
@@ -205,7 +223,17 @@ export class ExamAttemptService {
 
         result.synced++;
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        let errorMsg = 'Unknown error';
+        if (axios.isAxiosError(error)) {
+          console.error('[ExamAttemptService] Failed to retry attempt', attempt.id, {
+            url: error.config?.url,
+            status: error.response?.status,
+            data: error.response?.data,
+          });
+          errorMsg = error.message;
+        } else if (error instanceof Error) {
+          errorMsg = error.message;
+        }
 
         await ExamSubmissionRepo.markExamSubmissionFailed(attempt.id!);
 

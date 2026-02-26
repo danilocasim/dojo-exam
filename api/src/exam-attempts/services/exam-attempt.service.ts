@@ -37,16 +37,28 @@ export class ExamAttemptService {
    * timeout where the server had already persisted the first request.
    */
   async create(data: CreateExamAttemptDto): Promise<ExamAttempt> {
-    // Idempotency check: if we have a localId and userId, look for an existing record
+    // If we have a localId and userId, perform an atomic upsert on the
+    // (userId, localId) composite key. This guarantees idempotency even under
+    // concurrent retries from the same user/device.
     if (data.localId && data.userId) {
-      const existing = await this.prisma.examAttempt.findUnique({
+      return this.prisma.examAttempt.upsert({
         where: { userId_localId: { userId: data.userId, localId: data.localId } },
+        update: {},
+        create: {
+          userId: data.userId,
+          examTypeId: data.examTypeId,
+          score: data.score,
+          passed: data.passed,
+          duration: data.duration,
+          submittedAt: data.submittedAt || new Date(),
+          syncStatus: SyncStatus.PENDING,
+          localId: data.localId,
+        },
       });
-      if (existing) {
-        return existing; // Duplicate submission — return the original record
-      }
     }
 
+    // Anonymous / unsigned exams (no user association or localId) are created
+    // as standalone rows; they are considered already "synced".
     return this.prisma.examAttempt.create({
       data: {
         userId: data.userId || undefined,

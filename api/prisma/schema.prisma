@@ -1,12 +1,136 @@
-// Dojo Exam - Prisma Schema
-// Multi-tenant exam question bank
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model ExamType {
+  id            String        @id
+  name          String
+  displayName   String
+  description   String?
+  domains       Json
+  passingScore  Int           @default(70)
+  timeLimit     Int           @default(90)
+  questionCount Int           @default(65)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  examAttempts  ExamAttempt[]
+  questions     Question[]
+  syncVersions  SyncVersion?
+}
+
+model Admin {
+  id                String     @id @default(uuid())
+  email             String     @unique
+  passwordHash      String
+  name              String
+  createdAt         DateTime   @default(now())
+  approvedQuestions Question[] @relation("ApprovedBy")
+  createdQuestions  Question[] @relation("CreatedBy")
+}
+
+model Question {
+  id                String         @id @default(uuid())
+  examTypeId        String
+  text              String
+  type              QuestionType
+  domain            String
+  difficulty        Difficulty
+  options           Json
+  correctAnswers    String[]
+  explanation       String
+  status            QuestionStatus @default(DRAFT)
+  version           Int            @default(1)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  archivedAt        DateTime?
+  approvedAt        DateTime?
+  createdById       String?
+  approvedById      String?
+  explanationBlocks Json?
+  approvedBy        Admin?         @relation("ApprovedBy", fields: [approvedById], references: [id])
+  createdBy         Admin?         @relation("CreatedBy", fields: [createdById], references: [id])
+  examType          ExamType       @relation(fields: [examTypeId], references: [id])
+
+  @@index([examTypeId])
+  @@index([domain])
+  @@index([status])
+  @@index([version])
+  @@index([examTypeId, status])
+}
+
+model SyncVersion {
+  id         Int      @id @default(autoincrement())
+  examTypeId String   @unique
+  version    Int      @default(1)
+  updatedAt  DateTime @updatedAt
+  examType   ExamType @relation(fields: [examTypeId], references: [id])
+}
+
+model User {
+  id           String        @id @default(uuid())
+  googleId     String        @unique
+  email        String        @unique
+  name         String?
+  oauthToken   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  lastLoginAt  DateTime?
+  examAttempts ExamAttempt[]
+  studyStreak  StudyStreak?
+  userStats    UserStats?
+}
+
+model ExamAttempt {
+  id          String     @id @default(uuid())
+  userId      String?
+  examTypeId  String
+  score       Int
+  passed      Boolean
+  duration    Int
+  submittedAt DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  syncedAt    DateTime?
+  syncRetries Int        @default(0)
+  syncStatus  SyncStatus @default(PENDING)
+  localId     String?
+  examType    ExamType   @relation(fields: [examTypeId], references: [id])
+  user        User?      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, localId], where: raw("((\"userId\" IS NOT NULL) AND (\"localId\" IS NOT NULL))"))
+  @@index([userId])
+  @@index([examTypeId])
+  @@index([syncStatus])
+  @@index([localId])
+}
+
+model UserStats {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  totalExams       Int       @default(0)
+  totalPractice    Int       @default(0)
+  totalQuestions   Int       @default(0)
+  totalTimeSpentMs BigInt    @default(0)
+  lastActivityAt   DateTime?
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model StudyStreak {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  currentStreak      Int      @default(0)
+  longestStreak      Int      @default(0)
+  lastCompletionDate String?
+  examDate           String?
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
 }
 
 enum QuestionType {
@@ -32,149 +156,4 @@ enum SyncStatus {
   PENDING
   SYNCED
   FAILED
-}
-
-// Multi-tenant exam type (e.g., AWS CCP, Solutions Architect)
-model ExamType {
-  id            String   @id // e.g., "CLF-C02", "SAA-C03"
-  name          String // e.g., "AWS Cloud Practitioner"
-  displayName   String // e.g., "AWS CCP"
-  description   String?
-  domains       Json // [{id, name, weight, questionCount}]
-  passingScore  Int      @default(70) // Percentage (0-100)
-  timeLimit     Int      @default(90) // Minutes
-  questionCount Int      @default(65) // Questions per exam
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  questions    Question[]
-  syncVersions SyncVersion[]
-  examAttempts ExamAttempt[]
-}
-
-model Admin {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime @default(now())
-
-  createdQuestions  Question[] @relation("CreatedBy")
-  approvedQuestions Question[] @relation("ApprovedBy")
-}
-
-model Question {
-  id                String         @id @default(uuid())
-  examTypeId        String // FK to ExamType
-  text              String
-  type              QuestionType
-  domain            String // Domain ID from ExamType.domains
-  difficulty        Difficulty
-  options           Json // [{id: string, text: string}]
-  correctAnswers    String[] // Array of option IDs
-  explanation       String
-  explanationBlocks Json? // Optional rich explanation blocks [{type, content, meta}]
-  status            QuestionStatus @default(DRAFT)
-  version           Int            @default(1)
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  archivedAt DateTime?
-  approvedAt DateTime?
-
-  examType     ExamType @relation(fields: [examTypeId], references: [id])
-  createdBy    Admin?   @relation("CreatedBy", fields: [createdById], references: [id])
-  createdById  String?
-  approvedBy   Admin?   @relation("ApprovedBy", fields: [approvedById], references: [id])
-  approvedById String?
-
-  @@index([examTypeId])
-  @@index([domain])
-  @@index([status])
-  @@index([version])
-  @@index([examTypeId, status])
-}
-
-// Tracks sync version per exam type (multi-tenant)
-model SyncVersion {
-  id         Int      @id @default(autoincrement())
-  examTypeId String   @unique
-  version    Int      @default(1)
-  updatedAt  DateTime @updatedAt
-
-  examType ExamType @relation(fields: [examTypeId], references: [id])
-}
-
-// Phase 2: User account from Google OAuth
-model User {
-  id          String    @id @default(uuid())
-  googleId    String    @unique // Google account ID from OAuth
-  email       String    @unique
-  name        String?
-  oauthToken  String? // Encrypted refresh token storage
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
-
-  examAttempts ExamAttempt[]
-  userStats    UserStats?
-  studyStreak  StudyStreak?
-}
-
-// Phase 2: Exam submission record (extended in T120 with userId, syncStatus fields)
-model ExamAttempt {
-  id          String   @id @default(uuid())
-  userId      String? // FK to User (nullable for unsigned/Phase 1 exams)
-  examTypeId  String
-  score       Int // 0-100%
-  passed      Boolean
-  duration    Int // seconds
-  submittedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Phase 2: Cloud sync tracking
-  syncStatus  SyncStatus @default(PENDING) // pending, synced, failed
-  syncedAt    DateTime?
-  syncRetries Int        @default(0) // Number of failed sync attempts
-
-  // Idempotency: client-generated UUID prevents duplicate submissions on retry
-  localId String? // UUID generated on device at submission time
-
-  user     User?    @relation(fields: [userId], references: [id])
-  examType ExamType @relation(fields: [examTypeId], references: [id])
-
-  @@unique([userId, localId]) // Prevent duplicate submissions from same user+device
-  @@index([userId])
-  @@index([examTypeId])
-  @@index([syncStatus])
-  @@index([localId])
-}
-
-// Aggregate user statistics synced from mobile devices
-model UserStats {
-  id               String    @id @default(uuid())
-  userId           String    @unique // FK to User
-  totalExams       Int       @default(0)
-  totalPractice    Int       @default(0)
-  totalQuestions   Int       @default(0)
-  totalTimeSpentMs BigInt    @default(0) // milliseconds; BigInt for large values
-  lastActivityAt   DateTime?
-  updatedAt        DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-// Daily study streak synced from mobile devices
-model StudyStreak {
-  id                 String    @id @default(uuid())
-  userId             String    @unique // FK to User
-  currentStreak      Int       @default(0)
-  longestStreak      Int       @default(0)
-  lastCompletionDate String? // YYYY-MM-DD in device local time
-  examDate           String? // YYYY-MM-DD target exam date
-  updatedAt          DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
 }

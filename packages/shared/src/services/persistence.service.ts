@@ -127,22 +127,22 @@ const syncNow = async (config: PersistenceConfig, userId?: string): Promise<void
 
     const store = useExamAttemptStore.getState();
 
-    // 1. Sync pending exam attempts
-    const syncResult = await store.syncPendingAttempts(userId);
+    // 1. Sync pending exam attempts (authenticated with latest access token)
+    const accessToken = getAccessToken?.();
+    const syncResult = await store.syncPendingAttempts(accessToken || undefined);
     console.log(
       `[PersistenceService] Sync complete: ${syncResult.synced} synced, ${syncResult.failed} failed`,
     );
 
     // 2. Retry previously failed attempts
-    if (syncResult.failed > 0) {
+    if (syncResult.failed > 0 && accessToken) {
       console.log('[PersistenceService] Retrying failed attempts...');
-      await store.retryFailedAttempts(userId);
+      await store.retryFailedAttempts(accessToken);
     }
 
     // 3. Push UserStats + Streak (non-blocking, best-effort)
-    const token = getAccessToken?.();
-    if (token) {
-      pushAllStats(token).catch((err) =>
+    if (accessToken) {
+      pushAllStats(accessToken).catch((err) =>
         console.warn('[PersistenceService] Stats push failed:', err),
       );
     }

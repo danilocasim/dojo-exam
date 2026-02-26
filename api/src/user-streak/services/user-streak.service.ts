@@ -28,49 +28,51 @@ export class UserStreakService {
   }
 
   async upsert(userId: string, dto: UpsertStreakDto): Promise<StudyStreak> {
-    const existing = await this.prisma.studyStreak.findUnique({ where: { userId } });
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.studyStreak.findUnique({ where: { userId } });
 
-    if (!existing) {
-      return this.prisma.studyStreak.create({
+      if (!existing) {
+        return tx.studyStreak.create({
+          data: {
+            userId,
+            currentStreak: dto.currentStreak,
+            longestStreak: dto.longestStreak,
+            lastCompletionDate: dto.lastCompletionDate,
+            examDate: dto.examDate,
+          },
+        });
+      }
+
+      // Determine which completion date is more recent
+      const clientDate = dto.lastCompletionDate;
+      const serverDate = existing.lastCompletionDate;
+
+      let newCurrent: number;
+      let newLastDate: string | null;
+
+      if (!clientDate && !serverDate) {
+        newCurrent = Math.max(existing.currentStreak, dto.currentStreak);
+        newLastDate = null;
+      } else if (!serverDate || (clientDate && clientDate >= serverDate)) {
+        // Client is more recent or server has no data → use client's current streak
+        newCurrent = dto.currentStreak;
+        newLastDate = clientDate;
+      } else {
+        // Server is more recent → keep server's current streak
+        newCurrent = existing.currentStreak;
+        newLastDate = serverDate;
+      }
+
+      return tx.studyStreak.update({
+        where: { userId },
         data: {
-          userId,
-          currentStreak: dto.currentStreak,
-          longestStreak: dto.longestStreak,
-          lastCompletionDate: dto.lastCompletionDate,
-          examDate: dto.examDate,
+          currentStreak: newCurrent,
+          longestStreak: Math.max(existing.longestStreak, dto.longestStreak),
+          lastCompletionDate: newLastDate,
+          // Client exam date wins if provided; otherwise preserve server value
+          examDate: dto.examDate !== undefined ? dto.examDate : existing.examDate,
         },
       });
-    }
-
-    // Determine which completion date is more recent
-    const clientDate = dto.lastCompletionDate;
-    const serverDate = existing.lastCompletionDate;
-
-    let newCurrent: number;
-    let newLastDate: string | null;
-
-    if (!clientDate && !serverDate) {
-      newCurrent = Math.max(existing.currentStreak, dto.currentStreak);
-      newLastDate = null;
-    } else if (!serverDate || (clientDate && clientDate >= serverDate)) {
-      // Client is more recent or server has no data → use client's current streak
-      newCurrent = dto.currentStreak;
-      newLastDate = clientDate;
-    } else {
-      // Server is more recent → keep server's current streak
-      newCurrent = existing.currentStreak;
-      newLastDate = serverDate;
-    }
-
-    return this.prisma.studyStreak.update({
-      where: { userId },
-      data: {
-        currentStreak: newCurrent,
-        longestStreak: Math.max(existing.longestStreak, dto.longestStreak),
-        lastCompletionDate: newLastDate,
-        // Client exam date wins if provided; otherwise preserve server value
-        examDate: dto.examDate !== undefined ? dto.examDate : existing.examDate,
-      },
     });
   }
 }

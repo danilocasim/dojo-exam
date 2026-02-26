@@ -33,41 +33,43 @@ export class UserStatsService {
    * counter seen wins.  lastActivityAt is kept as the most recent value.
    */
   async upsert(userId: string, dto: UpsertUserStatsDto): Promise<UserStats> {
-    const existing = await this.prisma.userStats.findUnique({ where: { userId } });
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.userStats.findUnique({ where: { userId } });
 
-    if (!existing) {
-      return this.prisma.userStats.create({
+      if (!existing) {
+        return tx.userStats.create({
+          data: {
+            userId,
+            totalExams: dto.totalExams,
+            totalPractice: dto.totalPractice,
+            totalQuestions: dto.totalQuestions,
+            totalTimeSpentMs: dto.totalTimeSpentMs,
+            lastActivityAt: dto.lastActivityAt ?? null,
+          },
+        });
+      }
+
+      // Take MAX of each counter so neither device's offline work is lost
+      const totalTimeSpentMs = BigInt(dto.totalTimeSpentMs);
+      return tx.userStats.update({
+        where: { userId },
         data: {
-          userId,
-          totalExams: dto.totalExams,
-          totalPractice: dto.totalPractice,
-          totalQuestions: dto.totalQuestions,
-          totalTimeSpentMs: dto.totalTimeSpentMs,
-          lastActivityAt: dto.lastActivityAt ?? null,
+          totalExams: Math.max(existing.totalExams, dto.totalExams),
+          totalPractice: Math.max(existing.totalPractice, dto.totalPractice),
+          totalQuestions: Math.max(existing.totalQuestions, dto.totalQuestions),
+          totalTimeSpentMs:
+            totalTimeSpentMs > existing.totalTimeSpentMs
+              ? totalTimeSpentMs
+              : existing.totalTimeSpentMs,
+          // Keep the most recent activity timestamp
+          lastActivityAt:
+            dto.lastActivityAt && existing.lastActivityAt
+              ? dto.lastActivityAt > existing.lastActivityAt
+                ? dto.lastActivityAt
+                : existing.lastActivityAt
+              : dto.lastActivityAt ?? existing.lastActivityAt,
         },
       });
-    }
-
-    // Take MAX of each counter so neither device's offline work is lost
-    const totalTimeSpentMs = BigInt(dto.totalTimeSpentMs);
-    return this.prisma.userStats.update({
-      where: { userId },
-      data: {
-        totalExams: Math.max(existing.totalExams, dto.totalExams),
-        totalPractice: Math.max(existing.totalPractice, dto.totalPractice),
-        totalQuestions: Math.max(existing.totalQuestions, dto.totalQuestions),
-        totalTimeSpentMs:
-          totalTimeSpentMs > existing.totalTimeSpentMs
-            ? totalTimeSpentMs
-            : existing.totalTimeSpentMs,
-        // Keep the most recent activity timestamp
-        lastActivityAt:
-          dto.lastActivityAt && existing.lastActivityAt
-            ? dto.lastActivityAt > existing.lastActivityAt
-              ? dto.lastActivityAt
-              : existing.lastActivityAt
-            : dto.lastActivityAt ?? existing.lastActivityAt,
-      },
     });
   }
 }

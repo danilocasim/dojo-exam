@@ -1,14 +1,31 @@
 import { Controller, Get, Put, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { UserStreakService } from '../services/user-streak.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { LoggingInterceptor } from '../../common/interceptors/logging.interceptor';
 
 export class UpsertStreakBody {
-  currentStreak: number;
-  longestStreak: number;
-  lastCompletionDate: string | null;
-  examDate: string | null;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  currentStreak?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  longestStreak?: number;
+
+  @IsOptional()
+  @IsString()
+  lastCompletionDate?: string | null;
+
+  @IsOptional()
+  @IsString()
+  examDate?: string | null;
 }
 
 export class StreakResponse {
@@ -33,9 +50,16 @@ export class UserStreakController {
 
   @Get('me')
   async getMyStreak(@CurrentUser('userId') userId: string): Promise<StreakResponse> {
-    const streak = await this.userStreakService.getByUserId(userId);
+    let streak = await this.userStreakService.getByUserId(userId);
     if (!streak) {
-      return { currentStreak: 0, longestStreak: 0, lastCompletionDate: null, examDate: null };
+      // Lazily initialise streak row for this user so the table always has
+      // a record once the user has accessed it.
+      streak = await this.userStreakService.upsert(userId, {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastCompletionDate: null,
+        examDate: null,
+      });
     }
     return {
       currentStreak: streak.currentStreak,

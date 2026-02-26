@@ -1,14 +1,38 @@
 import { Controller, Get, Put, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsISO8601, Min } from 'class-validator';
 import { UserStatsService } from '../services/user-stats.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { LoggingInterceptor } from '../../common/interceptors/logging.interceptor';
 
 export class UpsertUserStatsBody {
-  totalExams: number;
-  totalPractice: number;
-  totalQuestions: number;
-  totalTimeSpentMs: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  totalExams?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  totalPractice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  totalQuestions?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  totalTimeSpentMs?: number;
+
+  @IsOptional()
+  @IsISO8601()
   lastActivityAt?: string | null; // ISO string from mobile
 }
 
@@ -35,15 +59,17 @@ export class UserStatsController {
 
   @Get('me')
   async getMyStats(@CurrentUser('userId') userId: string): Promise<UserStatsResponse> {
-    const stats = await this.userStatsService.getByUserId(userId);
+    let stats = await this.userStatsService.getByUserId(userId);
     if (!stats) {
-      return {
+      // Lazily initialise stats row for this user with zeros so that the
+      // table always contains a record once the user has accessed it.
+      stats = await this.userStatsService.upsert(userId, {
         totalExams: 0,
         totalPractice: 0,
         totalQuestions: 0,
         totalTimeSpentMs: 0,
         lastActivityAt: null,
-      };
+      });
     }
     return {
       totalExams: stats.totalExams,

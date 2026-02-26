@@ -58,7 +58,8 @@ export const pushUserStats = async (
 ): Promise<RemoteUserStats | null> => {
   try {
     const local = await getUserStats();
-    const response = await getAxios().put(
+    const axios = getAxios();
+    const response = await axios.put(
       `${getAPIURL()}/user-stats/me`,
       {
         totalExams: local.totalExams,
@@ -71,7 +72,16 @@ export const pushUserStats = async (
     );
     return response.data as RemoteUserStats;
   } catch (err) {
-    console.warn('[StatsSync] Failed to push user stats:', err);
+    const axios = getAxios();
+    if (axios.isAxiosError(err)) {
+      console.warn('[StatsSync] Failed to push user stats', {
+        url: err.config?.url,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+    } else {
+      console.warn('[StatsSync] Failed to push user stats:', err);
+    }
     return null;
   }
 };
@@ -86,7 +96,8 @@ export const pushUserStats = async (
  */
 export const pullAndMergeUserStats = async (accessToken: string): Promise<void> => {
   try {
-    const response = await getAxios().get(`${getAPIURL()}/user-stats/me`, {
+    const axios = getAxios();
+    const response = await axios.get(`${getAPIURL()}/user-stats/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const remote: RemoteUserStats = response.data;
@@ -123,7 +134,16 @@ export const pullAndMergeUserStats = async (accessToken: string): Promise<void> 
       totalPractice: mergedPractice,
     });
   } catch (err) {
-    console.warn('[StatsSync] Failed to pull user stats:', err);
+    const axios = getAxios();
+    if (axios.isAxiosError(err)) {
+      console.warn('[StatsSync] Failed to pull user stats', {
+        url: err.config?.url,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+    } else {
+      console.warn('[StatsSync] Failed to pull user stats:', err);
+    }
   }
 };
 
@@ -139,7 +159,8 @@ export const pullAndMergeUserStats = async (accessToken: string): Promise<void> 
 export const pushStreak = async (accessToken: string): Promise<RemoteStreak | null> => {
   try {
     const local = await getStudyStreak();
-    const response = await getAxios().put(
+    const axios = getAxios();
+    const response = await axios.put(
       `${getAPIURL()}/user-streak/me`,
       {
         currentStreak: local.currentStreak,
@@ -151,7 +172,16 @@ export const pushStreak = async (accessToken: string): Promise<RemoteStreak | nu
     );
     return response.data as RemoteStreak;
   } catch (err) {
-    console.warn('[StatsSync] Failed to push streak:', err);
+    const axios = getAxios();
+    if (axios.isAxiosError(err)) {
+      console.warn('[StatsSync] Failed to push streak', {
+        url: err.config?.url,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+    } else {
+      console.warn('[StatsSync] Failed to push streak:', err);
+    }
     return null;
   }
 };
@@ -169,7 +199,8 @@ export const pushStreak = async (accessToken: string): Promise<RemoteStreak | nu
  */
 export const pullAndMergeStreak = async (accessToken: string): Promise<void> => {
   try {
-    const response = await getAxios().get(`${getAPIURL()}/user-streak/me`, {
+    const axios = getAxios();
+    const response = await axios.get(`${getAPIURL()}/user-streak/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const remote: RemoteStreak = response.data;
@@ -214,7 +245,16 @@ export const pullAndMergeStreak = async (accessToken: string): Promise<void> => 
       lastCompletionDate: mergedLastDate,
     });
   } catch (err) {
-    console.warn('[StatsSync] Failed to pull streak:', err);
+    const axios = getAxios();
+    if (axios.isAxiosError(err)) {
+      console.warn('[StatsSync] Failed to pull streak', {
+        url: err.config?.url,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+    } else {
+      console.warn('[StatsSync] Failed to pull streak:', err);
+    }
   }
 };
 

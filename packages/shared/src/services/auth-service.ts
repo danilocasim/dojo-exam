@@ -212,6 +212,13 @@ export async function handleGoogleAuthSuccess(
       backendUser = backendResponse.data.user;
       jwtAccessToken = backendResponse.data.accessToken;
       jwtRefreshToken = backendResponse.data.refreshToken;
+
+      // Temporary debug logging for local testing: surface the JWT so it can be
+      // used to call protected endpoints from curl/Postman.
+      // NOTE: Do not keep this enabled in production logs.
+      if (__DEV__ && jwtAccessToken) {
+        console.log('[DEBUG] JWT accessToken from backend:', jwtAccessToken);
+      }
     } catch (err) {
       console.warn('[Auth] Backend verification failed (offline fallback):', err);
     }

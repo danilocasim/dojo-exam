@@ -223,6 +223,17 @@ export const useExamStore = create<ExamStore>((set, get) => ({
             lastSyncError: null,
           },
         });
+
+        // Fire-and-forget immediate cloud sync for exam attempts when the user
+        // is signed in. This ensures history is pushed to the backend without
+        // waiting for the periodic persistence timer.
+        if (authState.isSignedIn && authState.accessToken) {
+          get()
+            .syncToCloud()
+            .catch((err) => {
+              console.warn('[ExamStore] Immediate cloud sync after submit failed:', err);
+            });
+        }
       } catch (syncErr) {
         console.warn('[ExamStore] Failed to queue for cloud sync:', syncErr);
         // Non-blocking: exam submission still succeeds locally
@@ -419,15 +430,15 @@ export const useExamStore = create<ExamStore>((set, get) => ({
    */
   syncToCloud: async () => {
     const authState = useAuthStore.getState();
-    if (!authState.isSignedIn) return;
+    if (!authState.isSignedIn || !authState.accessToken) return;
 
     try {
       set((state) => ({
         syncState: { ...state.syncState, isSyncing: true, lastSyncError: null },
       }));
 
-      const userId = authState.user?.id;
-      const result = await useExamAttemptStore.getState().syncPendingAttempts(userId);
+      const accessToken = authState.accessToken;
+      const result = await useExamAttemptStore.getState().syncPendingAttempts(accessToken);
       const attemptStore = useExamAttemptStore.getState();
 
       set({
