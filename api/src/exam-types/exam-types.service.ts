@@ -169,6 +169,7 @@ export class ExamTypesService {
     options: unknown;
     correctAnswers: string[];
     explanation: string;
+    explanationBlocks?: unknown;
     version: number;
     createdAt: Date;
     updatedAt: Date;
@@ -182,6 +183,7 @@ export class ExamTypesService {
       options: question.options as QuestionOptionDto[],
       correctAnswers: question.correctAnswers,
       explanation: question.explanation,
+      explanationBlocks: (question.explanationBlocks as any) ?? null,
       version: 1,
       createdAt: question.createdAt.toISOString(),
       updatedAt: question.updatedAt.toISOString(),

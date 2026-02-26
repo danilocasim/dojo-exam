@@ -1,5 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { QuestionInput, ExamType } from '../services/api';
+import type {
+  QuestionInput,
+  ExamType,
+  ExplanationBlock,
+} from '../services/api';
+import { ExplanationEditor } from './ExplanationEditor';
 import { colors, radius } from '../theme';
 
 interface Props {
@@ -38,6 +43,7 @@ export function QuestionForm({
     ],
     correctAnswers: initialValues?.correctAnswers || [],
     explanation: initialValues?.explanation || '',
+    explanationBlocks: initialValues?.explanationBlocks || null,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -335,26 +341,15 @@ export function QuestionForm({
         ))}
       </div>
 
-      <label style={labelStyle}>
-        Explanation
-        <textarea
-          value={formData.explanation}
-          onChange={(e) => updateField('explanation', e.target.value)}
-          style={{
-            ...inputStyle,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            minHeight: 100,
-          }}
-          required
-          minLength={50}
-        />
-        <span
-          style={{ fontSize: 11, color: colors.subtle, alignSelf: 'flex-end' }}
-        >
-          {formData.explanation.length} chars
-        </span>
-      </label>
+      <ExplanationEditor
+        explanation={formData.explanation}
+        explanationBlocks={
+          formData.explanationBlocks as ExplanationBlock[] | null | undefined
+        }
+        onExplanationChange={(text) => updateField('explanation', text)}
+        onBlocksChange={(blocks) => updateField('explanationBlocks', blocks)}
+        inputStyle={inputStyle}
+      />
 
       <div
         style={{

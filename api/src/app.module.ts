@@ -23,6 +23,7 @@ import {
   corsConfig,
   authConfig,
   playIntegrityConfig,
+  s3Config,
 } from './config';
 
 @Module({
@@ -37,6 +38,7 @@ import {
         corsConfig,
         authConfig,
         playIntegrityConfig,
+        s3Config,
       ],
     }),
     ServeStaticModule.forRoot({
@@ -44,6 +46,7 @@ import {
       serveRoot: '/portal',
       serveStaticOptions: {
         index: ['index.html'],
+        decorateReply: true,
       },
     }),
     PrismaModule,

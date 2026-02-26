@@ -221,7 +221,7 @@ export const AnalyticsScreen: React.FC = () => {
               analyticsData.domainPerformance.some((d) => d.percentage >= 70) && (
                 <WeakDomainsSection
                   weakDomains={analyticsData.weakDomains}
-                  onPractice={() => navigation.navigate('PracticeSetup')}
+                  onPractice={() => navigation.navigate('MainTabs', { screen: 'PracticeTab' })}
                 />
               )}
           </>

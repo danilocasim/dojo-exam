@@ -116,6 +116,9 @@ export class QuestionsService {
         options: input.options as unknown as Prisma.InputJsonValue,
         correctAnswers: input.correctAnswers,
         explanation: input.explanation,
+        explanationBlocks: input.explanationBlocks
+          ? (input.explanationBlocks as unknown as Prisma.InputJsonValue)
+          : undefined,
         status: QuestionStatus.DRAFT,
         createdById: adminId,
       },
@@ -197,6 +200,9 @@ export class QuestionsService {
         options: input.options as unknown as Prisma.InputJsonValue,
         correctAnswers: input.correctAnswers,
         explanation: input.explanation,
+        explanationBlocks: input.explanationBlocks
+          ? (input.explanationBlocks as unknown as Prisma.InputJsonValue)
+          : Prisma.DbNull,
         // Reset to DRAFT on edit if previously pending/approved
         status: QuestionStatus.DRAFT,
       },
@@ -211,7 +217,7 @@ export class QuestionsService {
   }
 
   /**
-   * T085: Approve a question (must be PENDING status)
+   * T085: Approve a question (DRAFT or PENDING status)
    * Version is based on total approved question count, not an incrementing counter
    */
   async approve(id: string, adminId: string): Promise<AdminQuestionDto> {
@@ -222,9 +228,12 @@ export class QuestionsService {
       throw new NotFoundException(`Question '${id}' not found`);
     }
 
-    if (existing.status !== QuestionStatus.PENDING) {
+    if (
+      existing.status !== QuestionStatus.PENDING &&
+      existing.status !== QuestionStatus.DRAFT
+    ) {
       throw new BadRequestException(
-        'Only questions with PENDING status can be approved',
+        'Only questions with DRAFT or PENDING status can be approved',
       );
     }
 
@@ -372,6 +381,7 @@ export class QuestionsService {
     options: unknown;
     correctAnswers: string[];
     explanation: string;
+    explanationBlocks?: unknown;
     status: QuestionStatus;
     version: number;
     createdAt: Date;
@@ -398,6 +408,7 @@ export class QuestionsService {
       options: question.options as { id: string; text: string }[],
       correctAnswers: question.correctAnswers,
       explanation: question.explanation,
+      explanationBlocks: (question.explanationBlocks as any[]) ?? null,
       status: question.status,
       version: question.version,
       createdBy: toAdminUser(question.createdBy),

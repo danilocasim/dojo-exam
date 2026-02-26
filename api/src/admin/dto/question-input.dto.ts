@@ -6,6 +6,7 @@ import {
   ArrayMinSize,
   MinLength,
   ValidateNested,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -63,4 +64,29 @@ export class QuestionInputDto {
   @IsString()
   @MinLength(50, { message: 'Explanation must be at least 50 characters' })
   explanation: string;
+
+  @IsOptional()
+  explanationBlocks?: ExplanationBlockInput[] | null;
+}
+
+/**
+ * Structured explanation block input
+ */
+export class ExplanationBlockInput {
+  @IsString()
+  @IsNotEmpty()
+  type: 'paragraph' | 'link' | 'image' | 'bullet_list' | 'code' | 'separator';
+
+  @IsString()
+  content: string;
+
+  @IsOptional()
+  meta?: {
+    alt?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    listItems?: string[];
+    label?: string;
+  };
 }

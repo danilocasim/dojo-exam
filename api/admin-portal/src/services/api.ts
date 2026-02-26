@@ -70,6 +70,7 @@ export interface AdminQuestion {
   options: QuestionOption[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
   status: string;
   version: number;
   createdBy: AdminUser | null;
@@ -96,6 +97,23 @@ export interface QuestionInput {
   options: QuestionOption[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
+}
+
+/**
+ * Structured explanation block for rich content
+ */
+export interface ExplanationBlock {
+  type: 'paragraph' | 'link' | 'image' | 'bullet_list' | 'code' | 'separator';
+  content: string;
+  meta?: {
+    alt?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    listItems?: string[];
+    label?: string;
+  };
 }
 
 export interface ExamType {
@@ -248,5 +266,31 @@ export const api = {
     return request<AdminQuestion>(`/admin/questions/${id}/restore`, {
       method: 'POST',
     });
+  },
+
+  /**
+   * Upload an explanation image
+   */
+  async uploadExplanationImage(
+    file: File,
+  ): Promise<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch(`${API_BASE_URL}/admin/uploads/explanation-image`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || `Upload failed: ${res.status}`);
+    }
+
+    return res.json();
   },
 };

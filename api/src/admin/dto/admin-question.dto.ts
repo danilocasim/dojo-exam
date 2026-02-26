@@ -23,6 +23,7 @@ export class AdminQuestionDto {
   options: AdminQuestionOptionDto[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: unknown[] | null;
   status: string;
   version: number;
   createdBy: AdminUserDto | null;

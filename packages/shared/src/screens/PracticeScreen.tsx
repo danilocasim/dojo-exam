@@ -238,6 +238,7 @@ export const PracticeScreen: React.FC = () => {
           <FeedbackCard
             isCorrect={lastResult.isCorrect}
             explanation={lastResult.explanation}
+            explanationBlocks={lastResult.explanationBlocks as any}
             onContinue={handleContinue}
             isLastQuestion={isLastQuestion}
           />

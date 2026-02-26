@@ -65,6 +65,7 @@ export const initializeDatabase = async (): Promise<void> => {
       options TEXT NOT NULL,
       correctAnswers TEXT NOT NULL,
       explanation TEXT NOT NULL,
+      explanationBlocks TEXT,
       version INTEGER NOT NULL DEFAULT 1,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
@@ -73,6 +74,15 @@ export const initializeDatabase = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_question_difficulty ON Question(difficulty);
     CREATE INDEX IF NOT EXISTS idx_question_version ON Question(version);
   `);
+
+  // Migration: add explanationBlocks column for existing databases
+  try {
+    await database.execAsync(`
+      ALTER TABLE Question ADD COLUMN explanationBlocks TEXT;
+    `);
+  } catch {
+    // Column already exists — ignore
+  }
 
   // Create ExamAttempt table
   await database.execAsync(`

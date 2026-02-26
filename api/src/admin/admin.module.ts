@@ -11,6 +11,7 @@ import {
   AdminQuestionsController,
   AdminExamTypesController,
 } from './controllers';
+import { UploadsController } from './controllers/uploads.controller';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import {
     AdminAuthController,
     AdminQuestionsController,
     AdminExamTypesController,
+    UploadsController,
   ],
   providers: [
     AdminAuthService,

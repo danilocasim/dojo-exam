@@ -1,9 +1,12 @@
 // T063: ReviewQuestionCard - displays question with user's answer, correct answer, explanation
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { CheckCircle2, XCircle } from 'lucide-react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { CheckCircle2, XCircle, Maximize2 } from 'lucide-react-native';
 import { QuestionOption, QuestionType } from '../storage/schema';
 import { ReviewItem } from '../services/review.service';
+import { RichExplanation, ExplanationBlock } from './RichExplanation';
+import { ExplanationModal } from './ExplanationModal';
+import { ImageViewer } from './ImageViewer';
 
 export interface ReviewQuestionCardProps {
   item: ReviewItem;
@@ -33,6 +36,21 @@ const colors = {
  */
 export const ReviewQuestionCard: React.FC<ReviewQuestionCardProps> = ({ item }) => {
   const { question, answer, isCorrect } = item;
+  const [modalVisible, setModalVisible] = useState(false);
+  const [imageViewer, setImageViewer] = useState<{
+    visible: boolean;
+    uri: string;
+    alt?: string;
+  }>({ visible: false, uri: '' });
+
+  const handleOpenModal = useCallback(() => setModalVisible(true), []);
+  const handleCloseModal = useCallback(() => setModalVisible(false), []);
+  const handleImagePress = useCallback((uri: string, alt?: string) => {
+    setImageViewer({ visible: true, uri, alt });
+  }, []);
+  const handleImageViewerClose = useCallback(() => {
+    setImageViewer({ visible: false, uri: '' });
+  }, []);
 
   const getOptionStyle = (option: QuestionOption) => {
     const isSelected = answer.selectedAnswers.includes(option.id);
@@ -121,23 +139,39 @@ export const ReviewQuestionCard: React.FC<ReviewQuestionCardProps> = ({ item }) 
         {question.explanation && (
           <View style={styles.explanationBox}>
             <View style={styles.explanationHeader}>
-              <View style={styles.explanationIcon}>
-                {isCorrect ? (
-                  <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
-                ) : (
-                  <XCircle size={16} color={colors.error} strokeWidth={2} />
-                )}
+              <View style={styles.explanationHeaderLeft}>
+                <View style={styles.explanationIcon}>
+                  {isCorrect ? (
+                    <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
+                  ) : (
+                    <XCircle size={16} color={colors.error} strokeWidth={2} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.explanationLabel,
+                    { color: isCorrect ? colors.success : colors.error },
+                  ]}
+                >
+                  {isCorrect ? 'Correct' : 'Incorrect'} — Explanation
+                </Text>
               </View>
-              <Text
-                style={[
-                  styles.explanationLabel,
-                  { color: isCorrect ? colors.success : colors.error },
-                ]}
+              <TouchableOpacity
+                onPress={handleOpenModal}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="View explanation full screen"
               >
-                {isCorrect ? 'Correct' : 'Incorrect'} — Explanation
-              </Text>
+                <Maximize2 size={16} color={colors.primaryOrange} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.explanationText}>{question.explanation}</Text>
+            <RichExplanation
+              explanation={question.explanation}
+              explanationBlocks={(question as any).explanationBlocks}
+              textStyle={styles.explanationText}
+              onImagePress={handleImagePress}
+            />
           </View>
         )}
 
@@ -167,6 +201,24 @@ export const ReviewQuestionCard: React.FC<ReviewQuestionCardProps> = ({ item }) 
           </View>
         )}
       </View>
+
+      {/* Full-screen explanation modal */}
+      {question.explanation ? (
+        <ExplanationModal
+          visible={modalVisible}
+          explanation={question.explanation}
+          explanationBlocks={(question as any).explanationBlocks}
+          onClose={handleCloseModal}
+        />
+      ) : null}
+
+      {/* Image full-screen viewer */}
+      <ImageViewer
+        visible={imageViewer.visible}
+        uri={imageViewer.uri}
+        alt={imageViewer.alt}
+        onClose={handleImageViewerClose}
+      />
     </ScrollView>
   );
 };
@@ -278,7 +330,13 @@ const styles = StyleSheet.create({
   explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  explanationHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   explanationIcon: {
     marginRight: 10,

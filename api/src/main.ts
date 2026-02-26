@@ -7,6 +7,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter, PrismaExceptionFilter } from './common/filters';
+import multipart from '@fastify/multipart';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -17,6 +18,13 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3000;
   const logger = new Logger('Bootstrap');
+
+  // Register Fastify multipart for file uploads
+  await app.register(multipart as any, {
+    limits: {
+      fileSize: 2 * 1024 * 1024, // 2MB
+    },
+  });
 
   // Global filters
   app.useGlobalFilters(new AllExceptionsFilter(), new PrismaExceptionFilter());

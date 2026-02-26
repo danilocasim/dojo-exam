@@ -39,6 +39,22 @@ export interface QuestionOption {
 }
 
 /**
+ * Structured explanation block for rich content rendering
+ */
+export interface ExplanationBlockData {
+  type: 'paragraph' | 'link' | 'image' | 'bullet_list' | 'code' | 'separator';
+  content: string;
+  meta?: {
+    alt?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    listItems?: string[];
+    label?: string;
+  };
+}
+
+/**
  * Question entity - synced from cloud API
  */
 export interface Question {
@@ -58,6 +74,8 @@ export interface Question {
   correctAnswers: string[];
   /** Explanation of correct answer (min 50 chars) */
   explanation: string;
+  /** Optional structured explanation blocks for rich content */
+  explanationBlocks?: ExplanationBlockData[] | null;
   /** Sync version number */
   version: number;
   /** ISO timestamp when created */
@@ -78,6 +96,7 @@ export interface QuestionRow {
   options: string; // JSON string
   correctAnswers: string; // JSON string
   explanation: string;
+  explanationBlocks: string | null; // JSON string or null
   version: number;
   createdAt: string;
   updatedAt: string;

@@ -65,17 +65,18 @@ model Admin {
 }
 
 model Question {
-  id             String         @id @default(uuid())
-  examTypeId     String // FK to ExamType
-  text           String
-  type           QuestionType
-  domain         String // Domain ID from ExamType.domains
-  difficulty     Difficulty
-  options        Json // [{id: string, text: string}]
-  correctAnswers String[] // Array of option IDs
-  explanation    String
-  status         QuestionStatus @default(DRAFT)
-  version        Int            @default(1)
+  id                String         @id @default(uuid())
+  examTypeId        String // FK to ExamType
+  text              String
+  type              QuestionType
+  domain            String // Domain ID from ExamType.domains
+  difficulty        Difficulty
+  options           Json // [{id: string, text: string}]
+  correctAnswers    String[] // Array of option IDs
+  explanation       String
+  explanationBlocks Json? // Optional rich explanation blocks [{type, content, meta}]
+  status            QuestionStatus @default(DRAFT)
+  version           Int            @default(1)
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
