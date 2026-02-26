@@ -1,5 +1,5 @@
 // T069 + T073: AnalyticsScreen - Performance dashboard (inspiration-aligned layout)
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -75,7 +75,6 @@ const colors = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Analytics'>;
 
-type TimeRange = 'week' | 'month' | 'quarter';
 
 /* ────────────────────────────────────────────────────────────
  * Main Screen
@@ -85,7 +84,6 @@ export const AnalyticsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { startExam } = useExamStore();
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { streak, completedToday, loadStreak } = useStreakStore();
 
   const handleStartExam = async () => {
@@ -203,10 +201,7 @@ export const AnalyticsScreen: React.FC = () => {
               completedToday={completedToday}
             />
 
-            {/* 2 ── Time Range Selector */}
-            <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-
-            {/* 3 ── Statistics Overview Row */}
+            {/* 2 ── Statistics Overview Row */}
             <StatsOverviewRow studyStats={analyticsData.studyStats} />
 
             {/* 4 ── Score Trend Chart */}
@@ -261,7 +256,6 @@ interface SummaryCardsProps {
 
 // Day-of-week labels starting from Monday
 const ALL_DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const DOT_SIZE = 18;
 
 /** Build the 7-day label array ending on the current weekday */
 function getWeekDayLabels(): string[] {
@@ -284,22 +278,22 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
   longestStreak,
   completedToday,
 }) => {
-  const dayLabels = getWeekDayLabels();
   const activeDays = Math.min(currentStreak, 7);
-  const streakColor =
-    currentStreak >= 7 ? '#EF4444' : currentStreak >= 3 ? colors.primaryOrange : colors.textMuted;
+  const isLit = completedToday;
+  const accentColor = isLit ? colors.primaryOrange : colors.textMuted;
 
   return (
     <View style={st.summaryRow}>
       {/* Left – Streak */}
       <View style={st.summaryCard}>
+        {/* Header: circular flame + label + best badge */}
         <View style={st.summaryCardHeader}>
-          <View style={[st.summaryIconWrap, { backgroundColor: colors.orangeDark }]}>
+          <View style={[st.streakFlameCircle, { borderColor: accentColor }]}>
             <Flame
-              size={16}
-              color={streakColor}
+              size={18}
+              color={isLit ? colors.primaryOrange : colors.textMuted}
               strokeWidth={2}
-              fill={currentStreak >= 3 ? streakColor : 'none'}
+              fill={isLit ? 'rgba(255, 153, 0, 0.3)' : 'none'}
             />
           </View>
           <Text style={st.summaryCardLabel}>Streak</Text>
@@ -310,37 +304,28 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
             </View>
           )}
         </View>
+        {/* Number + unit */}
         <View style={st.streakValueRow}>
           <Text style={st.summaryCardValue}>{currentStreak}</Text>
-          <View style={st.streakLabelCol}>
-            <Text style={st.streakSubLabel}>day{currentStreak !== 1 ? 's' : ''}</Text>
-            {completedToday && <Text style={st.streakDoneLabel}>Done ✓</Text>}
-          </View>
+          <Text style={st.streakSubLabel}>day{currentStreak !== 1 ? 's' : ''}</Text>
         </View>
-        {/* 7-day dots */}
+        {/* 7-day horizontal bars (like HomeScreen) */}
         <View
-          style={st.streakDotsRow}
+          style={st.streakBarsRow}
           accessibilityLabel={`Current streak: ${currentStreak} days`}
           accessibilityRole="text"
         >
-          {dayLabels.map((label, i) => {
-            const isActive = i >= 7 - activeDays;
-            const isToday = i === 6;
-            return (
-              <View key={i} style={st.streakDayCol}>
-                <View
-                  style={[
-                    st.streakDot,
-                    isActive && st.streakDotActive,
-                    isToday && completedToday && st.streakDotToday,
-                  ]}
-                >
-                  {isActive && <View style={st.streakDotInner} />}
-                </View>
-                <Text style={[st.streakDayLabel, isToday && st.streakDayLabelToday]}>{label}</Text>
-              </View>
-            );
-          })}
+          {Array.from({ length: 7 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                st.streakBar,
+                i < activeDays
+                  ? { backgroundColor: colors.primaryOrange }
+                  : { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+              ]}
+            />
+          ))}
         </View>
       </View>
 
@@ -371,38 +356,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
 };
 
 /* ────────────────────────────────────────────────────────────
- * 3 ─ Time Range Selector (pill tabs)
- * ──────────────────────────────────────────────────────────── */
-
-const TIME_RANGES: { key: TimeRange; label: string }[] = [
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
-  { key: 'quarter', label: 'Quarter' },
-];
-
-const TimeRangeSelector: React.FC<{ value: TimeRange; onChange: (v: TimeRange) => void }> = ({
-  value,
-  onChange,
-}) => (
-  <View style={st.timeRangeContainer}>
-    {TIME_RANGES.map((range) => {
-      const active = value === range.key;
-      return (
-        <TouchableOpacity
-          key={range.key}
-          style={[st.timeRangePill, active && st.timeRangePillActive]}
-          onPress={() => onChange(range.key)}
-          activeOpacity={0.7}
-        >
-          <Text style={[st.timeRangeText, active && st.timeRangeTextActive]}>{range.label}</Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-);
-
-/* ────────────────────────────────────────────────────────────
- * 4 ─ Stats Overview Row (3 metrics horizontal)
+ * 3 ─ Stats Overview Row (3 metrics horizontal)
  * ──────────────────────────────────────────────────────────── */
 
 const StatsOverviewRow: React.FC<{ studyStats: StudyStats }> = ({ studyStats }) => (
@@ -950,21 +904,6 @@ const st = StyleSheet.create({
   },
   summaryProgressFill: { height: '100%', borderRadius: 2 },
 
-  /* ── Time Range Selector ── */
-  timeRangeContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: GAP,
-    borderWidth: 1,
-    borderColor: colors.borderDefault,
-  },
-  timeRangePill: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  timeRangePillActive: { backgroundColor: colors.primaryOrange },
-  timeRangeText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  timeRangeTextActive: { color: colors.textHeading },
-
   /* ── Stats Overview Row ── */
   overviewRow: {
     flexDirection: 'row',
@@ -1144,6 +1083,15 @@ const st = StyleSheet.create({
   practiceButtonText: { color: colors.textHeading, fontWeight: '600', fontSize: 12 },
 
   /* ── Streak (inside left summary card) ── */
+  streakFlameCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 153, 0, 0.08)',
+  },
   streakBest: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1163,64 +1111,22 @@ const st = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 4,
-    marginTop: 0,
-    marginBottom: 4,
-  },
-  streakLabelCol: {
-    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 10,
   },
   streakSubLabel: {
     fontSize: 12,
     fontWeight: '500',
     color: colors.textMuted,
   },
-  streakDoneLabel: {
-    fontSize: 9,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  streakDotsRow: {
+  streakBarsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    marginTop: 2,
+    gap: 4,
   },
-  streakDayCol: {
-    alignItems: 'center',
-    gap: 3,
-  },
-  streakDot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    borderWidth: 1.5,
-    borderColor: colors.borderDefault,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  streakDotActive: {
-    borderColor: colors.primaryOrange,
-    backgroundColor: 'rgba(255,153,0,0.15)',
-  },
-  streakDotToday: {
-    borderColor: colors.success,
-    backgroundColor: 'rgba(16,185,129,0.15)',
-  },
-  streakDotInner: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.primaryOrange,
-  },
-  streakDayLabel: {
-    fontSize: 8,
-    fontWeight: '500',
-    color: colors.textMuted,
-  },
-  streakDayLabelToday: {
-    color: colors.primaryOrange,
-    fontWeight: '700',
+  streakBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
   },
 });
 
