@@ -1,5 +1,5 @@
 // T069 + T073: AnalyticsScreen - Performance dashboard (inspiration-aligned layout)
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Alert,
   StyleSheet,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import Svg, {
   Path,
@@ -75,7 +74,6 @@ const colors = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Analytics'>;
 
-type TimeRange = 'week' | 'month' | 'quarter';
 
 /* ────────────────────────────────────────────────────────────
  * Main Screen
@@ -85,7 +83,6 @@ export const AnalyticsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { startExam } = useExamStore();
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { streak, completedToday, loadStreak } = useStreakStore();
 
   const handleStartExam = async () => {
@@ -203,10 +200,7 @@ export const AnalyticsScreen: React.FC = () => {
               completedToday={completedToday}
             />
 
-            {/* 2 ── Time Range Selector */}
-            <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-
-            {/* 3 ── Statistics Overview Row */}
+            {/* 2 ── Statistics Overview Row */}
             <StatsOverviewRow studyStats={analyticsData.studyStats} />
 
             {/* 4 ── Score Trend Chart */}
@@ -221,7 +215,7 @@ export const AnalyticsScreen: React.FC = () => {
               analyticsData.domainPerformance.some((d) => d.percentage >= 70) && (
                 <WeakDomainsSection
                   weakDomains={analyticsData.weakDomains}
-                  onPractice={() => navigation.navigate('PracticeSetup')}
+                  onPractice={() => navigation.navigate('MainTabs', { screen: 'PracticeTab' })}
                 />
               )}
           </>
@@ -261,7 +255,6 @@ interface SummaryCardsProps {
 
 // Day-of-week labels starting from Monday
 const ALL_DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const DOT_SIZE = 18;
 
 /** Build the 7-day label array ending on the current weekday */
 function getWeekDayLabels(): string[] {
@@ -284,22 +277,22 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
   longestStreak,
   completedToday,
 }) => {
-  const dayLabels = getWeekDayLabels();
   const activeDays = Math.min(currentStreak, 7);
-  const streakColor =
-    currentStreak >= 7 ? '#EF4444' : currentStreak >= 3 ? colors.primaryOrange : colors.textMuted;
+  const isLit = completedToday;
+  const accentColor = isLit ? colors.primaryOrange : colors.textMuted;
 
   return (
     <View style={st.summaryRow}>
       {/* Left – Streak */}
       <View style={st.summaryCard}>
+        {/* Header: circular flame + label + best badge */}
         <View style={st.summaryCardHeader}>
-          <View style={[st.summaryIconWrap, { backgroundColor: colors.orangeDark }]}>
+          <View style={[st.streakFlameCircle, { borderColor: accentColor }]}>
             <Flame
-              size={16}
-              color={streakColor}
+              size={18}
+              color={isLit ? colors.primaryOrange : colors.textMuted}
               strokeWidth={2}
-              fill={currentStreak >= 3 ? streakColor : 'none'}
+              fill={isLit ? 'rgba(255, 153, 0, 0.3)' : 'none'}
             />
           </View>
           <Text style={st.summaryCardLabel}>Streak</Text>
@@ -310,37 +303,28 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
             </View>
           )}
         </View>
+        {/* Number + unit */}
         <View style={st.streakValueRow}>
           <Text style={st.summaryCardValue}>{currentStreak}</Text>
-          <View style={st.streakLabelCol}>
-            <Text style={st.streakSubLabel}>day{currentStreak !== 1 ? 's' : ''}</Text>
-            {completedToday && <Text style={st.streakDoneLabel}>Done ✓</Text>}
-          </View>
+          <Text style={st.streakSubLabel}>day{currentStreak !== 1 ? 's' : ''}</Text>
         </View>
-        {/* 7-day dots */}
+        {/* 7-day horizontal bars (like HomeScreen) */}
         <View
-          style={st.streakDotsRow}
+          style={st.streakBarsRow}
           accessibilityLabel={`Current streak: ${currentStreak} days`}
           accessibilityRole="text"
         >
-          {dayLabels.map((label, i) => {
-            const isActive = i >= 7 - activeDays;
-            const isToday = i === 6;
-            return (
-              <View key={i} style={st.streakDayCol}>
-                <View
-                  style={[
-                    st.streakDot,
-                    isActive && st.streakDotActive,
-                    isToday && completedToday && st.streakDotToday,
-                  ]}
-                >
-                  {isActive && <View style={st.streakDotInner} />}
-                </View>
-                <Text style={[st.streakDayLabel, isToday && st.streakDayLabelToday]}>{label}</Text>
-              </View>
-            );
-          })}
+          {Array.from({ length: 7 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                st.streakBar,
+                i < activeDays
+                  ? { backgroundColor: colors.primaryOrange }
+                  : { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+              ]}
+            />
+          ))}
         </View>
       </View>
 
@@ -371,38 +355,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
 };
 
 /* ────────────────────────────────────────────────────────────
- * 3 ─ Time Range Selector (pill tabs)
- * ──────────────────────────────────────────────────────────── */
-
-const TIME_RANGES: { key: TimeRange; label: string }[] = [
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
-  { key: 'quarter', label: 'Quarter' },
-];
-
-const TimeRangeSelector: React.FC<{ value: TimeRange; onChange: (v: TimeRange) => void }> = ({
-  value,
-  onChange,
-}) => (
-  <View style={st.timeRangeContainer}>
-    {TIME_RANGES.map((range) => {
-      const active = value === range.key;
-      return (
-        <TouchableOpacity
-          key={range.key}
-          style={[st.timeRangePill, active && st.timeRangePillActive]}
-          onPress={() => onChange(range.key)}
-          activeOpacity={0.7}
-        >
-          <Text style={[st.timeRangeText, active && st.timeRangeTextActive]}>{range.label}</Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-);
-
-/* ────────────────────────────────────────────────────────────
- * 4 ─ Stats Overview Row (3 metrics horizontal)
+ * 3 ─ Stats Overview Row (3 metrics horizontal)
  * ──────────────────────────────────────────────────────────── */
 
 const StatsOverviewRow: React.FC<{ studyStats: StudyStats }> = ({ studyStats }) => (
@@ -457,6 +410,13 @@ const ScoreChart: React.FC<{ scoreHistory: ScoreHistoryEntry[]; passingScore?: n
   scoreHistory,
   passingScore = 72,
 }) => {
+  const [innerWidth, setInnerWidth] = React.useState(0);
+  const onLayout = React.useCallback(
+    (e: { nativeEvent: { layout: { width: number } } }) =>
+      setInnerWidth(e.nativeEvent.layout.width),
+    [],
+  );
+
   if (scoreHistory.length === 0) {
     return (
       <View style={st.chartCard}>
@@ -490,29 +450,36 @@ const ScoreChart: React.FC<{ scoreHistory: ScoreHistoryEntry[]; passingScore?: n
   const trend = calculateTrend(scoreHistory);
   const latestScore = scoreHistory[scoreHistory.length - 1]?.score ?? 0;
 
-  const screenWidth = Dimensions.get('window').width;
-  const padRight = 8;
-  const chartWidth = screenWidth - GAP * 2 - CARD_PAD * 2 - Y_AXIS_W - padRight;
-  const padTop = 8;
-  const padBot = 22;
-  const svgW = chartWidth + Y_AXIS_W + padRight;
+  // Derive chart dimensions from the measured card inner width (no Dimensions.get guessing)
+  const padRight = 6;
+  const chartWidth = innerWidth > 0 ? innerWidth - Y_AXIS_W - padRight : 0;
+  const padTop = 12;
+  const padBot = 24;
+  const svgW = innerWidth;
   const svgH = CHART_HEIGHT + padTop + padBot;
 
-  const points = scoreHistory.map((entry, i) => ({
-    x: Y_AXIS_W + (i / (scoreHistory.length - 1)) * chartWidth,
-    y: padTop + CHART_HEIGHT - (entry.score / 100) * CHART_HEIGHT,
-    score: entry.score,
-    passed: entry.passed,
-    date: entry.date,
-  }));
+  const points =
+    chartWidth > 0
+      ? scoreHistory.map((entry, i) => ({
+          x: Y_AXIS_W + (i / (scoreHistory.length - 1)) * chartWidth,
+          y: padTop + CHART_HEIGHT - (entry.score / 100) * CHART_HEIGHT,
+          score: entry.score,
+          passed: entry.passed,
+          date: entry.date,
+        }))
+      : [];
 
-  const linePath = buildSmoothPath(points);
+  const linePath = points.length > 1 ? buildSmoothPath(points) : '';
   const areaBottom = padTop + CHART_HEIGHT;
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${areaBottom} L ${points[0].x} ${areaBottom} Z`;
+  const areaPath =
+    points.length > 1
+      ? `${linePath} L ${points[points.length - 1].x} ${areaBottom} L ${points[0].x} ${areaBottom} Z`
+      : '';
   const passY = padTop + CHART_HEIGHT - (passingScore / 100) * CHART_HEIGHT;
 
   return (
     <View style={st.chartCard}>
+      {/* Header */}
       <View style={st.chartHeader}>
         <Text style={st.sectionLabel}>Score Trend</Text>
         <View style={st.trendBadge}>
@@ -537,121 +504,139 @@ const ScoreChart: React.FC<{ scoreHistory: ScoreHistoryEntry[]; passingScore?: n
         </View>
       </View>
 
-      <Svg width={svgW} height={svgH}>
-        <Defs>
-          <SvgGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.primaryOrange} stopOpacity="0.25" />
-            <Stop offset="1" stopColor={colors.primaryOrange} stopOpacity="0" />
-          </SvgGradient>
-        </Defs>
+      {/* Inner wrapper — onLayout fires AFTER card padding, giving exact drawable width */}
+      <View onLayout={onLayout} style={st.chartSvgArea}>
+      {innerWidth > 0 && points.length > 0 && (
+        <Svg width={svgW} height={svgH}>
+          <Defs>
+            <SvgGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={colors.primaryOrange} stopOpacity="0.2" />
+              <Stop offset="1" stopColor={colors.primaryOrange} stopOpacity="0" />
+            </SvgGradient>
+          </Defs>
 
-        {/* Grid lines + Y labels */}
-        {GRID_STEPS.map((val) => {
-          const gy = padTop + CHART_HEIGHT - (val / 100) * CHART_HEIGHT;
-          return (
-            <React.Fragment key={val}>
-              <SvgLine
-                x1={Y_AXIS_W}
-                y1={gy}
-                x2={svgW}
-                y2={gy}
-                stroke={colors.borderDefault}
-                strokeWidth={1}
-                strokeOpacity={0.5}
-              />
-              <SvgText
-                x={Y_AXIS_W - 4}
-                y={gy + 3.5}
-                fill={colors.textMuted}
-                fontSize={9}
-                fontWeight="500"
-                textAnchor="end"
-              >
-                {val}
-              </SvgText>
-            </React.Fragment>
-          );
-        })}
+          {/* Grid lines + Y labels */}
+          {GRID_STEPS.map((val) => {
+            const gy = padTop + CHART_HEIGHT - (val / 100) * CHART_HEIGHT;
+            return (
+              <React.Fragment key={val}>
+                <SvgLine
+                  x1={Y_AXIS_W}
+                  y1={gy}
+                  x2={svgW - padRight}
+                  y2={gy}
+                  stroke={colors.borderDefault}
+                  strokeWidth={1}
+                  strokeOpacity={0.5}
+                />
+                <SvgText
+                  x={Y_AXIS_W - 4}
+                  y={gy + 3.5}
+                  fill={colors.textMuted}
+                  fontSize={9}
+                  fontWeight="500"
+                  textAnchor="end"
+                >
+                  {val}
+                </SvgText>
+              </React.Fragment>
+            );
+          })}
 
-        {/* Passing score dashed line */}
-        <SvgLine
-          x1={Y_AXIS_W}
-          y1={passY}
-          x2={svgW}
-          y2={passY}
-          stroke={colors.primaryOrange}
-          strokeWidth={1}
-          strokeDasharray="4,4"
-          strokeOpacity={0.5}
-        />
-        <SvgText
-          x={svgW}
-          y={passY - 4}
-          fill={colors.primaryOrange}
-          fontSize={8}
-          fontWeight="600"
-          textAnchor="end"
-        >
-          Pass {passingScore}%
-        </SvgText>
-
-        {/* Gradient area */}
-        <Path d={areaPath} fill="url(#areaFill)" />
-
-        {/* Smooth line */}
-        <Path
-          d={linePath}
-          stroke={colors.primaryOrange}
-          strokeWidth={2.5}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Data dots */}
-        {points.map((pt, i) => (
-          <SvgCircle
-            key={i}
-            cx={pt.x}
-            cy={pt.y}
-            r={DOT_R}
-            fill={pt.passed ? colors.success : colors.error}
-            stroke={colors.surface}
-            strokeWidth={2}
+          {/* Passing score dashed line */}
+          <SvgLine
+            x1={Y_AXIS_W}
+            y1={passY}
+            x2={svgW - padRight}
+            y2={passY}
+            stroke={colors.primaryOrange}
+            strokeWidth={1}
+            strokeDasharray="4,4"
+            strokeOpacity={0.6}
           />
-        ))}
+          <SvgText
+            x={svgW - padRight - 2}
+            y={passY - 4}
+            fill={colors.primaryOrange}
+            fontSize={8}
+            fontWeight="600"
+            textAnchor="end"
+          >
+            Pass {passingScore}%
+          </SvgText>
 
-        {/* X-axis labels */}
-        {points.map((pt, i) => {
-          if (points.length > 5 && i > 0 && i < points.length - 1 && i % 2 !== 0) return null;
-          const d = new Date(pt.date);
-          const label = `${d.getMonth() + 1}/${d.getDate()}`;
-          return (
-            <SvgText
-              key={`lbl-${i}`}
-              x={pt.x}
-              y={svgH - 3}
-              fill={colors.textMuted}
-              fontSize={8}
-              fontWeight="500"
-              textAnchor="middle"
-            >
-              {label}
-            </SvgText>
-          );
-        })}
-      </Svg>
+          {/* Gradient area */}
+          <Path d={areaPath} fill="url(#areaFill)" />
 
-      <View style={st.latestRow}>
-        <Text style={st.latestLabel}>Latest Score</Text>
-        <Text
-          style={[
-            st.latestValue,
-            { color: latestScore >= passingScore ? colors.success : colors.error },
-          ]}
-        >
-          {latestScore}%
-        </Text>
+          {/* Smooth line */}
+          <Path
+            d={linePath}
+            stroke={colors.primaryOrange}
+            strokeWidth={2.5}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Data dots */}
+          {points.map((pt, i) => (
+            <SvgCircle
+              key={i}
+              cx={pt.x}
+              cy={pt.y}
+              r={DOT_R}
+              fill={pt.passed ? colors.success : colors.error}
+              stroke={colors.surface}
+              strokeWidth={2}
+            />
+          ))}
+
+          {/* X-axis date labels */}
+          {points.map((pt, i) => {
+            if (points.length > 5 && i > 0 && i < points.length - 1 && i % 2 !== 0) return null;
+            const d = new Date(pt.date);
+            const label = `${d.getMonth() + 1}/${d.getDate()}`;
+            return (
+              <SvgText
+                key={`lbl-${i}`}
+                x={pt.x}
+                y={svgH - 3}
+                fill={colors.textMuted}
+                fontSize={8}
+                fontWeight="500"
+                textAnchor="middle"
+              >
+                {label}
+              </SvgText>
+            );
+          })}
+        </Svg>
+      )}
+      </View>
+
+      {/* Footer: legend + latest score */}
+      <View style={st.chartFooter}>
+        <View style={st.chartLegend}>
+          <View style={st.legendItem}>
+            <View style={[st.legendDot, { backgroundColor: colors.success }]} />
+            <Text style={st.legendText}>Pass</Text>
+          </View>
+          <View style={st.legendItem}>
+            <View style={[st.legendDot, { backgroundColor: colors.error }]} />
+            <Text style={st.legendText}>Fail</Text>
+          </View>
+        </View>
+        <View style={st.latestScoreBlock}>
+          <Text style={st.latestLabel}>Latest</Text>
+          <Text
+            style={[
+              st.latestValue,
+              { color: latestScore >= passingScore ? colors.success : colors.error },
+            ]}
+          >
+            {latestScore}%
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -950,21 +935,6 @@ const st = StyleSheet.create({
   },
   summaryProgressFill: { height: '100%', borderRadius: 2 },
 
-  /* ── Time Range Selector ── */
-  timeRangeContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: GAP,
-    borderWidth: 1,
-    borderColor: colors.borderDefault,
-  },
-  timeRangePill: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  timeRangePillActive: { backgroundColor: colors.primaryOrange },
-  timeRangeText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  timeRangeTextActive: { color: colors.textHeading },
-
   /* ── Stats Overview Row ── */
   overviewRow: {
     flexDirection: 'row',
@@ -1007,7 +977,8 @@ const st = StyleSheet.create({
   },
   trendBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trendText: { fontSize: 11, fontWeight: '600' },
-  latestRow: {
+  chartSvgArea: { alignSelf: 'stretch' },
+  chartFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1016,7 +987,12 @@ const st = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderDefault,
   },
-  latestLabel: { fontSize: 12, color: colors.textBody },
+  chartLegend: { flexDirection: 'row', gap: 12 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: { width: 7, height: 7, borderRadius: 4 },
+  legendText: { fontSize: 11, color: colors.textMuted, fontWeight: '500' },
+  latestScoreBlock: { alignItems: 'flex-end' },
+  latestLabel: { fontSize: 11, color: colors.textMuted },
   latestValue: { fontSize: 17, fontWeight: 'bold' },
   chartEmpty: { alignItems: 'center', paddingVertical: 28, gap: 10 },
   chartEmptyText: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
@@ -1144,6 +1120,15 @@ const st = StyleSheet.create({
   practiceButtonText: { color: colors.textHeading, fontWeight: '600', fontSize: 12 },
 
   /* ── Streak (inside left summary card) ── */
+  streakFlameCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 153, 0, 0.08)',
+  },
   streakBest: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1163,64 +1148,22 @@ const st = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 4,
-    marginTop: 0,
-    marginBottom: 4,
-  },
-  streakLabelCol: {
-    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 10,
   },
   streakSubLabel: {
     fontSize: 12,
     fontWeight: '500',
     color: colors.textMuted,
   },
-  streakDoneLabel: {
-    fontSize: 9,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  streakDotsRow: {
+  streakBarsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    marginTop: 2,
+    gap: 4,
   },
-  streakDayCol: {
-    alignItems: 'center',
-    gap: 3,
-  },
-  streakDot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    borderWidth: 1.5,
-    borderColor: colors.borderDefault,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  streakDotActive: {
-    borderColor: colors.primaryOrange,
-    backgroundColor: 'rgba(255,153,0,0.15)',
-  },
-  streakDotToday: {
-    borderColor: colors.success,
-    backgroundColor: 'rgba(16,185,129,0.15)',
-  },
-  streakDotInner: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.primaryOrange,
-  },
-  streakDayLabel: {
-    fontSize: 8,
-    fontWeight: '500',
-    color: colors.textMuted,
-  },
-  streakDayLabelToday: {
-    color: colors.primaryOrange,
-    fontWeight: '700',
+  streakBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
   },
 });
 

@@ -12,6 +12,8 @@ import { AuthModule } from './auth/auth.module';
 import { ExamAttemptModule } from './exam-attempts/exam-attempt.module';
 import { SyncModule } from './sync/sync.module';
 import { IntegrityModule } from './integrity/integrity.module';
+import { UserStatsModule } from './user-stats/user-stats.module';
+import { UserStreakModule } from './user-streak/user-streak.module';
 import {
   RequestLoggerMiddleware,
   RateLimitMiddleware,
@@ -23,6 +25,7 @@ import {
   corsConfig,
   authConfig,
   playIntegrityConfig,
+  s3Config,
 } from './config';
 
 @Module({
@@ -37,6 +40,7 @@ import {
         corsConfig,
         authConfig,
         playIntegrityConfig,
+        s3Config,
       ],
     }),
     ServeStaticModule.forRoot({
@@ -44,6 +48,7 @@ import {
       serveRoot: '/portal',
       serveStaticOptions: {
         index: ['index.html'],
+        decorateReply: true,
       },
     }),
     PrismaModule,
@@ -53,6 +58,8 @@ import {
     ExamAttemptModule,
     SyncModule,
     IntegrityModule,
+    UserStatsModule,
+    UserStreakModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

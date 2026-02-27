@@ -54,6 +54,7 @@ interface ApiQuestion {
   options: Array<{ id: string; text: string }>;
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: unknown[] | null;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -288,6 +289,7 @@ const upsertQuestions = async (
       options: JSON.stringify(q.options),
       correctAnswers: JSON.stringify(q.correctAnswers),
       explanation: q.explanation,
+      explanationBlocks: q.explanationBlocks ? JSON.stringify(q.explanationBlocks) : null,
       version: q.version,
       createdAt: q.createdAt,
       updatedAt: q.updatedAt,
@@ -298,7 +300,7 @@ const upsertQuestions = async (
         `UPDATE Question SET 
           text = ?, type = ?, domain = ?, difficulty = ?,
           options = ?, correctAnswers = ?, explanation = ?,
-          version = ?, createdAt = ?, updatedAt = ?
+          explanationBlocks = ?, version = ?, createdAt = ?, updatedAt = ?
         WHERE id = ?`,
         [
           row.text,
@@ -308,6 +310,7 @@ const upsertQuestions = async (
           row.options,
           row.correctAnswers,
           row.explanation,
+          row.explanationBlocks,
           row.version,
           row.createdAt,
           row.updatedAt,
@@ -318,8 +321,8 @@ const upsertQuestions = async (
     } else {
       await db.runAsync(
         `INSERT INTO Question 
-          (id, text, type, domain, difficulty, options, correctAnswers, explanation, version, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, text, type, domain, difficulty, options, correctAnswers, explanation, explanationBlocks, version, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           row.id,
           row.text,
@@ -329,6 +332,7 @@ const upsertQuestions = async (
           row.options,
           row.correctAnswers,
           row.explanation,
+          row.explanationBlocks,
           row.version,
           row.createdAt,
           row.updatedAt,

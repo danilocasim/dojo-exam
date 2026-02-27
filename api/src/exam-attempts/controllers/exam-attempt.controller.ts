@@ -11,6 +11,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsISO8601, Min, Max } from 'class-validator';
 import { ExamAttemptService } from '../services/exam-attempt.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -19,11 +21,30 @@ import { LoggingInterceptor } from '../../common/interceptors/logging.intercepto
 // === DTOs ===
 
 export class SubmitExamAttemptDto {
+  @IsString()
   examTypeId: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
   score: number;
+
+  @IsBoolean()
   passed: boolean;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   duration: number; // Seconds
-  submittedAt?: Date;
+
+  @IsOptional()
+  @IsISO8601()
+  submittedAt?: string; // ISO string from client; controller/service will coerce to Date
+
+  @IsOptional()
+  @IsString()
+  localId?: string; // Client-generated UUID for idempotent retries
 }
 
 export class ExamAttemptResponse {
@@ -90,7 +111,7 @@ export class ExamAttemptController {
       score: dto.score,
       passed: dto.passed,
       duration: dto.duration,
-      submittedAt: dto.submittedAt,
+      submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : undefined,
     });
 
     return this.mapToResponse(attempt);
@@ -125,7 +146,8 @@ export class ExamAttemptController {
       score: dto.score,
       passed: dto.passed,
       duration: dto.duration,
-      submittedAt: dto.submittedAt,
+      submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : undefined,
+      localId: dto.localId,
     });
 
     return this.mapToResponse(attempt);

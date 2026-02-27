@@ -1,0 +1,55 @@
+/* NativeWind global styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom utility classes */
+@layer utilities {
+  /* Text styles */
+  .text-heading {
+    @apply text-2xl font-bold text-secondary-900;
+  }
+
+  .text-subheading {
+    @apply text-lg font-semibold text-secondary-700;
+  }
+
+  .text-body {
+    @apply text-base text-secondary-600;
+  }
+
+  .text-caption {
+    @apply text-sm text-secondary-500;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-primary-500 rounded-button px-6 py-3;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-200 rounded-button px-6 py-3;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-card p-4 shadow-sm;
+  }
+
+  /* Option button states */
+  .option-default {
+    @apply border-2 border-secondary-200 bg-white rounded-lg p-4;
+  }
+
+  .option-selected {
+    @apply border-2 border-primary-500 bg-primary-50 rounded-lg p-4;
+  }
+
+  .option-correct {
+    @apply border-2 border-success bg-green-50 rounded-lg p-4;
+  }
+
+  .option-incorrect {
+    @apply border-2 border-error bg-red-50 rounded-lg p-4;
+  }
+}

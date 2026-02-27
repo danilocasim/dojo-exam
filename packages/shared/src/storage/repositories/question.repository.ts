@@ -15,6 +15,7 @@ const rowToQuestion = (row: QuestionRow): Question => ({
   options: JSON.parse(row.options) as QuestionOption[],
   correctAnswers: JSON.parse(row.correctAnswers) as string[],
   explanation: row.explanation,
+  explanationBlocks: row.explanationBlocks ? JSON.parse(row.explanationBlocks) : null,
   version: row.version,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -32,6 +33,7 @@ const questionToRow = (question: Question): QuestionRow => ({
   options: JSON.stringify(question.options),
   correctAnswers: JSON.stringify(question.correctAnswers),
   explanation: question.explanation,
+  explanationBlocks: question.explanationBlocks ? JSON.stringify(question.explanationBlocks) : null,
   version: question.version,
   createdAt: question.createdAt,
   updatedAt: question.updatedAt,
@@ -152,8 +154,8 @@ export const insertQuestion = async (question: Question): Promise<void> => {
   const row = questionToRow(question);
   await db.runAsync(
     `INSERT INTO Question 
-      (id, text, type, domain, difficulty, options, correctAnswers, explanation, version, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, text, type, domain, difficulty, options, correctAnswers, explanation, explanationBlocks, version, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       row.id,
       row.text,
@@ -163,6 +165,7 @@ export const insertQuestion = async (question: Question): Promise<void> => {
       row.options,
       row.correctAnswers,
       row.explanation,
+      row.explanationBlocks,
       row.version,
       row.createdAt,
       row.updatedAt,
@@ -180,7 +183,7 @@ export const updateQuestion = async (question: Question): Promise<void> => {
     `UPDATE Question SET 
       text = ?, type = ?, domain = ?, difficulty = ?,
       options = ?, correctAnswers = ?, explanation = ?,
-      version = ?, createdAt = ?, updatedAt = ?
+      explanationBlocks = ?, version = ?, createdAt = ?, updatedAt = ?
     WHERE id = ?`,
     [
       row.text,
@@ -190,6 +193,7 @@ export const updateQuestion = async (question: Question): Promise<void> => {
       row.options,
       row.correctAnswers,
       row.explanation,
+      row.explanationBlocks,
       row.version,
       row.createdAt,
       row.updatedAt,
@@ -206,8 +210,8 @@ export const upsertQuestion = async (question: Question): Promise<void> => {
   const row = questionToRow(question);
   await db.runAsync(
     `INSERT OR REPLACE INTO Question 
-      (id, text, type, domain, difficulty, options, correctAnswers, explanation, version, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, text, type, domain, difficulty, options, correctAnswers, explanation, explanationBlocks, version, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       row.id,
       row.text,
@@ -217,6 +221,7 @@ export const upsertQuestion = async (question: Question): Promise<void> => {
       row.options,
       row.correctAnswers,
       row.explanation,
+      row.explanationBlocks,
       row.version,
       row.createdAt,
       row.updatedAt,

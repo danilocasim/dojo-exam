@@ -1,12 +1,13 @@
 // SQLite database initialization
-// Supports per-user database files for multi-account data isolation
+// Supports per-user, per-exam-type database files for data isolation
 import * as SQLite from 'expo-sqlite';
+import { EXAM_TYPE_ID } from '../config';
 
 // Database instance (singleton per active session)
 let db: SQLite.SQLiteDatabase | null = null;
 
-// Default anonymous database name
-const ANONYMOUS_DB = 'dojoexam.db';
+// Default anonymous database name (includes exam type for multi-app isolation)
+const ANONYMOUS_DB = `dojoexam_${EXAM_TYPE_ID.toLowerCase().replace(/[^a-z0-9]/g, '_')}.db`;
 
 // Current active database name
 let currentDbName = ANONYMOUS_DB;
@@ -21,8 +22,10 @@ const sanitizeEmail = (email: string): string => email.toLowerCase().replace(/[^
  * Get the database filename for a given user email.
  * Returns the anonymous DB name if email is null.
  */
+const examTypeSlug = EXAM_TYPE_ID.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
 const getDbNameForUser = (email: string | null): string =>
-  email ? `dojoexam_${sanitizeEmail(email)}.db` : ANONYMOUS_DB;
+  email ? `dojoexam_${examTypeSlug}_${sanitizeEmail(email)}.db` : ANONYMOUS_DB;
 
 /**
  * Get the current active database name (for debugging).
@@ -62,6 +65,7 @@ export const initializeDatabase = async (): Promise<void> => {
       options TEXT NOT NULL,
       correctAnswers TEXT NOT NULL,
       explanation TEXT NOT NULL,
+      explanationBlocks TEXT,
       version INTEGER NOT NULL DEFAULT 1,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
@@ -70,6 +74,15 @@ export const initializeDatabase = async (): Promise<void> => {
     CREATE INDEX IF NOT EXISTS idx_question_difficulty ON Question(difficulty);
     CREATE INDEX IF NOT EXISTS idx_question_version ON Question(version);
   `);
+
+  // Migration: add explanationBlocks column for existing databases
+  try {
+    await database.execAsync(`
+      ALTER TABLE Question ADD COLUMN explanationBlocks TEXT;
+    `);
+  } catch {
+    // Column already exists — ignore
+  }
 
   // Create ExamAttempt table
   await database.execAsync(`
@@ -101,12 +114,20 @@ export const initializeDatabase = async (): Promise<void> => {
       createdAt TEXT NOT NULL,
       syncStatus TEXT NOT NULL CHECK (syncStatus IN ('PENDING', 'SYNCED', 'FAILED')) DEFAULT 'PENDING',
       syncRetries INTEGER NOT NULL DEFAULT 0,
-      syncedAt TEXT
+      syncedAt TEXT,
+      localId TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_submission_exam_type ON ExamSubmission(examTypeId);
     CREATE INDEX IF NOT EXISTS idx_submission_sync_status ON ExamSubmission(syncStatus);
     CREATE INDEX IF NOT EXISTS idx_submission_submitted_at ON ExamSubmission(submittedAt);
   `);
+
+  // Migration: add localId column to existing databases (idempotency key for cloud sync)
+  try {
+    await database.execAsync(`ALTER TABLE ExamSubmission ADD COLUMN localId TEXT;`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   // Create ExamAnswer table
   await database.execAsync(`
@@ -327,8 +348,8 @@ export const importUserData = async (data: UserDataExport): Promise<void> => {
   // Import ExamSubmissions
   for (const row of data.examSubmissions) {
     await database.runAsync(
-      `INSERT OR IGNORE INTO ExamSubmission (id, userId, examTypeId, score, passed, duration, submittedAt, createdAt, syncStatus, syncRetries, syncedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO ExamSubmission (id, userId, examTypeId, score, passed, duration, submittedAt, createdAt, syncStatus, syncRetries, syncedAt, localId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id,
         row.userId,
@@ -341,6 +362,7 @@ export const importUserData = async (data: UserDataExport): Promise<void> => {
         row.syncStatus,
         row.syncRetries,
         row.syncedAt,
+        row.localId ?? null,
       ],
     );
   }

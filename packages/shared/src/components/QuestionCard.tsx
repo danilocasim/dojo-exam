@@ -1,8 +1,11 @@
 // T043: QuestionCard component with option selection
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Lightbulb, CheckCircle2, XCircle } from 'lucide-react-native';
+import { Lightbulb, CheckCircle2, XCircle, Maximize2 } from 'lucide-react-native';
 import { Question, QuestionOption, QuestionType } from '../storage/schema';
+import { RichExplanation, ExplanationBlock } from './RichExplanation';
+import { ExplanationModal } from './ExplanationModal';
+import { ImageViewer } from './ImageViewer';
 
 export interface QuestionCardProps {
   question: Question;
@@ -226,18 +229,81 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
         {/* Explanation */}
         {showResult && showExplanation && question.explanation && (
-          <View style={styles.explanationBox}>
-            <View style={styles.explanationHeader}>
-              <View style={styles.explanationIcon}>
-                <Lightbulb size={16} color={colors.primaryOrange} strokeWidth={2} />
-              </View>
-              <Text style={styles.explanationLabel}>Explanation</Text>
-            </View>
-            <Text style={styles.explanationText}>{question.explanation}</Text>
-          </View>
+          <ExplanationSection
+            explanation={question.explanation}
+            explanationBlocks={(question as any).explanationBlocks}
+          />
         )}
       </View>
     </ScrollView>
+  );
+};
+
+/**
+ * ExplanationSection — explanation with rich text + full-screen expand
+ */
+const ExplanationSection: React.FC<{
+  explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
+}> = ({ explanation, explanationBlocks }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [imageViewer, setImageViewer] = useState<{
+    visible: boolean;
+    uri: string;
+    alt?: string;
+  }>({ visible: false, uri: '' });
+
+  const handleOpenModal = useCallback(() => setModalVisible(true), []);
+  const handleCloseModal = useCallback(() => setModalVisible(false), []);
+  const handleImagePress = useCallback((uri: string, alt?: string) => {
+    setImageViewer({ visible: true, uri, alt });
+  }, []);
+  const handleImageViewerClose = useCallback(() => {
+    setImageViewer({ visible: false, uri: '' });
+  }, []);
+
+  return (
+    <>
+      <View style={styles.explanationBox}>
+        <View style={styles.explanationHeader}>
+          <View style={styles.explanationHeaderLeft}>
+            <View style={styles.explanationIcon}>
+              <Lightbulb size={16} color={colors.primaryOrange} strokeWidth={2} />
+            </View>
+            <Text style={styles.explanationLabel}>Explanation</Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleOpenModal}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="View explanation full screen"
+          >
+            <Maximize2 size={16} color={colors.primaryOrange} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+        <RichExplanation
+          explanation={explanation}
+          explanationBlocks={explanationBlocks}
+          textStyle={styles.explanationText}
+          onImagePress={handleImagePress}
+        />
+      </View>
+
+      <ExplanationModal
+        visible={modalVisible}
+        explanation={explanation}
+        explanationBlocks={explanationBlocks}
+        onClose={handleCloseModal}
+      />
+
+      <ImageViewer
+        visible={imageViewer.visible}
+        uri={imageViewer.uri}
+        alt={imageViewer.alt}
+        onClose={handleImageViewerClose}
+      />
+    </>
   );
 };
 
@@ -342,7 +408,12 @@ const styles = StyleSheet.create({
   explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  explanationHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   explanationIcon: {
     marginRight: 10,

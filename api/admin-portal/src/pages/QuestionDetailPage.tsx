@@ -15,107 +15,516 @@ export function QuestionDetailPage() {
   const [actionLoading, setActionLoading] = useState('');
   const [isEditing, setIsEditing] = useState(!id);
 
-  useEffect(() => { if (!id) return; setLoading(true); api.getQuestion(id).then(setQuestion).catch(() => navigate('/questions')).finally(() => setLoading(false)); }, [id, navigate]);
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    api
+      .getQuestion(id)
+      .then(setQuestion)
+      .catch(() => navigate('/questions'))
+      .finally(() => setLoading(false));
+  }, [id, navigate]);
 
-  const handleCreate = useCallback(async (input: QuestionInput) => { await api.createQuestion(input); navigate('/questions'); }, [navigate]);
-  const handleUpdate = useCallback(async (input: QuestionInput) => { if (!id) return; const u = await api.updateQuestion(id, input); setQuestion(u); setIsEditing(false); }, [id]);
+  const handleCreate = useCallback(
+    async (input: QuestionInput) => {
+      await api.createQuestion(input);
+      navigate('/questions');
+    },
+    [navigate],
+  );
+  const handleUpdate = useCallback(
+    async (input: QuestionInput) => {
+      if (!id) return;
+      const u = await api.updateQuestion(id, input);
+      setQuestion(u);
+      setIsEditing(false);
+    },
+    [id],
+  );
 
-  const handleAction = useCallback(async (action: 'approve' | 'archive' | 'restore') => {
-    if (!id) return; setActionLoading(action);
-    try { const fns = { approve: api.approveQuestion, archive: api.archiveQuestion, restore: api.restoreQuestion }; const u = await fns[action](id); setQuestion(u); } catch (err) { alert(err instanceof Error ? err.message : 'Action failed'); } finally { setActionLoading(''); }
-  }, [id]);
+  const handleAction = useCallback(
+    async (action: 'approve' | 'archive' | 'restore') => {
+      if (!id) return;
+      setActionLoading(action);
+      try {
+        const fns = {
+          approve: api.approveQuestion,
+          archive: api.archiveQuestion,
+          restore: api.restoreQuestion,
+        };
+        const u = await fns[action](id);
+        setQuestion(u);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Action failed');
+      } finally {
+        setActionLoading('');
+      }
+    },
+    [id],
+  );
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: colors.subtle }}>Loading...</div>;
+  if (loading)
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: colors.subtle }}>
+        Loading...
+      </div>
+    );
 
   // Create mode
-  if (!id) return (
-    <div>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.heading, marginBottom: 16 }}>New Question</h1>
-      <QuestionForm examTypes={examTypes} selectedExamType={selectedExamType} onSubmit={handleCreate} onCancel={() => navigate('/questions')} submitLabel="Create Question" />
-    </div>
-  );
+  if (!id)
+    return (
+      <div>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: colors.heading,
+            marginBottom: 16,
+          }}
+        >
+          New Question
+        </h1>
+        <QuestionForm
+          examTypes={examTypes}
+          selectedExamType={selectedExamType}
+          onSubmit={handleCreate}
+          onCancel={() => navigate('/questions')}
+          submitLabel="Create Question"
+        />
+      </div>
+    );
 
   // Edit mode
-  if (isEditing && question) return (
-    <div>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.heading, marginBottom: 16 }}>Edit Question</h1>
-      <QuestionForm examTypes={examTypes} selectedExamType={selectedExamType} initialValues={{ examTypeId: question.examTypeId, text: question.text, type: question.type as QuestionInput['type'], domain: question.domain, difficulty: question.difficulty as QuestionInput['difficulty'], options: question.options, correctAnswers: question.correctAnswers, explanation: question.explanation }} onSubmit={handleUpdate} onCancel={() => setIsEditing(false)} submitLabel="Save Changes" />
-    </div>
-  );
+  if (isEditing && question)
+    return (
+      <div>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: colors.heading,
+            marginBottom: 16,
+          }}
+        >
+          Edit Question
+        </h1>
+        <QuestionForm
+          examTypes={examTypes}
+          selectedExamType={selectedExamType}
+          initialValues={{
+            examTypeId: question.examTypeId,
+            text: question.text,
+            type: question.type as QuestionInput['type'],
+            domain: question.domain,
+            difficulty: question.difficulty as QuestionInput['difficulty'],
+            options: question.options,
+            correctAnswers: question.correctAnswers,
+            explanation: question.explanation,
+            explanationBlocks: question.explanationBlocks,
+          }}
+          onSubmit={handleUpdate}
+          onCancel={() => setIsEditing(false)}
+          submitLabel="Save Changes"
+        />
+      </div>
+    );
 
   if (!question) return null;
 
   const STATUS_MAP: Record<string, { bg: string; text: string }> = {
-    DRAFT: colors.draft, PENDING: colors.pending, APPROVED: colors.approved, ARCHIVED: colors.archived,
+    DRAFT: colors.draft,
+    PENDING: colors.pending,
+    APPROVED: colors.approved,
+    ARCHIVED: colors.archived,
   };
   const sc = STATUS_MAP[question.status] || STATUS_MAP.DRAFT;
-  const DIFF_COLOR: Record<string, string> = { EASY: colors.easy, MEDIUM: colors.medium, HARD: colors.hard };
+  const DIFF_COLOR: Record<string, string> = {
+    EASY: colors.easy,
+    MEDIUM: colors.medium,
+    HARD: colors.hard,
+  };
 
-  const btnBase: React.CSSProperties = { padding: '8px 18px', borderRadius: radius.sm, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: 'none' };
+  const btnBase: React.CSSProperties = {
+    padding: '8px 18px',
+    borderRadius: radius.sm,
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    border: 'none',
+  };
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-        <button onClick={() => navigate('/questions')} style={{ background: 'none', border: 'none', color: colors.primary, cursor: 'pointer', fontSize: 14, padding: 0, fontWeight: 500 }}>{'\u2190'} Back</button>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 10,
+        }}
+      >
+        <button
+          onClick={() => navigate('/questions')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: colors.primary,
+            cursor: 'pointer',
+            fontSize: 14,
+            padding: 0,
+            fontWeight: 500,
+          }}
+        >
+          {'\u2190'} Back
+        </button>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {(question.status === 'DRAFT' || question.status === 'PENDING') && (
-            <button onClick={() => setIsEditing(true)} style={{ ...btnBase, background: colors.surfaceHover, color: colors.body, border: `1px solid ${colors.border}` }}>Edit</button>
+          {['DRAFT', 'PENDING', 'APPROVED'].includes(question.status) && (
+            <button
+              onClick={() => setIsEditing(true)}
+              style={{
+                ...btnBase,
+                background: colors.surfaceHover,
+                color: colors.body,
+                border: `1px solid ${colors.border}`,
+              }}
+            >
+              Edit
+            </button>
           )}
-          {question.status === 'PENDING' && (
-            <button onClick={() => handleAction('approve')} disabled={!!actionLoading} style={{ ...btnBase, background: colors.success, color: '#fff' }}>{actionLoading === 'approve' ? '...' : '\u2713 Approve'}</button>
+          {(question.status === 'PENDING' || question.status === 'DRAFT') && (
+            <button
+              onClick={() => handleAction('approve')}
+              disabled={!!actionLoading}
+              style={{ ...btnBase, background: colors.success, color: '#fff' }}
+            >
+              {actionLoading === 'approve' ? '...' : '\u2713 Approve'}
+            </button>
           )}
           {['APPROVED', 'PENDING', 'DRAFT'].includes(question.status) && (
-            <button onClick={() => handleAction('archive')} disabled={!!actionLoading} style={{ ...btnBase, background: 'transparent', border: `1px solid ${colors.error}`, color: colors.error }}>{actionLoading === 'archive' ? '...' : 'Archive'}</button>
+            <button
+              onClick={() => handleAction('archive')}
+              disabled={!!actionLoading}
+              style={{
+                ...btnBase,
+                background: 'transparent',
+                border: `1px solid ${colors.error}`,
+                color: colors.error,
+              }}
+            >
+              {actionLoading === 'archive' ? '...' : 'Archive'}
+            </button>
           )}
           {question.status === 'ARCHIVED' && (
-            <button onClick={() => handleAction('restore')} disabled={!!actionLoading} style={{ ...btnBase, background: colors.info, color: '#fff' }}>{actionLoading === 'restore' ? '...' : 'Restore'}</button>
+            <button
+              onClick={() => handleAction('restore')}
+              disabled={!!actionLoading}
+              style={{ ...btnBase, background: colors.info, color: '#fff' }}
+            >
+              {actionLoading === 'restore' ? '...' : 'Restore'}
+            </button>
           )}
         </div>
       </div>
 
-      <div style={{ background: colors.surfaceRaised, borderRadius: radius.md, padding: 24, border: `1px solid ${colors.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-          <span style={{ padding: '3px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', background: sc.bg, color: sc.text }}>{question.status}</span>
-          <span style={{ fontSize: 13, color: DIFF_COLOR[question.difficulty] || colors.muted }}>{question.difficulty}</span>
-          <span style={{ fontSize: 13, color: colors.subtle }}>{question.domain}</span>
-          <span style={{ fontSize: 13, color: colors.subtle }}>v{question.version}</span>
+      <div
+        style={{
+          background: colors.surfaceRaised,
+          borderRadius: radius.md,
+          padding: 24,
+          border: `1px solid ${colors.border}`,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 16,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span
+            style={{
+              padding: '3px 12px',
+              borderRadius: 20,
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              background: sc.bg,
+              color: sc.text,
+            }}
+          >
+            {question.status}
+          </span>
+          <span
+            style={{
+              fontSize: 13,
+              color: DIFF_COLOR[question.difficulty] || colors.muted,
+            }}
+          >
+            {question.difficulty}
+          </span>
+          <span style={{ fontSize: 13, color: colors.subtle }}>
+            {question.domain}
+          </span>
+          <span style={{ fontSize: 13, color: colors.subtle }}>
+            v{question.version}
+          </span>
         </div>
 
-        <h2 style={{ fontSize: 17, fontWeight: 600, lineHeight: '1.6', color: colors.heading, marginBottom: 20 }}>{question.text}</h2>
+        <h2
+          style={{
+            fontSize: 17,
+            fontWeight: 600,
+            lineHeight: '1.6',
+            color: colors.heading,
+            marginBottom: 20,
+          }}
+        >
+          {question.text}
+        </h2>
 
         <div style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: colors.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Options</h3>
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: colors.muted,
+              marginBottom: 8,
+              textTransform: 'uppercase',
+              letterSpacing: '0.4px',
+            }}
+          >
+            Options
+          </h3>
           {question.options.map((opt) => {
             const isCorrect = question.correctAnswers.includes(opt.id);
             return (
-              <div key={opt.id} style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: radius.sm,
-                border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : colors.border}`,
-                background: isCorrect ? colors.successMuted : 'transparent', marginBottom: 6, fontSize: 14, color: colors.body,
-              }}>
-                <span style={{ fontWeight: 700, color: colors.subtle, width: 18 }}>{opt.id}</span>
+              <div
+                key={opt.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 14px',
+                  borderRadius: radius.sm,
+                  border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : colors.border}`,
+                  background: isCorrect ? colors.successMuted : 'transparent',
+                  marginBottom: 6,
+                  fontSize: 14,
+                  color: colors.body,
+                }}
+              >
+                <span
+                  style={{ fontWeight: 700, color: colors.subtle, width: 18 }}
+                >
+                  {opt.id}
+                </span>
                 <span style={{ flex: 1 }}>{opt.text}</span>
-                {isCorrect && <span style={{ color: colors.success, fontSize: 12, fontWeight: 600 }}>{'\u2713'} Correct</span>}
+                {isCorrect && (
+                  <span
+                    style={{
+                      color: colors.success,
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {'\u2713'} Correct
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: colors.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Explanation</h3>
-          <p style={{ fontSize: 14, lineHeight: '1.7', color: colors.body, background: colors.surface, padding: 14, borderRadius: radius.sm }}>{question.explanation}</p>
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: colors.muted,
+              marginBottom: 8,
+              textTransform: 'uppercase',
+              letterSpacing: '0.4px',
+            }}
+          >
+            Explanation
+          </h3>
+          <div
+            style={{
+              fontSize: 14,
+              lineHeight: '1.7',
+              color: colors.body,
+              background: colors.surface,
+              padding: 14,
+              borderRadius: radius.sm,
+            }}
+          >
+            <p style={{ margin: 0 }}>{question.explanation}</p>
+            {question.explanationBlocks &&
+              question.explanationBlocks.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: `1px solid ${colors.border}`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: colors.subtle,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.4px',
+                    }}
+                  >
+                    Rich Blocks
+                  </span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      marginTop: 8,
+                    }}
+                  >
+                    {question.explanationBlocks.map((block, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          padding: 8,
+                          borderRadius: radius.sm,
+                          border: `1px solid ${colors.border}`,
+                          background: colors.surfaceRaised,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: colors.primary,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {block.type}
+                        </span>
+                        {block.type === 'paragraph' && (
+                          <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+                            {block.content}
+                          </p>
+                        )}
+                        {block.type === 'link' && (
+                          <a
+                            href={block.content}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: colors.primary,
+                              fontSize: 13,
+                              display: 'block',
+                              marginTop: 4,
+                            }}
+                          >
+                            {block.meta?.label || block.content}
+                          </a>
+                        )}
+                        {block.type === 'image' && (
+                          <img
+                            src={block.content}
+                            alt={block.meta?.alt || ''}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: 180,
+                              marginTop: 4,
+                              borderRadius: 6,
+                              objectFit: 'contain',
+                              background: '#111827',
+                            }}
+                          />
+                        )}
+                        {block.type === 'bullet_list' && (
+                          <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+                            {(block.meta?.listItems || []).map((item, j) => (
+                              <li
+                                key={j}
+                                style={{ fontSize: 13, color: colors.body }}
+                              >
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {block.type === 'code' && (
+                          <pre
+                            style={{
+                              margin: '4px 0 0',
+                              fontSize: 12,
+                              color: colors.body,
+                              background: '#111827',
+                              padding: 8,
+                              borderRadius: 4,
+                              overflow: 'auto',
+                            }}
+                          >
+                            {block.content}
+                          </pre>
+                        )}
+                        {block.type === 'separator' && (
+                          <hr
+                            style={{
+                              border: 'none',
+                              borderTop: `1px solid ${colors.border}`,
+                              margin: '4px 0',
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, borderTop: `1px solid ${colors.border}`, paddingTop: 16 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 12,
+            borderTop: `1px solid ${colors.border}`,
+            paddingTop: 16,
+          }}
+        >
           {[
             ['Created by', question.createdBy?.name || '\u2014'],
             ['Created', new Date(question.createdAt).toLocaleString()],
-            ...(question.approvedBy ? [['Approved by', question.approvedBy.name]] : []),
-            ...(question.approvedAt ? [['Approved', new Date(question.approvedAt).toLocaleString()]] : []),
-            ...(question.archivedAt ? [['Archived', new Date(question.archivedAt).toLocaleString()]] : []),
+            ...(question.approvedBy
+              ? [['Approved by', question.approvedBy.name]]
+              : []),
+            ...(question.approvedAt
+              ? [['Approved', new Date(question.approvedAt).toLocaleString()]]
+              : []),
+            ...(question.archivedAt
+              ? [['Archived', new Date(question.archivedAt).toLocaleString()]]
+              : []),
           ].map(([label, value], i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ color: colors.subtle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</span>
+            <div
+              key={i}
+              style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            >
+              <span
+                style={{
+                  color: colors.subtle,
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                }}
+              >
+                {label}
+              </span>
               <span style={{ fontSize: 13, color: colors.body }}>{value}</span>
             </div>
           ))}

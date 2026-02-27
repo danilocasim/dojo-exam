@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Production Infrastructure**: Railway (backend), Neon PostgreSQL Serverless (database)
 - **Admin Portal**: React 18 SPA built with Vite, served by NestJS at `/portal`
 - **Testing**: Jest 30 + Supertest (API), Jest 29 + React Native Testing Library (mobile), Detox (mobile E2E)
+- **Storage**: AWS S3 (explanation images, `dojo-exam-explanations` bucket, `explanations/` prefix)
 
 ## Project Structure
 
@@ -35,7 +36,7 @@ packages/
     │   ├── screens/          # 14 UI screens (Home, Exam, Practice, Review, Upgrade, etc.)
     │   ├── components/       # 14+ reusable components (QuestionCard, Timer, etc.)
     │   ├── services/         # 18 service files (exam, sync, auth, analytics, etc.)
-    │   ├── stores/           # 7 Zustand stores (auth, exam, exam-attempt, play-integrity, etc.)
+    │   ├── stores/           # 8 Zustand stores (auth, exam, exam-attempt, play-integrity, streak, etc.)
     │   ├── storage/          # 8 SQLite repositories (offline-first)
     │   ├── config/           # Shared defaults (API_CONFIG, SYNC_CONFIG)
     │   ├── navigation/       # React Navigation root and stacks
@@ -57,6 +58,11 @@ specs/                        # Feature documentation per phase
 ## Commands
 
 ```bash
+# Root (all workspaces)
+npm test                                       # Run all workspace tests
+npm run lint                                   # Lint all workspaces
+npm run build                                  # Build all workspaces
+
 # Mobile (monorepo)
 cd apps/aws-clp && npx expo start      # Start dev server for AWS CLP app
 cd packages/shared && npm test         # Shared package unit tests
@@ -89,6 +95,7 @@ Copy `.env.example` to `.env` in `api/` and each app under `apps/` before runnin
 - `JWT_SECRET`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
 - `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth
 - `GOOGLE_CLOUD_PROJECT_NUMBER`, `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` — Play Integrity
+- `AWS_S3_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — S3 image uploads
 
 **App key variables** (`apps/aws-clp/.env`): must use `EXPO_PUBLIC_` prefix to be accessible in app code.
 - `EXPO_PUBLIC_API_URL` — Backend URL
@@ -115,6 +122,7 @@ Copy `.env.example` to `.env` in `api/` and each app under `apps/` before runnin
 - **Play Integrity**: One-time check on first launch, cached for 30 days in SQLite. Dev bypass available. Sideloaded/re-signed APKs are blocked.
 - **Monorepo (Phase 4, active)**: npm workspaces with `packages/*`, `apps/*`, `api` workspaces. All shared mobile code in `packages/shared/` (`@exam-app/shared`). Each app in `apps/{exam-id}/` is a thin wrapper (~4 lines in App.tsx) that imports `AppRoot` and passes exam-specific config. The old `mobile/` directory has been fully migrated and removed.
 - **Bundle service**: `packages/shared/src/services/bundle.service.ts` loads initial question bank from bundled JSON assets (per-app `assets/questions/` directory).
+- **S3 image uploads**: `api/src/admin/services/s3.service.ts` handles explanation image upload/delete to AWS S3 (`explanations/` prefix). Used by `UploadsController` and the `ExplanationEditor` component in the admin portal. Images are stored with content-addressed filenames (`{timestamp}-{md5hash}{ext}`). When questions are updated/deleted, old S3 images are batch-deleted.
 
 ## API Endpoints
 
@@ -134,6 +142,8 @@ PUT    /admin/exam-types/{id}                   # Update exam type
 PATCH  /admin/exam-types/{id}                   # Toggle active/inactive
 GET    /admin/questions?examTypeId=...          # List questions
 POST   /admin/questions                         # Create question (requires examTypeId)
+POST   /admin/uploads/explanation-image         # Upload image to S3 (multipart, field: "file")
+DELETE /admin/uploads/explanation-image/:filename  # Delete image from S3
 ```
 
 ## Testing Notes
@@ -156,7 +166,7 @@ POST   /admin/questions                         # Create question (requires exam
   - Phase 15 (Final Validation) — 📋 Not started (T241–T246)
 - **Phase 5** (`specs/003-play-integrity/`): Monetization — Login-Gated Free Tier + One-Time Purchase — 📋 Planned
   - Phase 16 (Login-Gated Free Tier, 15 questions) — 📋 Not started (T247–T258)
-  - Phase 17 (Play Billing One-Time Purchase) — 📋 Blocked (T259–T270, requires Play Console access)
+  - Phase 17 (Play Billing One-Time Purchase) — 📋 Ready (T259–T270, Play Console access granted)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

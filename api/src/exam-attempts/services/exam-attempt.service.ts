@@ -9,6 +9,7 @@ export interface CreateExamAttemptDto {
   passed: boolean;
   duration: number;
   submittedAt?: Date;
+  localId?: string; // Client-generated UUID for idempotent re-submission
 }
 
 export interface ExamAttemptFilter {
@@ -28,11 +29,36 @@ export class ExamAttemptService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Create new exam attempt (submission)
-   * @param data - Exam attempt details
-   * @returns Created ExamAttempt record
+   * Create (or idempotently upsert) an exam attempt.
+   *
+   * When a localId is provided and the (userId, localId) pair already exists
+   * on the server, the existing record is returned unchanged.  This prevents
+   * duplicate rows when the mobile client retries a submission after a network
+   * timeout where the server had already persisted the first request.
    */
   async create(data: CreateExamAttemptDto): Promise<ExamAttempt> {
+    // If we have a localId and userId, perform an atomic upsert on the
+    // (userId, localId) composite key. This guarantees idempotency even under
+    // concurrent retries from the same user/device.
+    if (data.localId && data.userId) {
+      return this.prisma.examAttempt.upsert({
+        where: { userId_localId: { userId: data.userId, localId: data.localId } },
+        update: {},
+        create: {
+          userId: data.userId,
+          examTypeId: data.examTypeId,
+          score: data.score,
+          passed: data.passed,
+          duration: data.duration,
+          submittedAt: data.submittedAt || new Date(),
+          syncStatus: SyncStatus.PENDING,
+          localId: data.localId,
+        },
+      });
+    }
+
+    // Anonymous / unsigned exams (no user association or localId) are created
+    // as standalone rows; they are considered already "synced".
     return this.prisma.examAttempt.create({
       data: {
         userId: data.userId || undefined,
@@ -41,7 +67,8 @@ export class ExamAttemptService {
         passed: data.passed,
         duration: data.duration,
         submittedAt: data.submittedAt || new Date(),
-        syncStatus: data.userId ? SyncStatus.PENDING : SyncStatus.SYNCED, // Unsigned exams stay local
+        syncStatus: data.userId ? SyncStatus.PENDING : SyncStatus.SYNCED,
+        localId: data.localId || undefined,
       },
     });
   }

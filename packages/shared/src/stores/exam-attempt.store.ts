@@ -27,8 +27,8 @@ interface ExamAttemptStoreState {
     attempt: Omit<ExamAttempt, 'id' | 'createdAt' | 'syncStatus' | 'syncRetries'>,
   ) => Promise<void>;
   loadAttempts: () => Promise<void>;
-  syncPendingAttempts: (userId?: string) => Promise<SyncResult>;
-  retryFailedAttempts: (userId?: string) => Promise<SyncResult>;
+  syncPendingAttempts: (accessToken?: string) => Promise<SyncResult>;
+  retryFailedAttempts: (accessToken?: string) => Promise<SyncResult>;
   deleteAttempt: (id: string) => Promise<void>;
   loadAnalytics: (examTypeId?: string) => Promise<void>;
   clearAll: () => Promise<void>;
@@ -109,13 +109,13 @@ export const useExamAttemptStore = create<ExamAttemptStoreState>((set, get) => (
   },
 
   // Sync pending attempts with cloud
-  syncPendingAttempts: async (userId?: string) => {
+  syncPendingAttempts: async (accessToken?: string) => {
     const service = get().service;
 
     try {
       set({ isSyncing: true });
 
-      const result = await service.syncPendingAttempts(userId);
+      const result = await service.syncPendingAttempts(accessToken);
 
       // Reload attempts after sync
       await get().loadAttempts();
@@ -133,13 +133,13 @@ export const useExamAttemptStore = create<ExamAttemptStoreState>((set, get) => (
   },
 
   // Retry failed attempts
-  retryFailedAttempts: async (userId?: string) => {
+  retryFailedAttempts: async (accessToken?: string) => {
     const service = get().service;
 
     try {
       set({ isSyncing: true });
 
-      const result = await service.retryFailedAttempts(userId);
+      const result = await service.retryFailedAttempts(accessToken);
 
       // Reload attempts after retry
       await get().loadAttempts();

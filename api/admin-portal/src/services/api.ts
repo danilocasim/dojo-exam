@@ -70,6 +70,7 @@ export interface AdminQuestion {
   options: QuestionOption[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
   status: string;
   version: number;
   createdBy: AdminUser | null;
@@ -96,6 +97,23 @@ export interface QuestionInput {
   options: QuestionOption[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
+}
+
+/**
+ * Structured explanation block for rich content
+ */
+export interface ExplanationBlock {
+  type: 'paragraph' | 'link' | 'image' | 'bullet_list' | 'code' | 'separator';
+  content: string;
+  meta?: {
+    alt?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    listItems?: string[];
+    label?: string;
+  };
 }
 
 export interface ExamType {
@@ -113,6 +131,57 @@ export interface ExamType {
   timeLimit: number;
   questionCount: number;
   isActive: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Bulk Import types
+// ---------------------------------------------------------------------------
+
+export interface BulkImportQuestionItem {
+  text: string;
+  type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
+  domain: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  options: QuestionOption[];
+  correctAnswers: string[];
+  explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
+}
+
+export interface BulkImportPayload {
+  examTypeId: string;
+  questions: BulkImportQuestionItem[];
+}
+
+export interface ImportValidationError {
+  questionIndex: number;
+  field: string;
+  message: string;
+}
+
+export interface ImportDuplicateInfo {
+  questionIndex: number;
+  reason: 'DUPLICATE_IN_FILE' | 'DUPLICATE_IN_DB';
+  text: string;
+  conflictsWithIndex?: number;
+}
+
+export interface BulkImportValidationResult {
+  valid: boolean;
+  summary: {
+    total: number;
+    errors: number;
+    duplicatesInFile: number;
+    duplicatesInDb: number;
+  };
+  errors: ImportValidationError[];
+  duplicates: ImportDuplicateInfo[];
+}
+
+export interface BulkImportResult {
+  imported: number;
+  examTypeId: string;
+  questionIds: string[];
 }
 
 export interface AdminStats {
@@ -248,5 +317,77 @@ export const api = {
     return request<AdminQuestion>(`/admin/questions/${id}/restore`, {
       method: 'POST',
     });
+  },
+
+  // -------------------------------------------------------------------------
+  // Bulk Import
+  // -------------------------------------------------------------------------
+
+  /**
+   * Validate a parsed JSON import payload without persisting anything.
+   * Returns a detailed validation result including errors and duplicates.
+   */
+  validateBulkImport(payload: BulkImportPayload) {
+    return request<BulkImportValidationResult>('/admin/questions/bulk-import/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Import questions atomically. Fails with 422 if validation fails.
+   */
+  bulkImport(payload: BulkImportPayload) {
+    return request<BulkImportResult>('/admin/questions/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Download the annotated JSON template for a given exam type.
+   * Returns the raw JSON string (already formatted with documentation).
+   */
+  getBulkImportTemplateUrl(examTypeId?: string): string {
+    const base = `${API_BASE_URL}/admin/questions/bulk-import/template`;
+    return examTypeId ? `${base}?examTypeId=${encodeURIComponent(examTypeId)}` : base;
+  },
+
+  /**
+   * Upload an explanation image
+   */
+  async uploadExplanationImage(
+    file: File,
+  ): Promise<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch(`${API_BASE_URL}/admin/uploads/explanation-image`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || `Upload failed: ${res.status}`);
+    }
+
+    return res.json();
+  },
+
+  /**
+   * Delete an explanation image from S3
+   */
+  async deleteExplanationImage(filename: string): Promise<void> {
+    return request<void>(
+      `/admin/uploads/explanation-image/${encodeURIComponent(filename)}`,
+      {
+        method: 'DELETE',
+      },
+    );
   },
 };

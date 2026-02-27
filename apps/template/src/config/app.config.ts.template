@@ -1,0 +1,7 @@
+import type { AppConfig } from '@exam-app/shared';
+
+export const APP_CONFIG: AppConfig = {
+  examTypeId: '__EXAM_TYPE_ID__',
+  appName: '__APP_NAME__',
+  branding: { primaryColor: '__PRIMARY_COLOR__' },
+};

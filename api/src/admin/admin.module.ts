@@ -5,12 +5,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../prisma';
 import { AdminAuthService } from './auth';
 import { JwtStrategy, JwtAuthGuard } from './guards';
-import { QuestionsService, AdminExamTypesService } from './services';
+import { QuestionsService, AdminExamTypesService, S3Service } from './services';
+import { BulkImportService } from './services/bulk-import.service';
 import {
   AdminAuthController,
   AdminQuestionsController,
   AdminExamTypesController,
 } from './controllers';
+import { UploadsController } from './controllers/uploads.controller';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import {
     AdminAuthController,
     AdminQuestionsController,
     AdminExamTypesController,
+    UploadsController,
   ],
   providers: [
     AdminAuthService,
@@ -47,7 +50,15 @@ import {
     JwtAuthGuard,
     QuestionsService,
     AdminExamTypesService,
+    S3Service,
+    BulkImportService,
   ],
-  exports: [AdminAuthService, QuestionsService, AdminExamTypesService],
+  exports: [
+    AdminAuthService,
+    QuestionsService,
+    AdminExamTypesService,
+    S3Service,
+    BulkImportService,
+  ],
 })
 export class AdminModule {}

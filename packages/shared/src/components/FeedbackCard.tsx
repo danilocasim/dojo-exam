@@ -1,7 +1,16 @@
 // T055: FeedbackCard - Immediate answer feedback with correct/incorrect and explanation
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import { CheckCircle2, XCircle, Lightbulb, ChevronRight, Trophy } from 'lucide-react-native';
+import {
+  CheckCircle2,
+  XCircle,
+  Lightbulb,
+  ChevronRight,
+  Trophy,
+  Maximize2,
+} from 'lucide-react-native';
+import { RichExplanation, ExplanationBlock } from './RichExplanation';
+import { ExplanationModal } from './ExplanationModal';
 
 // AWS Modern Color Palette
 const colors = {
@@ -23,6 +32,7 @@ const colors = {
 export interface FeedbackCardProps {
   isCorrect: boolean;
   explanation: string;
+  explanationBlocks?: ExplanationBlock[] | null;
   onContinue: () => void;
   isLastQuestion?: boolean;
 }
@@ -33,9 +43,15 @@ export interface FeedbackCardProps {
 export const FeedbackCard: React.FC<FeedbackCardProps> = ({
   isCorrect,
   explanation,
+  explanationBlocks,
   onContinue,
   isLastQuestion = false,
 }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleOpenModal = useCallback(() => setModalVisible(true), []);
+  const handleCloseModal = useCallback(() => setModalVisible(false), []);
+
   return (
     <View style={styles.container}>
       {/* Combined result + explanation card */}
@@ -75,15 +91,30 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
         {explanation ? (
           <View style={styles.explanationSection}>
             <View style={styles.explanationHeader}>
-              <Lightbulb size={14} color={colors.primaryOrange} strokeWidth={2} />
-              <Text style={styles.explanationLabel}>Explanation</Text>
+              <View style={styles.explanationHeaderLeft}>
+                <Lightbulb size={14} color={colors.primaryOrange} strokeWidth={2} />
+                <Text style={styles.explanationLabel}>Explanation</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleOpenModal}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="View explanation full screen"
+              >
+                <Maximize2 size={16} color={colors.primaryOrange} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
             <ScrollView
               style={styles.explanationScroll}
               nestedScrollEnabled
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.explanationText}>{explanation}</Text>
+              <RichExplanation
+                explanation={explanation}
+                explanationBlocks={explanationBlocks}
+                textStyle={styles.explanationText}
+              />
             </ScrollView>
           </View>
         ) : null}
@@ -103,6 +134,14 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
           </>
         )}
       </TouchableOpacity>
+
+      {/* Full-screen explanation modal */}
+      <ExplanationModal
+        visible={modalVisible}
+        explanation={explanation}
+        explanationBlocks={explanationBlocks}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 };
@@ -166,8 +205,14 @@ const styles = StyleSheet.create({
   explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 6,
     marginBottom: 8,
+  },
+  explanationHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   explanationLabel: {
     fontSize: 11,

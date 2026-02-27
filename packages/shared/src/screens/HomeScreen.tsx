@@ -44,6 +44,7 @@ import {
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useExamStore } from '../stores';
+import { EXAM_TYPE_ID } from '../config';
 import { useAuthStore } from '../stores/auth-store';
 import { useStreakStore } from '../stores/streak.store';
 import { hasInProgressExam, abandonCurrentExam } from '../services';
@@ -360,7 +361,7 @@ export const HomeScreen: React.FC = () => {
             <View>
               <View style={styles.headerTitleRow}>
                 <Text style={styles.appTitle}>Dojo Exam</Text>
-                <Text style={styles.headerBadge}>CLF-C02</Text>
+                <Text style={styles.headerBadge}>{EXAM_TYPE_ID}</Text>
               </View>
               <Text style={styles.brandSubtitle}>by Tutorials Dojo</Text>
             </View>
@@ -411,18 +412,12 @@ export const HomeScreen: React.FC = () => {
           <View style={styles.statsCard}>
             <Flame
               size={16}
-              color={
-                (streak?.currentStreak ?? 0) >= 7
-                  ? '#EF4444'
-                  : (streak?.currentStreak ?? 0) >= 3
-                    ? colors.primaryOrange
-                    : colors.textMuted
-              }
+              color={completedToday ? colors.primaryOrange : colors.textMuted}
               strokeWidth={2}
+              fill={completedToday ? 'rgba(255, 153, 0, 0.3)' : 'none'}
             />
             <Text style={styles.statsValue}>{streak?.currentStreak ?? 0}</Text>
             <Text style={styles.statsLabel}>Day Streak</Text>
-            {completedToday && <View style={styles.streakDoneDot} />}
           </View>
         </View>
 
@@ -801,14 +796,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 28,
     backgroundColor: colors.borderDefault,
-  },
-  streakDoneDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success,
-    marginLeft: -2,
-    marginTop: -8,
   },
 
   // Primary CTA

@@ -40,9 +40,26 @@ export class QuestionDto {
   options: QuestionOptionDto[];
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: ExplanationBlockDto[] | null;
   version: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Structured explanation block for rich content
+ */
+export class ExplanationBlockDto {
+  type: 'paragraph' | 'link' | 'image' | 'bullet_list' | 'code' | 'separator';
+  content: string;
+  meta?: {
+    alt?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    listItems?: string[];
+    label?: string;
+  };
 }
 
 /**

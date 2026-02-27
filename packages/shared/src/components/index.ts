@@ -45,3 +45,9 @@ export { StreakCard } from './StreakCard';
 // Calendar & Date Picker
 export { CalendarStrip } from './CalendarStrip';
 export { DatePickerModal } from './DatePickerModal';
+
+// Rich explanations
+export { RichExplanation } from './RichExplanation';
+export type { ExplanationBlock, RichExplanationProps } from './RichExplanation';
+export { ExplanationModal } from './ExplanationModal';
+export { ImageViewer } from './ImageViewer';

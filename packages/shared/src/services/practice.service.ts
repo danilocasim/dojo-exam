@@ -39,6 +39,7 @@ export interface PracticeAnswerResult {
   isCorrect: boolean;
   correctAnswers: string[];
   explanation: string;
+  explanationBlocks?: unknown[] | null;
 }
 
 /**
@@ -146,6 +147,7 @@ export const submitPracticeAnswer = async (
     isCorrect,
     correctAnswers: question.correctAnswers,
     explanation: question.explanation,
+    explanationBlocks: question.explanationBlocks ?? null,
   };
 };
 

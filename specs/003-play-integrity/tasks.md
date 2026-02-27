@@ -34,7 +34,7 @@
 | **Phase 4: Multi-App Monorepo** | | | | |
 | Phase 10: Monorepo Foundation | T207-T214 | 8 | 📋 Not Started | 6 hrs |
 | Phase 11: App Wrapper Migration | T215-T220 | 6 | ✅ Complete | 5 hrs |
-| Phase 12: Template & Script | T221-T224 | 4 | � In Progress | 3 hrs |
+| Phase 12: Template & Script | T221-T224 | 4 | ✅ Complete | 3 hrs |
 | Phase 13: Admin CRUD Backend | T225-T230 | 6 | 📋 Not Started | 5 hrs |
 | Phase 14: Admin CRUD Frontend | T231-T238 | 8 | 📋 Not Started | 6 hrs |
 | Phase 15: Testing & Docs | T239-T246 | 8 | 📋 Not Started | 6 hrs |
@@ -614,7 +614,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### Template Tasks
 
-- [ ] T221 Create apps/template/ directory with template files using placeholder tokens:
+- [x] T221 Create apps/template/ directory with template files using placeholder tokens:
   - `app.json.template`: `__APP_NAME__`, `__APP_SLUG__`, `__PACKAGE_NAME__`, `__BUNDLE_ID__`
   - `App.tsx.template`: `__EXAM_TYPE_ID__`, `__APP_NAME__`
   - `package.json.template`: `__APP_SLUG__`
@@ -624,16 +624,16 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
   - `src/config/app.config.ts.template`: `__EXAM_TYPE_ID__`, `__APP_NAME__`, `__PRIMARY_COLOR__`
   - `assets/`: Placeholder icon.png, splash-icon.png, adaptive-icon.png
 
-- [ ] T222 Create scripts/create-app.sh with parameters:
+- [x] T222 Create scripts/create-app.sh with parameters:
   ```bash
   Usage: ./scripts/create-app.sh --exam-type <ID> --name <NAME> --package <PACKAGE> [--color <HEX>]
   Example: ./scripts/create-app.sh --exam-type SAA-C03 --name "Dojo Exam SAA" --package com.danilocasim.dojoexam.saac03 --color "#FF9900"
   ```
   Script: copies template → replaces tokens → runs npm install → prints next steps (update assets, configure EAS, test). Validate that exam type ID exists in backend before creating (optional: `curl /exam-types/{id}` check).
 
-- [ ] T223 Create first new app using the script: `./scripts/create-app.sh --exam-type SAA-C03 --name "Dojo Exam SAA" --package com.danilocasim.dojoexam.saac03`. Verify apps/aws-saa/ is generated with correct files and placeholders replaced.
+- [x] T223 Create first new app using the script: `./scripts/create-app.sh --exam-type SAA-C03 --name "Dojo Exam SAA" --package com.danilocasim.dojoexam.saac03`. Verify apps/aws-saa/ is generated with correct files and placeholders replaced.
 
-- [ ] T224 Verify apps/aws-saa/ builds and runs:
+- [x] T224 Verify apps/aws-saa/ builds and runs:
   1. `cd apps/aws-saa && npx expo start` — app launches
   2. App shows correct exam name and connects to backend
   3. Backend returns SAA-C03 exam type config (exam type created via admin portal in Phase 12-13)
@@ -650,7 +650,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### Regression Testing Tasks
 
-- [ ] T239 **CRITICAL**: Run ALL existing tests in monorepo structure:
+- [X] T239 **CRITICAL**: Run ALL existing tests in monorepo structure:
   1. `cd packages/shared && npm test` — all shared code tests pass
   2. `cd apps/aws-clp && npm test` — all app-specific tests pass
   3. `cd api && npm test` — all backend tests pass (should have zero changes needed)
@@ -660,7 +660,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 ### New Test Tasks
 
-- [ ] T240 Create api/test/admin-exam-types.e2e-spec.ts with Supertest E2E tests:
+- [X] T240 Create api/test/admin-exam-types.e2e-spec.ts with Supertest E2E tests:
   - POST /admin/exam-types: create new exam type → 201 with correct response body
   - POST /admin/exam-types: duplicate ID → 409 Conflict
   - POST /admin/exam-types: invalid domain weights (sum != 100) → 400
@@ -670,14 +670,14 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
   - PATCH /admin/exam-types/:id: toggle active → 200, isActive flipped
   - All endpoints require auth: no token → 401
 
-- [ ] T241 [P] Create admin portal component tests (Jest + React Testing Library):
+- [X] T241 [P] Create admin portal component tests (Vitest + React Testing Library):
   - DomainEditor: renders domains, add domain, remove domain, weight validation display
   - ExamTypeFormPage: renders form fields, submit triggers API call, validation errors shown
   - ExamTypeListPage: renders table rows, deactivate toggle calls API
 
 ### EAS Build Configuration Tasks
 
-- [ ] T242 Configure EAS Build in apps/aws-clp/eas.json:
+- [X] T242 Configure EAS Build in apps/aws-clp/eas.json:
   - Copy existing eas.json from mobile/ if not already moved in T215
   - Verify projectId matches existing EAS project
   - Configure build profiles: development, preview, production
@@ -740,7 +740,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 - **Phase 14 (Template & Script)**: Depends on Phase 13 (admin portal must be able to create exam types first)
 - **Phase 15 (Testing & Docs)**: Depends on Phase 14
 - **Phase 16 (Login-Gated Free Tier)**: Depends on Phase 15 (MVP stable first). Can ship independently of Phase 17.
-- **Phase 17 (Play Billing)**: Depends on Phase 16 + Play Console monetization access. **BLOCKED until Play access granted.**
+- **Phase 17 (Play Billing)**: Depends on Phase 16 + Play Console monetization access. **READY — Play access granted.**
 
 ### Updated Execution Order (1 Developer)
 
@@ -804,7 +804,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 7. **No Prisma schema changes for admin CRUD**: ExamType model already has all needed fields. CRUD operations use existing Prisma client. Zero migrations.
 8. **Preserve all environment variable patterns**: `EXPO_PUBLIC_*` variables must work identically in `apps/{name}/` as they did in `mobile/`.
 9. **UpgradeScreen already exists**: `packages/shared/src/screens/UpgradeScreen.tsx` has static UI. Phase 16-17 enhances it with actual logic.
-10. **Phase 16 is independent of Phase 17**: Free tier can ship without Play Billing access. Phase 17 only starts when Play Console monetization is active.
+10. **Phase 16 is independent of Phase 17**: Free tier can ship without Play Billing access. Phase 17 can start now that Play Console monetization is active.
 
 ---
 
@@ -907,7 +907,7 @@ chmod +x scripts/validate-spec-003.sh && ./scripts/validate-spec-003.sh
 
 **Purpose**: Integrate Google Play Billing API for "Forever Access" one-time purchase. Unlock full question bank.  
 **Prerequisites**: Phase 16 (T247-T258) Complete + Active Google Play Console monetization profile  
-**Status**: 📋 **BLOCKED** — Requires Play Console monetization access (not yet available)
+**Status**: 📋 **READY FOR IMPLEMENTATION** — Play Console monetization access granted
 
 **Key Principle**: One-time purchase, no subscriptions. Per-app product SKU. Purchase restores on reinstall. Offline-first — purchase status cached locally.
 

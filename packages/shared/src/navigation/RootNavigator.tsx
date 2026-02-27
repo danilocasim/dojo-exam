@@ -32,8 +32,7 @@ export type RootStackParamList = {
   ExamScreen: { resumeAttemptId?: string };
   ExamResults: { attemptId: string };
 
-  // Practice flow screens
-  PracticeSetup: undefined;
+  // Practice flow screens (PracticeSetup is a tab in MainTabs as 'PracticeTab')
   PracticeScreen: { sessionId: string };
   PracticeSummary: { sessionId: string };
 
