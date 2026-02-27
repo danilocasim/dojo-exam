@@ -25,7 +25,7 @@ import {
   updateStreakOnCompletion,
 } from '../storage/repositories/streak.repository';
 import { getDatabase } from '../storage/database';
-import { getAPIURL } from '../config';
+import { getAPIURL, EXAM_TYPE_ID } from '../config';
 
 // ─── Types matching backend responses ───────────────────────────────────────
 
@@ -268,10 +268,106 @@ export const pushAllStats = async (accessToken: string): Promise<void> => {
   await Promise.all([pushUserStats(accessToken), pushStreak(accessToken)]);
 };
 
+// ─── ExamSubmission history sync ─────────────────────────────────────────────
+
+interface RemoteExamAttempt {
+  id: string;
+  examTypeId: string;
+  score: number;
+  passed: boolean;
+  duration: number;
+  submittedAt: string;
+  createdAt: string;
+  localId?: string;
+}
+
+/**
+ * Pull exam history from the server and insert any missing records into local SQLite.
+ *
+ * Merge rule: server records are inserted only when no local record already exists
+ * with a matching localId (or id if localId is absent). Existing local records are
+ * never overwritten, preserving any offline-only data.
+ *
+ * @param accessToken  JWT access token
+ */
+export const pullAndMergeExamHistory = async (accessToken: string): Promise<void> => {
+  try {
+    const axios = getAxios();
+    const db = await getDatabase();
+    const limit = 50;
+    let page = 1;
+    let totalPages = 1;
+    let inserted = 0;
+
+    do {
+      const response = await axios.get(`${getAPIURL()}/exam-attempts/my-history`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { page, limit, examTypeId: EXAM_TYPE_ID },
+      });
+
+      const result = response.data as {
+        data: RemoteExamAttempt[];
+        totalPages: number;
+      };
+
+      totalPages = result.totalPages ?? 1;
+
+      for (const remote of result.data) {
+        // Dedup: check by localId first, then by server id
+        const matchKey = remote.localId ?? remote.id;
+        const existing = await db.getFirstAsync<{ id: string }>(
+          'SELECT id FROM ExamSubmission WHERE id = ? OR localId = ?',
+          [matchKey, matchKey],
+        );
+
+        if (!existing) {
+          await db.runAsync(
+            `INSERT INTO ExamSubmission
+              (id, examTypeId, score, passed, duration, submittedAt, createdAt,
+               syncStatus, syncRetries, syncedAt, localId)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'SYNCED', 0, ?, ?)`,
+            [
+              matchKey,
+              remote.examTypeId,
+              remote.score,
+              remote.passed ? 1 : 0,
+              remote.duration,
+              remote.submittedAt,
+              remote.createdAt,
+              new Date().toISOString(),
+              remote.localId ?? null,
+            ],
+          );
+          inserted++;
+        }
+      }
+
+      page++;
+    } while (page <= totalPages);
+
+    console.log(`[StatsSync] Exam history synced from server — ${inserted} new records inserted`);
+  } catch (err) {
+    const axios = getAxios();
+    if (axios.isAxiosError(err)) {
+      console.warn('[StatsSync] Failed to pull exam history', {
+        url: err.config?.url,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+    } else {
+      console.warn('[StatsSync] Failed to pull exam history:', err);
+    }
+  }
+};
+
 /**
  * Pull both UserStats and Streak from the server and merge locally.
  * Call this on login / app resume to reconcile cross-device data.
  */
 export const pullAndMergeAllStats = async (accessToken: string): Promise<void> => {
-  await Promise.all([pullAndMergeUserStats(accessToken), pullAndMergeStreak(accessToken)]);
+  await Promise.all([
+    pullAndMergeUserStats(accessToken),
+    pullAndMergeStreak(accessToken),
+    pullAndMergeExamHistory(accessToken),
+  ]);
 };
