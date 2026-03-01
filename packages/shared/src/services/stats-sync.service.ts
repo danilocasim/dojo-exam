@@ -25,7 +25,10 @@ import {
   updateStreakOnCompletion,
 } from '../storage/repositories/streak.repository';
 import { getAllExamSubmissions } from '../storage/repositories/exam-submission.repository';
-import { getAnswersByExamAttemptId } from '../storage/repositories/exam-answer.repository';
+import {
+  getAnswersByExamAttemptId,
+  insertRestoredAnswersBatch,
+} from '../storage/repositories/exam-answer.repository';
 import { getQuestionsByIds } from '../storage/repositories/question.repository';
 import { calculateDomainBreakdown } from './scoring.service';
 import { getCachedExamTypeConfig } from './sync.service';
@@ -285,6 +288,7 @@ interface RemoteExamAttempt {
   createdAt: string;
   localId?: string;
   domainScores?: Array<{ domainId: string; correct: number; total: number }>;
+  answers?: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }>;
 }
 
 /**
@@ -352,6 +356,47 @@ export const pullAndMergeExamHistory = async (accessToken: string): Promise<void
             `UPDATE ExamSubmission SET domainScores = ? WHERE (id = ? OR localId = ?) AND domainScores IS NULL`,
             [JSON.stringify(remote.domainScores), matchKey, matchKey],
           );
+        }
+
+        // If the server provided per-question answers, restore ExamAttempt + ExamAnswer rows
+        // so this exam appears as fully reviewable (canReview: true) in history.
+        if (remote.answers && remote.answers.length > 0) {
+          const existingAttempt = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM ExamAttempt WHERE id = ?',
+            [matchKey],
+          );
+
+          if (!existingAttempt) {
+            // Synthesise startedAt from submittedAt minus duration
+            const submittedMs = new Date(remote.submittedAt).getTime();
+            const startedAt = new Date(submittedMs - remote.duration * 1000).toISOString();
+            // remainingTimeMs and expiresAt are NOT NULL; use 0 and completed time for restored attempts
+            const completedAt = remote.submittedAt;
+
+            await db.runAsync(
+              `INSERT OR IGNORE INTO ExamAttempt
+                (id, startedAt, completedAt, status, score, passed, totalQuestions, remainingTimeMs, expiresAt)
+               VALUES (?, ?, ?, 'completed', ?, ?, ?, 0, ?)`,
+              [
+                matchKey,
+                startedAt,
+                completedAt,
+                remote.score,
+                remote.passed ? 1 : 0,
+                remote.answers.length,
+                completedAt,
+              ],
+            );
+          }
+
+          // Insert answer rows only if none exist yet
+          const existingAnswers = await db.getFirstAsync<{ count: number }>(
+            'SELECT COUNT(*) as count FROM ExamAnswer WHERE examAttemptId = ?',
+            [matchKey],
+          );
+          if (!existingAnswers || existingAnswers.count === 0) {
+            await insertRestoredAnswersBatch(matchKey, remote.answers);
+          }
         }
       }
 

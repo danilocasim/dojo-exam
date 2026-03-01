@@ -11,6 +11,7 @@ export interface CreateExamAttemptDto {
   submittedAt?: Date;
   localId?: string; // Client-generated UUID for idempotent re-submission
   domainScores?: Array<{ domainId: string; correct: number; total: number }>;
+  answers?: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }>;
 }
 
 export interface ExamAttemptFilter {
@@ -47,12 +48,12 @@ export class ExamAttemptService {
       });
 
       if (existing) {
-        // Backfill domainScores if the client is supplying them for the first time.
-        if (data.domainScores && !existing.domainScores) {
-          return this.prisma.examAttempt.update({
-            where: { id: existing.id },
-            data: { domainScores: data.domainScores },
-          });
+        // Backfill missing fields if the client is supplying them for the first time.
+        const updates: Record<string, unknown> = {};
+        if (data.domainScores && !existing.domainScores) updates.domainScores = data.domainScores;
+        if (data.answers && !existing.answers) updates.answers = data.answers;
+        if (Object.keys(updates).length > 0) {
+          return this.prisma.examAttempt.update({ where: { id: existing.id }, data: updates });
         }
         return existing;
       }
@@ -68,6 +69,7 @@ export class ExamAttemptService {
           syncStatus: SyncStatus.PENDING,
           localId: data.localId,
           domainScores: data.domainScores ?? undefined,
+          answers: data.answers ?? undefined,
         },
       });
     }
@@ -85,6 +87,7 @@ export class ExamAttemptService {
         syncStatus: data.userId ? SyncStatus.PENDING : SyncStatus.SYNCED,
         localId: data.localId || undefined,
         domainScores: data.domainScores ?? undefined,
+        answers: data.answers ?? undefined,
       },
     });
   }

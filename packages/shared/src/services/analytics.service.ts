@@ -1,6 +1,6 @@
 // T067: AnalyticsService - Aggregates analytics data for the dashboard
 import { getUserStats } from '../storage/repositories/user-stats.repository';
-import { getRecentExamAttempts } from '../storage/repositories/exam-attempt.repository';
+import { getCompletedExamAttempts } from '../storage/repositories/exam-attempt.repository';
 import { getDatabase } from '../storage/database';
 import {
   getOverallStats,
@@ -57,7 +57,9 @@ export interface AnalyticsData {
 const WEAK_DOMAIN_THRESHOLD = 70;
 
 /**
- * Get complete analytics data for the dashboard
+ * Get complete analytics data for the dashboard.
+ * All data is read from the local SQLite DB (UserStats, ExamAttempt, ExamSubmission, ExamAnswer).
+ * Ensure pullAndMergeAllStats runs on login/app focus so the DB is synced with the server.
  */
 export const getAnalyticsData = async (): Promise<AnalyticsData> => {
   const [overallStats, studyStats, scoreHistory, domainPerformance] = await Promise.all([
@@ -95,23 +97,24 @@ export const getStudyStats = async (): Promise<StudyStats> => {
 };
 
 /**
- * Get score history from completed exam attempts for chart.
+ * Get score history from completed exam attempts for the trend chart.
  * Merges local ExamAttempt rows with server-pulled ExamSubmission rows,
  * deduplicating by localId so the same exam doesn't appear twice.
+ * All data is read from the local DB (synced on login/app focus).
  */
 export const getScoreHistory = async (limit: number = 10): Promise<ScoreHistoryEntry[]> => {
-  // Local attempts (taken on this device)
-  const attempts = await getRecentExamAttempts(limit);
-  const localEntries = attempts
+  // Local completed attempts (by completion date, most recent first)
+  const completed = await getCompletedExamAttempts();
+  const localEntries = completed
     .filter((a) => a.score !== null)
     .map((a) => ({
       date: a.completedAt ?? a.startedAt,
       score: a.score ?? 0,
       passed: a.passed === true,
-      key: a.id, // ExamAttempt.id === ExamSubmission.localId for locally-created submissions
+      key: a.id,
     }));
 
-  // Server-pulled submissions (ExamSubmission table)
+  // Server-pulled submissions (no matching local attempt)
   const db = await getDatabase();
   const submissionRows = await db.getAllAsync<{
     id: string;
@@ -119,9 +122,8 @@ export const getScoreHistory = async (limit: number = 10): Promise<ScoreHistoryE
     score: number;
     passed: number;
     submittedAt: string;
-  }>('SELECT id, localId, score, passed, submittedAt FROM ExamSubmission ORDER BY submittedAt DESC LIMIT ?', [limit]);
+  }>('SELECT id, localId, score, passed, submittedAt FROM ExamSubmission ORDER BY submittedAt DESC LIMIT ?', [limit * 2]);
 
-  // Dedup: skip submissions whose localId already appears in local attempts
   const seenKeys = new Set(localEntries.map((e) => e.key));
   const submissionEntries = submissionRows
     .filter((row) => {

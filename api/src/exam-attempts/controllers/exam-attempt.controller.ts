@@ -43,6 +43,22 @@ export class DomainScoreDto {
   total: number;
 }
 
+export class ExamAnswerSyncDto {
+  @IsString()
+  questionId: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  selectedAnswers: string[];
+
+  @IsBoolean()
+  isCorrect: boolean;
+
+  @IsNumber()
+  @Min(0)
+  orderIndex: number;
+}
+
 export class SubmitExamAttemptDto {
   @IsString()
   examTypeId: string;
@@ -74,6 +90,12 @@ export class SubmitExamAttemptDto {
   @ValidateNested({ each: true })
   @Type(() => DomainScoreDto)
   domainScores?: DomainScoreDto[]; // Per-domain breakdown [{domainId, correct, total}]
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExamAnswerSyncDto)
+  answers?: ExamAnswerSyncDto[]; // Per-question answers [{questionId, selectedAnswers, isCorrect, orderIndex}]
 }
 
 export class ExamAttemptResponse {
@@ -89,6 +111,7 @@ export class ExamAttemptResponse {
   syncedAt?: Date;
   syncRetries: number;
   domainScores?: Array<{ domainId: string; correct: number; total: number }>;
+  answers?: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }>;
 }
 
 export class ExamAttemptListResponse {
@@ -143,6 +166,7 @@ export class ExamAttemptController {
       duration: dto.duration,
       submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : undefined,
       domainScores: dto.domainScores,
+      answers: dto.answers,
     });
 
     return this.mapToResponse(attempt);
@@ -180,6 +204,7 @@ export class ExamAttemptController {
       submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : undefined,
       localId: dto.localId,
       domainScores: dto.domainScores,
+      answers: dto.answers,
     });
 
     return this.mapToResponse(attempt);
@@ -309,6 +334,7 @@ export class ExamAttemptController {
       syncedAt: attempt.syncedAt,
       syncRetries: attempt.syncRetries,
       domainScores: (attempt.domainScores as Array<{ domainId: string; correct: number; total: number }> | null) ?? undefined,
+      answers: (attempt.answers as Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }> | null) ?? undefined,
     };
   }
 }

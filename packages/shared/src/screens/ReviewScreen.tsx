@@ -11,7 +11,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, ChevronRight, X, BarChart2, AlertCircle, Grid3x3 } from 'lucide-react-native';
 import { useShallow } from 'zustand/react/shallow';
@@ -109,6 +109,14 @@ export const ReviewScreen: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId]);
+
+  // Refetch from DB every time the user accesses the review section so stats and
+  // individual question data are always current (e.g. after backfill or sync).
+  useFocusEffect(
+    React.useCallback(() => {
+      if (attemptId) loadReview(attemptId);
+    }, [attemptId, loadReview]),
+  );
 
   const getDomainBarColor = (percentage: number) => {
     if (percentage >= 70) return colors.success;

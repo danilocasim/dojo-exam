@@ -54,7 +54,8 @@ export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   ...initialState,
 
   /**
-   * Load full analytics data
+   * Load full analytics data from the database (stats, score trend, domain performance).
+   * Called on Analytics screen focus so the review/stats section always shows current data.
    */
   loadAnalytics: async () => {
     set({ isLoading: true, error: null });
@@ -68,7 +69,7 @@ export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   },
 
   /**
-   * Refresh analytics data (same as load but preserves existing data during load)
+   * Refresh analytics data from the database (pull-to-refresh).
    */
   refresh: async () => {
     set({ isLoading: true, error: null });

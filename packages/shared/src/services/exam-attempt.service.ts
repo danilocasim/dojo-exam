@@ -146,6 +146,24 @@ export class ExamAttemptService {
       try {
         // Send to cloud API — include localId for server-side idempotency
         const sub = attempt as ExamSubmissionRepo.ExamSubmission;
+
+        // Fetch per-question answers for this attempt (keyed by localId = attemptId)
+        let answers: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }> | undefined;
+        try {
+          const attemptId = sub.localId ?? sub.id!;
+          const rawAnswers = await getAnswersByExamAttemptId(attemptId);
+          if (rawAnswers.length > 0) {
+            answers = rawAnswers.map((a) => ({
+              questionId: a.questionId,
+              selectedAnswers: a.selectedAnswers,
+              isCorrect: a.isCorrect ?? false,
+              orderIndex: a.orderIndex,
+            }));
+          }
+        } catch {
+          // Non-fatal — sync still proceeds without answers
+        }
+
         await axios.post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
@@ -156,6 +174,7 @@ export class ExamAttemptService {
             submittedAt: attempt.submittedAt,
             localId: sub.localId,
             domainScores: sub.domainScores,
+            answers,
           },
           {
             headers: {
@@ -228,6 +247,23 @@ export class ExamAttemptService {
 
         // Retry sync — include localId so server won't create a duplicate
         const sub = attempt as ExamSubmissionRepo.ExamSubmission;
+
+        let retryAnswers: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }> | undefined;
+        try {
+          const attemptId = sub.localId ?? sub.id!;
+          const rawAnswers = await getAnswersByExamAttemptId(attemptId);
+          if (rawAnswers.length > 0) {
+            retryAnswers = rawAnswers.map((a) => ({
+              questionId: a.questionId,
+              selectedAnswers: a.selectedAnswers,
+              isCorrect: a.isCorrect ?? false,
+              orderIndex: a.orderIndex,
+            }));
+          }
+        } catch {
+          // Non-fatal
+        }
+
         await axios.post(
           `${this.apiUrl}/exam-attempts/submit-authenticated`,
           {
@@ -238,6 +274,7 @@ export class ExamAttemptService {
             submittedAt: attempt.submittedAt,
             localId: sub.localId,
             domainScores: sub.domainScores,
+            answers: retryAnswers,
           },
           {
             headers: {

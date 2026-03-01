@@ -76,6 +76,7 @@ export const ExamHistoryScreen: React.FC = () => {
     }
   };
 
+  // Refetch exam history from DB every time the user accesses the screen (status, date, score).
   useFocusEffect(
     useCallback(() => {
       loadHistory();

@@ -245,7 +245,7 @@ export const ExamSummaryScreen: React.FC = () => {
 
         {/* Note */}
         <Text style={st.syncNote}>
-          This exam was synced from the server. Individual question answers are not available.
+          This exam was synced from the server. Individual question answers were not recorded for this attempt.
         </Text>
       </ScrollView>
     </SafeAreaView>

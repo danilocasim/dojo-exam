@@ -101,6 +101,7 @@ model ExamAttempt {
   syncStatus   SyncStatus @default(PENDING)
   localId      String?
   domainScores Json?      // [{domainId, correct, total}] — per-domain breakdown
+  answers      Json?      // [{questionId, selectedAnswers, isCorrect, orderIndex}] — per-question answers
   examType     ExamType   @relation(fields: [examTypeId], references: [id])
   user         User?      @relation(fields: [userId], references: [id])
 

@@ -57,9 +57,9 @@ export interface ReviewData {
 // ─── Service Functions ───────────────────────────────────────────────────────
 
 /**
- * Get list of completed exams for history screen.
- * Merges local ExamAttempt rows with server-pulled ExamSubmission rows so
- * history is visible even on a fresh install after a cloud pull.
+ * Get list of completed exams for history screen (passed/failed, date, score).
+ * Reads from local DB: merges ExamAttempt with ExamSubmission, dedupes by localId.
+ * Call on every access (e.g. useFocusEffect) so history is always current.
  */
 export const getExamHistory = async (): Promise<ExamHistoryEntry[]> => {
   const attempts = await getCompletedExamAttempts();
@@ -131,7 +131,8 @@ export const getExamHistory = async (): Promise<ExamHistoryEntry[]> => {
 };
 
 /**
- * Load full review data for an exam attempt
+ * Load full review data for an exam attempt (questions, correct/incorrect, subject analysis).
+ * Reads from local DB (ExamAttempt, ExamAnswer, Question). Refetch on review screen focus for fresh data.
  */
 export const getReviewData = async (attemptId: string): Promise<ReviewData> => {
   const attempt = await getExamAttemptById(attemptId);
