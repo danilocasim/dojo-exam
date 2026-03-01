@@ -152,7 +152,7 @@ export const saveExamSubmission = async (submission: ExamSubmission): Promise<Ex
   const row = examsSubmissionToRow(submission);
 
   await db.runAsync(
-    `INSERT INTO ExamSubmission (
+    `INSERT OR IGNORE INTO ExamSubmission (
       id, userId, examTypeId, score, passed, duration,
       submittedAt, createdAt, syncStatus, syncRetries, syncedAt, localId, domainScores
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

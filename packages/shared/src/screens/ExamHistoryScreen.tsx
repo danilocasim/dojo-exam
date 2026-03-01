@@ -109,13 +109,9 @@ export const ExamHistoryScreen: React.FC = () => {
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-
+    const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (dateDay.getTime() === nowDay.getTime()) return 'Today';
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -154,9 +150,7 @@ export const ExamHistoryScreen: React.FC = () => {
             <Text style={styles.entryDetailMuted}>{item.timeSpent}</Text>
           </View>
         </View>
-        <Text style={styles.dateText}>
-          {formatDate(item.attempt.completedAt ?? item.attempt.startedAt)}
-        </Text>
+        <Text style={styles.dateText}>{formatDate(item.submittedAt)}</Text>
       </View>
 
       <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />

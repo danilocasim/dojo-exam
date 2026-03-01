@@ -110,6 +110,7 @@ export class ExamAttemptResponse {
   syncStatus: string;
   syncedAt?: Date;
   syncRetries: number;
+  localId?: string;
   domainScores?: Array<{ domainId: string; correct: number; total: number }>;
   answers?: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }>;
 }
@@ -333,6 +334,7 @@ export class ExamAttemptController {
       syncStatus: attempt.syncStatus,
       syncedAt: attempt.syncedAt,
       syncRetries: attempt.syncRetries,
+      localId: attempt.localId ?? undefined,
       domainScores: (attempt.domainScores as Array<{ domainId: string; correct: number; total: number }> | null) ?? undefined,
       answers: (attempt.answers as Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }> | null) ?? undefined,
     };

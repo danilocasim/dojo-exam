@@ -16,10 +16,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const getAxios = () => require('axios').default ?? require('axios');
 
-import {
-  getUserStats,
-  resetUserStats,
-} from '../storage/repositories/user-stats.repository';
+import { getUserStats, resetUserStats } from '../storage/repositories/user-stats.repository';
 import {
   getStudyStreak,
   updateStreakOnCompletion,
@@ -61,9 +58,7 @@ interface RemoteStreak {
  * @param accessToken  JWT access token for the authenticated user
  * @returns The merged stats as returned by the server, or null on failure
  */
-export const pushUserStats = async (
-  accessToken: string,
-): Promise<RemoteUserStats | null> => {
+export const pushUserStats = async (accessToken: string): Promise<RemoteUserStats | null> => {
   try {
     const local = await getUserStats();
     const axios = getAxios();
@@ -288,7 +283,12 @@ interface RemoteExamAttempt {
   createdAt: string;
   localId?: string;
   domainScores?: Array<{ domainId: string; correct: number; total: number }>;
-  answers?: Array<{ questionId: string; selectedAnswers: string[]; isCorrect: boolean; orderIndex: number }>;
+  answers?: Array<{
+    questionId: string;
+    selectedAnswers: string[];
+    isCorrect: boolean;
+    orderIndex: number;
+  }>;
 }
 
 /**
@@ -325,14 +325,25 @@ export const pullAndMergeExamHistory = async (accessToken: string): Promise<void
       for (const remote of result.data) {
         // Dedup: check by localId first, then by server id
         const matchKey = remote.localId ?? remote.id;
-        const existing = await db.getFirstAsync<{ id: string }>(
+        let existing = await db.getFirstAsync<{ id: string }>(
           'SELECT id FROM ExamSubmission WHERE id = ? OR localId = ?',
           [matchKey, matchKey],
         );
 
+        // Fallback: composite match when server doesn't return localId.
+        // This prevents orphan creation for old server records that lack localId.
+        if (!existing && !remote.localId) {
+          existing = await db.getFirstAsync<{ id: string }>(
+            `SELECT id FROM ExamSubmission
+             WHERE examTypeId = ? AND score = ? AND passed = ?
+               AND ABS(julianday(submittedAt) - julianday(?)) < 0.001`,
+            [remote.examTypeId, remote.score, remote.passed ? 1 : 0, remote.submittedAt],
+          );
+        }
+
         if (!existing) {
           await db.runAsync(
-            `INSERT INTO ExamSubmission
+            `INSERT OR IGNORE INTO ExamSubmission
               (id, examTypeId, score, passed, duration, submittedAt, createdAt,
                syncStatus, syncRetries, syncedAt, localId, domainScores)
              VALUES (?, ?, ?, ?, ?, ?, ?, 'SYNCED', 0, ?, ?, ?)`,
@@ -350,21 +361,42 @@ export const pullAndMergeExamHistory = async (accessToken: string): Promise<void
             ],
           );
           inserted++;
-        } else if (remote.domainScores) {
-          // Backfill domainScores into an existing local record that lacks them
-          await db.runAsync(
-            `UPDATE ExamSubmission SET domainScores = ? WHERE (id = ? OR localId = ?) AND domainScores IS NULL`,
-            [JSON.stringify(remote.domainScores), matchKey, matchKey],
-          );
+        } else {
+          // We matched an existing record by localId (matchKey = remote.localId).
+          // Delete any stale orphan that was previously inserted using the server's
+          // UUID as its id (created before the server returned localId in responses).
+          if (remote.localId && remote.id !== matchKey) {
+            await db.runAsync('DELETE FROM ExamSubmission WHERE id = ? AND localId IS NULL', [
+              remote.id,
+            ]);
+          }
+          if (remote.domainScores) {
+            // Backfill domainScores into an existing local record that lacks them
+            await db.runAsync(
+              `UPDATE ExamSubmission SET domainScores = ? WHERE (id = ? OR localId = ?) AND domainScores IS NULL`,
+              [JSON.stringify(remote.domainScores), matchKey, matchKey],
+            );
+          }
         }
 
         // If the server provided per-question answers, restore ExamAttempt + ExamAnswer rows
         // so this exam appears as fully reviewable (canReview: true) in history.
         if (remote.answers && remote.answers.length > 0) {
-          const existingAttempt = await db.getFirstAsync<{ id: string }>(
+          let existingAttempt = await db.getFirstAsync<{ id: string }>(
             'SELECT id FROM ExamAttempt WHERE id = ?',
             [matchKey],
           );
+
+          // Fallback: composite match to avoid creating orphan ExamAttempts
+          // when the matchKey is a server UUID that doesn't match any local attempt.
+          if (!existingAttempt) {
+            existingAttempt = await db.getFirstAsync<{ id: string }>(
+              `SELECT id FROM ExamAttempt
+               WHERE status = 'completed' AND score = ? AND passed = ?
+                 AND ABS(julianday(completedAt) - julianday(?)) < 0.001`,
+              [remote.score, remote.passed ? 1 : 0, remote.submittedAt],
+            );
+          }
 
           if (!existingAttempt) {
             // Synthesise startedAt from submittedAt minus duration
@@ -472,16 +504,18 @@ export const backfillDomainScores = async (accessToken: string): Promise<void> =
         );
 
         // Persist locally so we don't re-attempt on the next sync
-        await db.runAsync(
-          `UPDATE ExamSubmission SET domainScores = ? WHERE id = ?`,
-          [JSON.stringify(domainScores), sub.id],
-        );
+        await db.runAsync(`UPDATE ExamSubmission SET domainScores = ? WHERE id = ?`, [
+          JSON.stringify(domainScores),
+          sub.id,
+        ]);
       } catch {
         // Non-fatal — will retry on next sync
       }
     }
 
-    console.log(`[StatsSync] Domain score backfill complete (${toBackfill.length} candidates checked)`);
+    console.log(
+      `[StatsSync] Domain score backfill complete (${toBackfill.length} candidates checked)`,
+    );
   } catch (err) {
     console.warn('[StatsSync] Domain score backfill failed:', err);
   }

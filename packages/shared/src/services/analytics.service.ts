@@ -1,13 +1,12 @@
 // T067: AnalyticsService - Aggregates analytics data for the dashboard
 import { getUserStats } from '../storage/repositories/user-stats.repository';
-import { getCompletedExamAttempts } from '../storage/repositories/exam-attempt.repository';
-import { getDatabase } from '../storage/database';
 import {
   getOverallStats,
   calculateAggregatedDomainPerformance,
   formatTimeSpent,
   OverallStats,
 } from './scoring.service';
+import { getExamHistory } from './review.service';
 import { DomainScore, UserStats } from '../storage/schema';
 
 /**
@@ -97,52 +96,23 @@ export const getStudyStats = async (): Promise<StudyStats> => {
 };
 
 /**
- * Get score history from completed exam attempts for the trend chart.
- * Merges local ExamAttempt rows with server-pulled ExamSubmission rows,
- * deduplicating by localId so the same exam doesn't appear twice.
- * All data is read from the local DB (synced on login/app focus).
+ * Get score history from completed exams for the trend chart.
+ * Uses getExamHistory() as the single source of truth — it already
+ * deduplicates ExamAttempt + ExamSubmission rows via SQL + JS-level dedup.
  */
 export const getScoreHistory = async (limit: number = 10): Promise<ScoreHistoryEntry[]> => {
-  // Local completed attempts (by completion date, most recent first)
-  const completed = await getCompletedExamAttempts();
-  const localEntries = completed
-    .filter((a) => a.score !== null)
-    .map((a) => ({
-      date: a.completedAt ?? a.startedAt,
-      score: a.score ?? 0,
-      passed: a.passed === true,
-      key: a.id,
-    }));
+  const history = await getExamHistory();
 
-  // Server-pulled submissions (no matching local attempt)
-  const db = await getDatabase();
-  const submissionRows = await db.getAllAsync<{
-    id: string;
-    localId: string | null;
-    score: number;
-    passed: number;
-    submittedAt: string;
-  }>('SELECT id, localId, score, passed, submittedAt FROM ExamSubmission ORDER BY submittedAt DESC LIMIT ?', [limit * 2]);
-
-  const seenKeys = new Set(localEntries.map((e) => e.key));
-  const submissionEntries = submissionRows
-    .filter((row) => {
-      const key = row.localId ?? row.id;
-      if (seenKeys.has(key)) return false;
-      seenKeys.add(key);
-      return true;
-    })
-    .map((row) => ({
-      date: row.submittedAt,
-      score: row.score,
-      passed: row.passed === 1,
-    }));
-
-  // Merge, sort chronologically (oldest first), take most recent `limit`
-  return [...localEntries, ...submissionEntries]
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  // Sort chronologically (oldest first), take most recent `limit`
+  return history
+    .filter((e) => e.score != null)
+    .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
     .slice(-limit)
-    .map(({ date, score, passed }) => ({ date, score, passed }));
+    .map((e) => ({
+      date: e.submittedAt,
+      score: e.score,
+      passed: e.passed,
+    }));
 };
 
 /**
